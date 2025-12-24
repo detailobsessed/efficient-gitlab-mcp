@@ -36,11 +36,18 @@ async function main() {
     transportMode: config.transportMode,
   });
 
-  // Create MCP server
-  const mcpServer = new McpServer({
-    name: config.serverName,
-    version: config.serverVersion,
-  });
+  // Create MCP server with logging capability for agent observability
+  const mcpServer = new McpServer(
+    {
+      name: config.serverName,
+      version: config.serverVersion,
+    },
+    {
+      capabilities: {
+        logging: {},
+      },
+    },
+  );
 
   // Create tool registry for progressive disclosure
   // We expose 5 meta-tools that allow the LLM to discover and execute tools on-demand
@@ -68,6 +75,10 @@ async function main() {
   // These are the ONLY tools exposed to the LLM
   logger.info("Registering meta-tools for progressive disclosure...");
   registerMetaTools(mcpServer, registry, logger);
+
+  // Attach MCP server to logger for protocol logging
+  // This enables agent observability - LLMs can see server logs
+  logger.attachMcpServer(mcpServer);
 
   // Setup transport based on configuration
   if (config.transportMode === "stdio") {

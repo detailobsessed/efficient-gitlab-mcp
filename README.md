@@ -26,7 +26,9 @@ This fork builds on the original GitLab MCP with substantial engineering improve
 ### Key Improvements
 
 - **Progressive Disclosure** — 5 meta-tools instead of 100+ individual tools (~90% token reduction)
-- **Comprehensive Test Suite** — Registry, config, logger, and meta-tools tested
+- **MCP Protocol Logging** — Structured logs sent to LLM clients for agent observability
+- **HTTP Transport Security** — DNS rebinding protection, configurable allowed hosts/origins
+- **Comprehensive Test Suite** — Registry, config, logger, MCP integration, and meta-tools tested
 - **Strict Code Quality** — Zero `any` types, no non-null assertions, enforced cognitive complexity limits
 - **Modern Tooling** — Bun for fast builds, Biome for linting, prek for pre-commit hooks
 
@@ -171,6 +173,39 @@ claude mcp add gitlab-agent -- bun /path/to/efficient-gitlab-mcp/dist/index.js
 # HTTP transport
 STREAMABLE_HTTP=true bun start
 claude mcp add --transport http gitlab-agent http://localhost:3002/mcp
+```
+
+---
+
+## Features
+
+### MCP Protocol Logging
+
+The server supports MCP protocol logging for agent observability. When connected, LLM clients can receive structured log messages showing what the server is doing:
+
+- Tool execution logs
+- GitLab API call details
+- Error information with context
+
+This helps agents understand server behavior and debug issues.
+
+### HTTP Transport Security
+
+When using HTTP transport (`STREAMABLE_HTTP=true`), the server includes security features:
+
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `HTTP_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated list of allowed Host headers |
+| `HTTP_ALLOWED_ORIGINS` | (any) | Comma-separated list of allowed Origin headers |
+| `HTTP_ENABLE_DNS_REBINDING_PROTECTION` | `true` | Enable DNS rebinding attack protection |
+
+Example for production:
+
+```bash
+HTTP_ALLOWED_HOSTS=api.example.com,localhost \
+HTTP_ALLOWED_ORIGINS=https://app.example.com \
+STREAMABLE_HTTP=true \
+bun start
 ```
 
 ---
