@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { LoggingMessageNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 import { createRegistryAdapter, registerMetaTools, ToolRegistry } from "../src/registry/index.js";
 import { registerRepositoryTools } from "../src/tools/repositories.js";
 import { registerSearchTools } from "../src/tools/search.js";
@@ -42,11 +43,18 @@ describe("MCP Server Integration", () => {
     // Create linked transport pair for in-process testing
     [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 
-    // Create and configure MCP server
-    server = new McpServer({
-      name: "test-gitlab-mcp",
-      version: "1.0.0",
-    });
+    // Create and configure MCP server with logging capability
+    server = new McpServer(
+      {
+        name: "test-gitlab-mcp",
+        version: "1.0.0",
+      },
+      {
+        capabilities: {
+          logging: {},
+        },
+      },
+    );
 
     // Set up tool registry with a subset of tools for testing
     const registry = new ToolRegistry();
@@ -232,5 +240,64 @@ describe("MCP Server Integration", () => {
 
     // Note: We don't test actual GitLab API calls here since that would require
     // mocking the GitLab client. Those are covered in the tool-specific tests.
+  });
+
+  describe("MCP Protocol Logging", () => {
+    it("should report logging capability", async () => {
+      const capabilities = client.getServerCapabilities();
+      expect(capabilities?.logging).toBeDefined();
+    });
+
+    it("should receive log messages from server", async () => {
+      const receivedLogs: Array<{ level: string; data: unknown }> = [];
+
+      // Set up notification handler for logging messages
+      client.setNotificationHandler(LoggingMessageNotificationSchema, (notification) => {
+        receivedLogs.push({
+          level: notification.params.level,
+          data: notification.params.data,
+        });
+      });
+
+      // Send a log message from the server
+      await server.server.sendLoggingMessage({
+        level: "info",
+        logger: "test",
+        data: "Test log message from server",
+      });
+
+      // Give time for the notification to be processed
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(receivedLogs.length).toBeGreaterThan(0);
+      expect(receivedLogs[0].level).toBe("info");
+      expect(receivedLogs[0].data).toBe("Test log message from server");
+    });
+
+    it("should receive structured log data", async () => {
+      const receivedLogs: Array<{ level: string; data: unknown }> = [];
+
+      client.setNotificationHandler(LoggingMessageNotificationSchema, (notification) => {
+        receivedLogs.push({
+          level: notification.params.level,
+          data: notification.params.data,
+        });
+      });
+
+      // Send structured log data
+      await server.server.sendLoggingMessage({
+        level: "debug",
+        logger: "gitlab-mcp",
+        data: { message: "Tool executed", toolName: "list_categories", duration: 42 },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(receivedLogs.length).toBeGreaterThan(0);
+      const logData = receivedLogs[0].data as Record<string, unknown>;
+      expect(logData.message).toBe("Tool executed");
+      expect(logData.toolName).toBe("list_categories");
+      expect(logData.duration).toBe(42);
+    });
   });
 });
