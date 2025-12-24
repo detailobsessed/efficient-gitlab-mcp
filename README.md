@@ -20,7 +20,7 @@ This fork builds on the original GitLab MCP with substantial engineering improve
 | **Tool Exposure** | 100+ tools directly | 5 meta-tools (progressive disclosure) |
 | **Testing** | Basic | Comprehensive test suite |
 | **Linting** | ESLint + Prettier | Strict Biome rules (`noExplicitAny`, `noNonNullAssertion`, cognitive complexity) |
-| **CI/CD** | Basic | GitHub Actions (lint, build, test) |
+| **CI/CD** | Basic | GitHub Actions (lint, build, test, semantic-release) |
 | **Pre-commit** | None | prek hooks (typos, formatting, build verification) |
 
 ### Key Improvements
@@ -28,9 +28,10 @@ This fork builds on the original GitLab MCP with substantial engineering improve
 - **Progressive Disclosure** — 5 meta-tools instead of 100+ individual tools (~90% token reduction)
 - **MCP Protocol Logging** — Structured logs sent to LLM clients for agent observability
 - **HTTP Transport Security** — DNS rebinding protection, configurable allowed hosts/origins
-- **Comprehensive Test Suite** — Registry, config, logger, MCP integration, and meta-tools tested
+- **Comprehensive Test Suite** — 120+ tests covering registry, config, logger, MCP integration, and meta-tools
 - **Strict Code Quality** — Zero `any` types, no non-null assertions, enforced cognitive complexity limits
 - **Modern Tooling** — Bun for fast builds, Biome for linting, prek for pre-commit hooks
+- **Automated Releases** — Semantic versioning with conventional commits
 
 ---
 
