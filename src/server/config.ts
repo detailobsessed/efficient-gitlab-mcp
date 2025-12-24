@@ -24,6 +24,11 @@ export interface ServerConfig {
   httpPort: number;
   httpHost: string;
 
+  // HTTP Transport Security
+  httpAllowedHosts: string[];
+  httpAllowedOrigins: string[];
+  httpEnableDnsRebindingProtection: boolean;
+
   // GitLab API
   gitlabApiUrl: string;
   gitlabPersonalAccessToken?: string;
@@ -90,6 +95,18 @@ export function loadConfig(): ServerConfig {
     transportMode: determineTransportMode(),
     httpPort: parseInt(process.env.PORT || "3002", 10),
     httpHost: process.env.HOST || "127.0.0.1",
+
+    // HTTP Transport Security
+    httpAllowedHosts: (process.env.HTTP_ALLOWED_HOSTS || "localhost,127.0.0.1")
+      .split(",")
+      .map((h) => h.trim())
+      .filter(Boolean),
+    httpAllowedOrigins: process.env.HTTP_ALLOWED_ORIGINS
+      ? process.env.HTTP_ALLOWED_ORIGINS.split(",")
+          .map((o) => o.trim())
+          .filter(Boolean)
+      : [],
+    httpEnableDnsRebindingProtection: process.env.HTTP_ENABLE_DNS_REBINDING_PROTECTION !== "false",
 
     // GitLab API
     gitlabApiUrl: normalizeGitLabApiUrl(process.env.GITLAB_API_URL || "https://gitlab.com"),

@@ -77,7 +77,13 @@ async function main() {
     logger.info("MCP Server ready (stdio)");
   } else if (config.transportMode === "streamable-http") {
     // HTTP transport with Express
-    logger.info("Starting with Streamable HTTP transport", { port: config.httpPort });
+    logger.info("Starting with Streamable HTTP transport", {
+      port: config.httpPort,
+      host: config.httpHost,
+      dnsRebindingProtection: config.httpEnableDnsRebindingProtection,
+      allowedHosts: config.httpAllowedHosts,
+      allowedOrigins: config.httpAllowedOrigins.length > 0 ? config.httpAllowedOrigins : "any",
+    });
     const app = express();
     app.use(express.json());
 
@@ -96,54 +102,59 @@ async function main() {
       });
     });
 
+    // Helper to create a new transport with security features
+    const createTransport = (): StreamableHTTPServerTransport => {
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (newSessionId: string) => {
+          streamableTransports[newSessionId] = transport;
+          logger.info(`Session initialized: ${newSessionId}`);
+        },
+        enableDnsRebindingProtection: config.httpEnableDnsRebindingProtection,
+        allowedHosts: config.httpAllowedHosts,
+        allowedOrigins:
+          config.httpAllowedOrigins.length > 0 ? config.httpAllowedOrigins : undefined,
+      });
+
+      transport.onclose = () => {
+        const sid = transport.sessionId;
+        if (sid && streamableTransports[sid]) {
+          logger.info(`Session closed: ${sid}`);
+          delete streamableTransports[sid];
+        }
+      };
+
+      return transport;
+    };
+
+    // Helper to send error response
+    const sendErrorResponse = (res: Response, error: unknown) => {
+      logger.error("Error handling MCP request", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      if (!res.headersSent) {
+        res.status(500).json({
+          jsonrpc: "2.0",
+          error: { code: -32603, message: "Internal server error" },
+          id: null,
+        });
+      }
+    };
+
     // MCP endpoint
     app.post("/mcp", async (req: Request, res: Response) => {
       const sessionId = req.headers["mcp-session-id"] as string;
 
       try {
-        let transport: StreamableHTTPServerTransport;
-
         if (sessionId && streamableTransports[sessionId]) {
-          // Reuse existing transport for ongoing session
-          transport = streamableTransports[sessionId];
-          await transport.handleRequest(req, res, req.body);
+          await streamableTransports[sessionId].handleRequest(req, res, req.body);
         } else {
-          // Create new transport for new session
-          transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: () => randomUUID(),
-            onsessioninitialized: (newSessionId: string) => {
-              streamableTransports[newSessionId] = transport;
-              logger.info(`Session initialized: ${newSessionId}`);
-            },
-          });
-
-          // Set up cleanup handler when transport closes
-          transport.onclose = () => {
-            const sid = transport.sessionId;
-            if (sid && streamableTransports[sid]) {
-              logger.info(`Session closed: ${sid}`);
-              delete streamableTransports[sid];
-            }
-          };
-
-          // Connect transport to MCP server
+          const transport = createTransport();
           await mcpServer.connect(transport);
           await transport.handleRequest(req, res, req.body);
         }
       } catch (error) {
-        logger.error("Error handling MCP request", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        if (!res.headersSent) {
-          res.status(500).json({
-            jsonrpc: "2.0",
-            error: {
-              code: -32603,
-              message: "Internal server error",
-            },
-            id: null,
-          });
-        }
+        sendErrorResponse(res, error);
       }
     });
 
