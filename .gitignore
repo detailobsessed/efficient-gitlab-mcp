@@ -1,12 +1,14 @@
 node_modules
 .DS_Store
 build
+dist
 .local/
 .env
 .env.local
 .env.test
 coverage/
 *.log
+# bun.lock should be committed for CI
 
 # ai
 .opencode*
