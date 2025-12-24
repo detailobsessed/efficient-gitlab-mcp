@@ -92,7 +92,11 @@ All GitLab operations organized by category:
 ### Prerequisites
 
 - [Bun](https://bun.sh/) 1.0.0+
-- A GitLab personal access token or OAuth setup
+- A GitLab personal access token with the following scopes:
+  - `api` — Full API access (required for most operations)
+  - `read_api` — Read-only API access (if you only need read operations)
+  - `read_repository` — Read repository files
+  - `write_repository` — Push to repositories
 
 ### Install
 
@@ -116,7 +120,48 @@ bun run build
 bun start
 ```
 
-### Connect to Claude Code
+### MCP Client Configuration
+
+Add this to your MCP client configuration (e.g., `~/.config/claude/claude_desktop_config.json` for Claude Desktop, or your IDE's MCP settings):
+
+```json
+{
+  "mcpServers": {
+    "gitlab": {
+      "command": "bun",
+      "args": ["run", "/path/to/efficient-gitlab-mcp/dist/index.js"],
+      "env": {
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx",
+        "GITLAB_API_URL": "https://gitlab.com"
+      }
+    }
+  }
+}
+```
+
+For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL.
+
+#### Using Docker
+
+```json
+{
+  "mcpServers": {
+    "gitlab": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "GITLAB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/detailobsessed/efficient-gitlab-mcp:latest"
+      ],
+      "env": {
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx"
+      }
+    }
+  }
+}
+```
+
+### Connect via CLI
 
 ```bash
 # stdio transport (default)
