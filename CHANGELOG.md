@@ -1,3 +1,11 @@
+## [0.1.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.1.0...v0.1.1) (2025-12-24)
+
+
+### Bug Fixes
+
+* **ci:** add permissions and secrets inherit for reusable workflow ([#15](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/15)) ([2a41bfc](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/2a41bfca90dfc3767cf759caf79ff72d735e3c40))
+* **ci:** remove persist-credentials false for semantic-release ([#14](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/14)) ([e9d9db1](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/e9d9db11ee5f16b43c252a7167d640b0b6c5c959))
+
 # [0.1.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.0.0...v0.1.0) (2025-12-24)
 
 
