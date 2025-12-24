@@ -1,0 +1,8 @@
+[default.extend-identifiers]
+
+[default.extend-words]
+# Korean comments in the codebase
+iid = "iid"
+
+[files]
+extend-exclude = ["package-lock.json", "node_modules/", "build/", "dist/"]
