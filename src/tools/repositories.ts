@@ -284,10 +284,21 @@ export function registerRepositoryTools(target: ToolRegistrationTarget, logger: 
         author_name: args.author_name,
       };
 
-      const result = await defaultClient.post(
-        `/projects/${projectId}/repository/files/${filePath}`,
-        body,
-      );
+      // Check if file exists to determine POST (create) vs PUT (update)
+      let fileExists = false;
+      try {
+        const ref = args.branch ? `?ref=${encodeURIComponent(args.branch)}` : "";
+        await defaultClient.get(`/projects/${projectId}/repository/files/${filePath}${ref}`);
+        fileExists = true;
+      } catch {
+        // File doesn't exist, will create
+      }
+
+      const endpoint = `/projects/${projectId}/repository/files/${filePath}`;
+      const result = fileExists
+        ? await defaultClient.put(endpoint, body)
+        : await defaultClient.post(endpoint, body);
+
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
       };
