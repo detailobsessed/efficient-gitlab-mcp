@@ -5,4 +5,5 @@ export { registerNamespaceTools } from "./namespaces.js";
 export { registerPipelineTools } from "./pipelines.js";
 export { registerProjectTools } from "./projects.js";
 export { registerRepositoryTools } from "./repositories.js";
+export { registerSearchTools } from "./search.js";
 export { registerUserTools } from "./users.js";

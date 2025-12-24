@@ -8,6 +8,7 @@ import { registerNamespaceTools } from "../src/tools/namespaces.js";
 import { registerPipelineTools } from "../src/tools/pipelines.js";
 import { registerProjectTools } from "../src/tools/projects.js";
 import { registerRepositoryTools } from "../src/tools/repositories.js";
+import { registerSearchTools } from "../src/tools/search.js";
 import { registerUserTools } from "../src/tools/users.js";
 import { Logger } from "../src/utils/logger.js";
 
@@ -200,12 +201,13 @@ describe("Tool Registration", () => {
       registerCommitTools(createRegistryAdapter(registry, "commits"), logger);
       registerNamespaceTools(createRegistryAdapter(registry, "namespaces"), logger);
       registerUserTools(createRegistryAdapter(registry, "users"), logger);
+      registerSearchTools(createRegistryAdapter(registry, "search"), logger);
 
       const allTools = registry.getAllToolNames();
-      expect(allTools.length).toBe(52);
+      expect(allTools.length).toBe(55);
 
       const categories = registry.listCategories();
-      expect(categories.length).toBe(7);
+      expect(categories.length).toBe(8);
     });
 
     it("should register 62 tools with pipelines enabled", () => {
@@ -218,13 +220,14 @@ describe("Tool Registration", () => {
       registerCommitTools(createRegistryAdapter(registry, "commits"), logger);
       registerNamespaceTools(createRegistryAdapter(registry, "namespaces"), logger);
       registerUserTools(createRegistryAdapter(registry, "users"), logger);
+      registerSearchTools(createRegistryAdapter(registry, "search"), logger);
       registerPipelineTools(createRegistryAdapter(registry, "pipelines"), logger);
 
       const allTools = registry.getAllToolNames();
-      expect(allTools.length).toBe(62);
+      expect(allTools.length).toBe(65);
 
       const categories = registry.listCategories();
-      expect(categories.length).toBe(8);
+      expect(categories.length).toBe(9);
     });
 
     it("should make all tools searchable", () => {

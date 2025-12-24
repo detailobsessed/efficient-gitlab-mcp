@@ -77,6 +77,7 @@ All GitLab operations organized by category:
 | projects | Project details, members, labels |
 | commits | List commits, get diffs |
 | namespaces | List, get, verify namespaces |
+| search | Global, project, and group search across code, issues, MRs, commits |
 | milestones | Create, edit, delete milestones |
 | wiki | Wiki page management |
 | releases | Release management |
