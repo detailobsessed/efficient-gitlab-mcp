@@ -102,6 +102,11 @@ export class ToolRegistry {
         description: "Get user details by username.",
       },
       {
+        name: "search",
+        description:
+          "Global, project, and group search across issues, merge requests, code, commits, and more.",
+      },
+      {
         name: "notes",
         description:
           "Create and manage notes (comments) on issues and merge requests. Draft notes for MRs.",

@@ -21,6 +21,7 @@ import {
   registerPipelineTools,
   registerProjectTools,
   registerRepositoryTools,
+  registerSearchTools,
   registerUserTools,
 } from "../tools/index.js";
 import { Logger } from "../utils/logger.js";
@@ -56,6 +57,7 @@ async function main() {
   registerCommitTools(createRegistryAdapter(registry, "commits"), logger);
   registerNamespaceTools(createRegistryAdapter(registry, "namespaces"), logger);
   registerUserTools(createRegistryAdapter(registry, "users"), logger);
+  registerSearchTools(createRegistryAdapter(registry, "search"), logger);
 
   // Pipeline tools are optional (controlled by USE_PIPELINE env var)
   if (config.usePipeline) {
