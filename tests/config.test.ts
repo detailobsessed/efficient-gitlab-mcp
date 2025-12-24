@@ -204,4 +204,45 @@ describe("loadConfig", () => {
       expect(config.httpHost).toBe("0.0.0.0");
     });
   });
+
+  describe("HTTP transport security", () => {
+    it("should default allowed hosts to localhost and 127.0.0.1", () => {
+      delete process.env.HTTP_ALLOWED_HOSTS;
+      const config = loadConfig();
+      expect(config.httpAllowedHosts).toEqual(["localhost", "127.0.0.1"]);
+    });
+
+    it("should parse custom allowed hosts", () => {
+      process.env.HTTP_ALLOWED_HOSTS = "example.com, api.example.com";
+      const config = loadConfig();
+      expect(config.httpAllowedHosts).toEqual(["example.com", "api.example.com"]);
+    });
+
+    it("should default allowed origins to empty array", () => {
+      delete process.env.HTTP_ALLOWED_ORIGINS;
+      const config = loadConfig();
+      expect(config.httpAllowedOrigins).toEqual([]);
+    });
+
+    it("should parse custom allowed origins", () => {
+      process.env.HTTP_ALLOWED_ORIGINS = "http://localhost:3000, https://app.example.com";
+      const config = loadConfig();
+      expect(config.httpAllowedOrigins).toEqual([
+        "http://localhost:3000",
+        "https://app.example.com",
+      ]);
+    });
+
+    it("should enable DNS rebinding protection by default", () => {
+      delete process.env.HTTP_ENABLE_DNS_REBINDING_PROTECTION;
+      const config = loadConfig();
+      expect(config.httpEnableDnsRebindingProtection).toBe(true);
+    });
+
+    it("should allow disabling DNS rebinding protection", () => {
+      process.env.HTTP_ENABLE_DNS_REBINDING_PROTECTION = "false";
+      const config = loadConfig();
+      expect(config.httpEnableDnsRebindingProtection).toBe(false);
+    });
+  });
 });
