@@ -144,26 +144,6 @@ Add this to your MCP client configuration (e.g., `~/.config/claude/claude_deskto
 
 For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL.
 
-#### Using Docker
-
-```json
-{
-  "mcpServers": {
-    "gitlab": {
-      "command": "docker",
-      "args": [
-        "run", "-i", "--rm",
-        "-e", "GITLAB_PERSONAL_ACCESS_TOKEN",
-        "ghcr.io/detailobsessed/efficient-gitlab-mcp:latest"
-      ],
-      "env": {
-        "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx"
-      }
-    }
-  }
-}
-```
-
 ### Connect via CLI
 
 ```bash
