@@ -74,7 +74,7 @@ Add or update the GitLab MCP server configuration:
   "mcpServers": {
     "gitlab": {
       "command": "npx",
-      "args": ["-y", "@zereight/mcp-gitlab"],
+      "args": ["-y", "efficient-gitlab-mcp-server"],
       "env": {
         "GITLAB_USE_OAUTH": "true",
         "GITLAB_OAUTH_CLIENT_ID": "your_application_id_here",
@@ -98,7 +98,7 @@ If you're using a self-hosted GitLab instance, update the `GITLAB_API_URL`:
   "mcpServers": {
     "gitlab": {
       "command": "npx",
-      "args": ["-y", "@zereight/mcp-gitlab"],
+      "args": ["-y", "efficient-gitlab-mcp-server"],
       "env": {
         "GITLAB_USE_OAUTH": "true",
         "GITLAB_OAUTH_CLIENT_ID": "your_application_id_here",
