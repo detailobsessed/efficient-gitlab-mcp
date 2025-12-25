@@ -1,3 +1,10 @@
+## [0.2.2](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.2.1...v0.2.2) (2025-12-25)
+
+
+### Bug Fixes
+
+* use Node.js 24 for npm OIDC trusted publishing ([#25](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/25)) ([5bcb716](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/5bcb7163d1ab2ff60c048a0bea9e38656c5350de))
+
 ## [0.2.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.2.0...v0.2.1) (2025-12-25)
 
 
