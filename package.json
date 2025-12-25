@@ -1,9 +1,9 @@
 {
-  "name": "gitlab-mcp-server",
+  "name": "efficient-gitlab-mcp-server",
   "version": "0.1.1",
   "description": "Production-ready GitLab MCP Server with progressive disclosure pattern",
   "license": "MIT",
-  "author": "",
+  "author": "Ismar <ismart@gmail.com>",
   "type": "module",
   "main": "dist/index.js",
   "bin": "./dist/index.js",

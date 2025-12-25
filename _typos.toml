@@ -5,4 +5,4 @@
 iid = "iid"
 
 [files]
-extend-exclude = ["package-lock.json", "node_modules/", "build/", "dist/"]
+extend-exclude = ["package-lock.json", "node_modules/", "dist/"]
