@@ -146,7 +146,7 @@ function parseMCPResponse(output: string): any {
 // MCP 서버와 통신하는 함수
 async function callMCPTool(toolName: string, parameters: Record<string, any> = {}): Promise<any> {
   return new Promise((resolve, reject) => {
-    const mcpProcess: ChildProcess = spawn('node', ['build/index.js'], {
+    const mcpProcess: ChildProcess = spawn('bun', ['dist/index.js'], {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: {
         ...process.env,
@@ -355,7 +355,7 @@ async function runReadOnlyTests(): Promise<boolean> {
   }
 
   // MCP 서버 빌드 확인
-  if (!fs.existsSync('build/index.js')) {
+  if (!fs.existsSync('dist/index.js')) {
     console.log('🔨 MCP 서버를 빌드합니다...');
     const buildProcess = spawn('npm', ['run', 'build'], { stdio: 'inherit' });
     await new Promise<void>((resolve, reject) => {

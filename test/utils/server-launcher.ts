@@ -82,11 +82,11 @@ export async function launchServer(config: ServerConfig): Promise<ServerInstance
       throw new Error(`${TransportMode.STDIO} mode is not supported for server testing, because it uses process communication.`);
   }
 
-  const serverPath = path.resolve(process.cwd(), 'build/index.js');
+  const serverPath = path.resolve(process.cwd(), 'dist/index.js');
   
   console.log("Launcher: Spawning server process with env:", serverEnv);
   console.log("Launcher: Spawning server process with env:", serverEnv);
-  const serverProcess = spawn('node', [serverPath], {
+  const serverProcess = spawn('bun', ['run', serverPath], {
     env: serverEnv,
     stdio: ['pipe', 'pipe', 'pipe'],
     shell: false,
