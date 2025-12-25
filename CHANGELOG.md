@@ -1,3 +1,10 @@
+# [0.2.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.1.2...v0.2.0) (2025-12-25)
+
+
+### Features
+
+* add npm version badge to README ([#23](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/23)) ([1c2cc84](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/1c2cc845e661e1333a0f35f6a9a275d373615e66))
+
 ## [0.1.2](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.1.1...v0.1.2) (2025-12-25)
 
 
