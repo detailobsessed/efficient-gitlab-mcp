@@ -104,6 +104,14 @@ All GitLab operations organized by category:
 
 ### Install
 
+**Option 1: NPM (Recommended)**
+```bash
+npx efficient-gitlab-mcp-server
+# or with bun
+bunx efficient-gitlab-mcp-server
+```
+
+**Option 2: From Source**
 ```bash
 git clone https://github.com/detailobsessed/efficient-gitlab-mcp.git
 cd efficient-gitlab-mcp
@@ -211,19 +219,52 @@ bun run build
 
 ## Configuration
 
+### Core Settings
+
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `GITLAB_PERSONAL_ACCESS_TOKEN` | Yes* | - | GitLab personal access token |
 | `GITLAB_API_URL` | No | `https://gitlab.com` | GitLab instance URL |
 | `GITLAB_PROJECT_ID` | No | - | Default project ID |
 | `GITLAB_ALLOWED_PROJECT_IDS` | No | - | Comma-separated allowed project IDs |
+| `GITLAB_READ_ONLY_MODE` | No | `false` | Disable write operations |
+| `GITLAB_IS_OLD` | No | `false` | For older GitLab instances |
+
+### Transport Settings
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
 | `STREAMABLE_HTTP` | No | `false` | Enable HTTP transport |
+| `SSE` | No | `false` | Enable SSE transport |
 | `PORT` | No | `3002` | HTTP server port |
 | `HOST` | No | `127.0.0.1` | HTTP server host |
-| `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, `error` |
+
+### Feature Flags
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
 | `USE_GITLAB_WIKI` | No | `false` | Enable wiki tools |
 | `USE_MILESTONE` | No | `false` | Enable milestone tools |
 | `USE_PIPELINE` | No | `false` | Enable pipeline tools |
+
+### Logging & Security
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, `error` |
+| `LOG_FORMAT` | No | `pretty` | `json`, `pretty` |
+| `HTTP_ALLOWED_HOSTS` | No | `localhost,127.0.0.1` | Allowed Host headers |
+| `HTTP_ALLOWED_ORIGINS` | No | (any) | Allowed Origin headers |
+
+### Remote Authorization (Multi-tenant)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `REMOTE_AUTHORIZATION` | No | `false` | Enable remote auth |
+| `ENABLE_DYNAMIC_API_URL` | No | `false` | Allow dynamic GitLab URLs |
+| `SESSION_TIMEOUT_SECONDS` | No | `3600` | Session timeout |
+| `MAX_SESSIONS` | No | `1000` | Maximum concurrent sessions |
+| `MAX_REQUESTS_PER_MINUTE` | No | `60` | Rate limit per session |
 
 *Or use OAuth authentication - see [OAuth Setup Guide](./docs/oauth-setup.md)
 
