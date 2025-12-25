@@ -96,42 +96,12 @@ All GitLab operations organized by category:
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) 1.0.0+
+- Node.js 18+ (for `npx`) or [Bun](https://bun.sh/) 1.0+ (for `bunx`)
 - A GitLab personal access token with the following scopes:
   - `api` — Full API access (required for most operations)
   - `read_api` — Read-only API access (if you only need read operations)
   - `read_repository` — Read repository files
   - `write_repository` — Push to repositories
-
-### Install
-
-**Option 1: NPM (Recommended)**
-```bash
-npx efficient-gitlab-mcp-server
-# or with bun
-bunx efficient-gitlab-mcp-server
-```
-
-**Option 2: From Source**
-```bash
-git clone https://github.com/detailobsessed/efficient-gitlab-mcp.git
-cd efficient-gitlab-mcp
-bun install
-```
-
-### Configure
-
-```bash
-cp .env.example .env
-# Edit .env and add your GITLAB_PERSONAL_ACCESS_TOKEN
-```
-
-### Run
-
-```bash
-bun run build
-bun start
-```
 
 ### MCP Client Configuration
 
@@ -141,8 +111,25 @@ Add this to your MCP client configuration (e.g., `~/.config/claude/claude_deskto
 {
   "mcpServers": {
     "gitlab": {
-      "command": "bun",
-      "args": ["run", "/path/to/efficient-gitlab-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["efficient-gitlab-mcp-server"],
+      "env": {
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx",
+        "GITLAB_API_URL": "https://gitlab.com"
+      }
+    }
+  }
+}
+```
+
+Or with Bun:
+
+```json
+{
+  "mcpServers": {
+    "gitlab": {
+      "command": "bunx",
+      "args": ["efficient-gitlab-mcp-server"],
       "env": {
         "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx",
         "GITLAB_API_URL": "https://gitlab.com"
@@ -158,11 +145,21 @@ For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL.
 
 ```bash
 # stdio transport (default)
-claude mcp add gitlab-agent -- bun /path/to/efficient-gitlab-mcp/dist/index.js
+claude mcp add gitlab-agent -- npx efficient-gitlab-mcp-server
 
-# HTTP transport
-STREAMABLE_HTTP=true bun start
+# HTTP transport (requires running from source)
+STREAMABLE_HTTP=true npx efficient-gitlab-mcp-server
 claude mcp add --transport http gitlab-agent http://localhost:3002/mcp
+```
+
+### Install from Source (Development)
+
+```bash
+git clone https://github.com/detailobsessed/efficient-gitlab-mcp.git
+cd efficient-gitlab-mcp
+bun install
+bun run build
+bun start
 ```
 
 ---
