@@ -1,3 +1,10 @@
+## [0.2.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.2.0...v0.2.1) (2025-12-25)
+
+
+### Bug Fixes
+
+* use ubuntu-latest for npm publish (OIDC requires GitHub-hosted runners) ([#24](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/24)) ([28155bc](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/28155bcff6e4cfb69e941e82aacf119f59f8f893))
+
 # [0.2.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.1.2...v0.2.0) (2025-12-25)
 
 
