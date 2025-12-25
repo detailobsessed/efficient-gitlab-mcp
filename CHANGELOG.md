@@ -1,3 +1,10 @@
+## [0.2.3](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.2.2...v0.2.3) (2025-12-25)
+
+
+### Bug Fixes
+
+* correct bin format in package.json ([#26](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/26)) ([91a1e98](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/91a1e98bd4b2a94c8e4acd0ebcf320a0a6aa8987))
+
 ## [0.2.2](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.2.1...v0.2.2) (2025-12-25)
 
 
