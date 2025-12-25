@@ -6,7 +6,9 @@
   "author": "Ismar <ismart@gmail.com>",
   "type": "module",
   "main": "dist/index.js",
-  "bin": "./dist/index.js",
+  "bin": {
+    "efficient-gitlab-mcp-server": "./dist/index.js"
+  },
   "files": [
     "dist"
   ],
