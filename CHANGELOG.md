@@ -1,3 +1,10 @@
+## [0.1.2](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.1.1...v0.1.2) (2025-12-25)
+
+
+### Bug Fixes
+
+* **ci:** checkout release tag in npm-publish workflow ([#21](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/21)) ([8094cd1](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/8094cd13893b9d0d5327d232cad12da0c0b6ce7c))
+
 ## [0.1.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.1.0...v0.1.1) (2025-12-24)
 
 
