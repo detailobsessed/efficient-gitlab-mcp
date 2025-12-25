@@ -1,5 +1,6 @@
 # Efficient GitLab MCP
 
+[![npm version](https://img.shields.io/npm/v/efficient-gitlab-mcp-server.svg)](https://www.npmjs.com/package/efficient-gitlab-mcp-server)
 [![CI](https://github.com/detailobsessed/efficient-gitlab-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/detailobsessed/efficient-gitlab-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Bun](https://img.shields.io/badge/Bun-1.0+-f9f1e1?logo=bun&logoColor=f9f1e1)](https://bun.sh/)
