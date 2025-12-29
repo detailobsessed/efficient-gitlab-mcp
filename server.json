@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.detailobsessed/efficient-gitlab",
+  "description": "GitLab MCP Server with progressive disclosure - 5 meta-tools, 90% token reduction",
+  "repository": {
+    "url": "https://github.com/detailobsessed/efficient-gitlab-mcp",
+    "source": "github"
+  },
+  "version": "0.2.3",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "efficient-gitlab-mcp-server",
+      "version": "0.2.3",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "GITLAB_PERSONAL_ACCESS_TOKEN",
+          "description": "GitLab personal access token with API scope",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "GITLAB_API_URL",
+          "description": "GitLab API base URL (default: https://gitlab.com)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}
