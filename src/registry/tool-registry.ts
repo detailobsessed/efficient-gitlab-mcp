@@ -288,9 +288,11 @@ export class ToolRegistry {
   }
 
   private handleZodArray(def: ZodDef): Record<string, unknown> {
+    // Zod v3 uses def.type as ZodType, Zod v4 uses def.element
+    const itemType = def.element || (typeof def.type === "object" ? def.type : undefined);
     const schema: Record<string, unknown> = {
       type: "array",
-      items: def.type ? this.zodToJsonSchema(def.type) : { type: "unknown" },
+      items: itemType ? this.zodToJsonSchema(itemType as ZodType) : { type: "unknown" },
     };
     if (def.maxLength) schema.maxItems = def.maxLength.value;
     if (def.minLength) schema.minItems = def.minLength.value;
@@ -301,73 +303,91 @@ export class ToolRegistry {
     def: ZodDef,
     extraProps: Record<string, unknown>,
   ): Record<string, unknown> {
+    // Zod v4 wraps innerType with a def property
+    let innerZodType: ZodType | undefined;
+    if (def.innerType) {
+      if ("def" in def.innerType) {
+        // Zod v4 style: innerType has a def property, treat it as ZodType
+        innerZodType = def.innerType as unknown as ZodType;
+      } else {
+        innerZodType = def.innerType as ZodType;
+      }
+    }
     const schema = (
-      def.innerType ? this.zodToJsonSchema(def.innerType) : { type: "unknown" }
+      innerZodType ? this.zodToJsonSchema(innerZodType) : { type: "unknown" }
     ) as Record<string, unknown>;
     return { ...schema, ...extraProps };
+  }
+
+  // Normalize Zod type names (v3 uses "ZodString", v4 uses "string")
+  private normalizeZodTypeName(name: string | undefined): string | undefined {
+    if (!name) return undefined;
+    // Map v3 names to v4 style for unified handling
+    const v3ToV4: Record<string, string> = {
+      ZodString: "string",
+      ZodNumber: "number",
+      ZodBoolean: "boolean",
+      ZodArray: "array",
+      ZodObject: "object",
+      ZodOptional: "optional",
+      ZodDefault: "default",
+      ZodEnum: "enum",
+      ZodUnion: "union",
+      ZodNullable: "nullable",
+    };
+    return v3ToV4[name] || name;
   }
 
   private zodToJsonSchema(zodType: ZodType): unknown {
     const def = (zodType as unknown as { _def: ZodDef })._def;
     if (!def) return { type: "unknown" };
 
-    const { typeName, description } = def;
-    let schema: Record<string, unknown>;
+    const rawTypeName = def.typeName || (typeof def.type === "string" ? def.type : undefined);
+    const typeName = this.normalizeZodTypeName(rawTypeName);
+    const schema = this.buildSchemaForType(typeName, def);
 
-    switch (typeName) {
-      case "ZodString":
-        schema = { type: "string" };
-        this.applyStringChecks(schema, def.checks);
-        break;
-      case "ZodNumber":
-        schema = this.handleZodNumber(def);
-        break;
-      case "ZodBoolean":
-        schema = { type: "boolean" };
-        break;
-      case "ZodArray":
-        schema = this.handleZodArray(def);
-        break;
-      case "ZodObject":
-        schema = { type: "object", properties: def.shape ? this.serializeSchema(def.shape()) : {} };
-        break;
-      case "ZodOptional":
-        schema = this.handleZodWrapper(def, { optional: true });
-        break;
-      case "ZodDefault":
-        schema = this.handleZodWrapper(def, {
-          default: def.defaultValue ? def.defaultValue() : undefined,
-        });
-        break;
-      case "ZodEnum":
-        schema = { type: "string", enum: def.values };
-        break;
-      case "ZodUnion":
-        schema = {
-          oneOf: def.options ? def.options.map((opt: ZodType) => this.zodToJsonSchema(opt)) : [],
-        };
-        break;
-      case "ZodNullable":
-        schema = this.handleZodWrapper(def, { nullable: true });
-        break;
-      default:
-        schema = { type: typeName.replace("Zod", "").toLowerCase() };
-    }
-
-    if (description) schema.description = description;
+    if (def.description) schema.description = def.description;
     return schema;
+  }
+
+  private buildSchemaForType(typeName: string | undefined, def: ZodDef): Record<string, unknown> {
+    if (typeName === "string") {
+      const schema: Record<string, unknown> = { type: "string" };
+      this.applyStringChecks(schema, def.checks);
+      return schema;
+    }
+    if (typeName === "number") return this.handleZodNumber(def);
+    if (typeName === "boolean") return { type: "boolean" };
+    if (typeName === "array") return this.handleZodArray(def);
+    if (typeName === "object") return this.handleZodObject(def);
+    if (typeName === "optional") return this.handleZodWrapper(def, { optional: true });
+    if (typeName === "default")
+      return this.handleZodWrapper(def, { default: def.defaultValue?.() });
+    if (typeName === "enum")
+      return { type: "string", enum: def.values || (def.entries ? Object.keys(def.entries) : []) };
+    if (typeName === "union")
+      return { oneOf: def.options?.map((opt: ZodType) => this.zodToJsonSchema(opt)) || [] };
+    if (typeName === "nullable") return this.handleZodWrapper(def, { nullable: true });
+    return { type: typeName ? String(typeName).replace("Zod", "").toLowerCase() : "unknown" };
+  }
+
+  private handleZodObject(def: ZodDef): Record<string, unknown> {
+    const shape = def.shape ? (typeof def.shape === "function" ? def.shape() : def.shape) : {};
+    return { type: "object", properties: this.serializeSchema(shape) };
   }
 }
 
-/** Zod internal definition type */
+/** Zod internal definition type (supports both v3 and v4) */
 interface ZodDef {
-  typeName: string;
+  typeName?: string; // Zod v3
+  type?: string | ZodType; // Zod v4 uses string type, v3 uses ZodType for arrays
   description?: string;
   checks?: Array<{ kind: string; value?: unknown }>;
-  values?: unknown[];
-  innerType?: ZodType;
-  shape?: () => Record<string, ZodType>;
-  type?: ZodType;
+  values?: unknown[]; // Zod v3 enum
+  entries?: Record<string, string>; // Zod v4 enum
+  innerType?: ZodType | { def: ZodDef }; // Zod v4 wraps innerType differently
+  element?: ZodType; // Zod v4 array element type
+  shape?: (() => Record<string, ZodType>) | Record<string, ZodType>; // v3: function, v4: property
   defaultValue?: () => unknown;
   options?: ZodType[];
   minLength?: { value: number };

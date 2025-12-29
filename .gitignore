@@ -13,3 +13,6 @@ coverage/
 # ai
 .opencode*
 .aider*
+
+# mcp-publisher tokens
+.mcpregistry_*
