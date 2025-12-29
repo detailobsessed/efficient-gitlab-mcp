@@ -1,3 +1,10 @@
+# [0.3.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.2.3...v0.3.0) (2025-12-29)
+
+
+### Features
+
+* add MCP Registry support with mcpName and server.json ([#30](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/30)) ([19dd31e](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/19dd31ea22b3de78d932061aa34ac97e4ecf2563))
+
 ## [0.2.3](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.2.2...v0.2.3) (2025-12-25)
 
 
