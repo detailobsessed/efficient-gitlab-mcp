@@ -1,0 +1,6 @@
+[files]
+extend-exclude = ["CHANGELOG.md", "*.lock"]
+
+[default.extend-words]
+# Git commit hashes that look like typos
+ba = "ba"

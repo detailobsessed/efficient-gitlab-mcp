@@ -31,7 +31,7 @@ export class MockGitLabServer {
     this.config = config;
     this.app = express();
     this.customRouter = express.Router();
-    
+
     // Dynamic dispatcher for custom handlers
     this.customRouter.use((req, res, next) => {
       // Create a key from method and path (relative to /api/v4)
@@ -39,7 +39,7 @@ export class MockGitLabServer {
       const key = `${req.method.toUpperCase()}:${req.path}`;
       console.log(`[CustomRouter] Checking key: '${key}'`);
       const handler = this.customHandlers.get(key);
-      
+
       if (handler) {
         console.log(`[MockServer] Custom handler hit: ${key}`);
         return handler(req, res, next);
@@ -349,11 +349,11 @@ export class MockGitLabServer {
  * Helper to find available port for mock server
  */
 export async function findMockServerPort(
-  basePort: number = 9000, 
+  basePort: number = 9000,
   maxAttempts: number = 10
 ): Promise<number> {
   const net = await import('net');
-  
+
   const tryPort = async (port: number, attemptsLeft: number): Promise<number> => {
     if (attemptsLeft === 0) {
       throw new Error(`Could not find available port after ${maxAttempts} attempts starting from ${basePort}`);
@@ -362,7 +362,7 @@ export async function findMockServerPort(
     return new Promise((resolve, reject) => {
       const server = net.createServer();
       server.unref();
-      
+
       server.on('error', async () => {
         try {
           const nextPort = await tryPort(port + 1, attemptsLeft - 1);
@@ -371,7 +371,7 @@ export async function findMockServerPort(
           reject(err);
         }
       });
-      
+
       server.listen(port, '127.0.0.1', () => {
         const addr = server.address();
         const actualPort = typeof addr === 'object' && addr ? addr.port : port;
@@ -391,4 +391,3 @@ export async function findMockServerPort(
 export function resetMockServerState(server: MockGitLabServer) {
   (server as any).requestCount = 0;
 }
-

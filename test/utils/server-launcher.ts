@@ -45,10 +45,10 @@ export async function launchServer(config: ServerConfig): Promise<ServerInstance
   const GITLAB_API_URL = process.env.GITLAB_API_URL || "https://gitlab.com";
   const GITLAB_TOKEN = process.env.GITLAB_TOKEN_TEST || process.env.GITLAB_TOKEN;
   const TEST_PROJECT_ID = process.env.TEST_PROJECT_ID;
-  
+
   // Check if remote authorization is enabled
   const isRemoteAuth = env.REMOTE_AUTHORIZATION === 'true';
-  
+
   // Validate that we have required configuration (unless using remote auth)
   if (!GITLAB_TOKEN && !isRemoteAuth) {
     throw new Error('GITLAB_TOKEN_TEST or GITLAB_TOKEN environment variable is required for server testing');
@@ -83,7 +83,7 @@ export async function launchServer(config: ServerConfig): Promise<ServerInstance
   }
 
   const serverPath = path.resolve(process.cwd(), 'dist/index.js');
-  
+
   console.log("Launcher: Spawning server process with env:", serverEnv);
   console.log("Launcher: Spawning server process with env:", serverEnv);
   const serverProcess = spawn('bun', ['run', serverPath], {
@@ -105,7 +105,7 @@ export async function launchServer(config: ServerConfig): Promise<ServerInstance
     kill: () => {
       if (!serverProcess.killed) {
         serverProcess.kill('SIGTERM');
-        
+
         // Force kill if not terminated within 5 seconds
         setTimeout(() => {
           if (!serverProcess.killed) {
@@ -145,7 +145,7 @@ async function waitForServerStart(
         reject(e);
         return;
       }
-      
+
       // Check for server start messages
       const startMessages = [
         'Starting GitLab MCP Server with stdio transport',
@@ -155,7 +155,7 @@ async function waitForServerStart(
         `port ${port}`
       ];
 
-      const hasStartMessage = startMessages.some(msg => 
+      const hasStartMessage = startMessages.some(msg =>
         outputBuffer.includes(msg)
       );
 
@@ -163,7 +163,7 @@ async function waitForServerStart(
         clearTimeout(timer);
         // process.stdout?.removeListener('data', onData);
         // process.stderr?.removeListener('data', onData);
-        
+
         // Additional wait for HTTP servers to be fully ready
         if (mode !== TransportMode.STDIO) {
           setTimeout(resolve, 1000);
@@ -202,17 +202,17 @@ async function waitForServerStart(
  */
 export async function findAvailablePort(basePort: number = 3002): Promise<number> {
   const net = await import('net');
-  
+
   return new Promise((resolve, reject) => {
     const server = net.createServer();
-    
+
     server.listen(basePort, () => {
       const address = server.address();
       const port = typeof address === 'object' && address ? address.port : basePort;
-      
+
       server.close(() => resolve(port));
     });
-    
+
     server.on('error', (err: NodeJS.ErrnoException) => {
       if (err.code === 'EADDRINUSE') {
         // Port is in use, try next one
@@ -235,7 +235,7 @@ export function cleanupServers(servers: ServerInstance[]): void {
       console.warn(`Failed to kill server process: ${error}`);
     }
   });
-} 
+}
 
 
 /**
@@ -262,7 +262,7 @@ export function createTimeoutController(timeout: number): AbortController {
  */
 export async function checkHealthEndpoint(port: number, maxRetries: number = 5): Promise<HealthCheckResponse> {
   let lastError: Error;
-  
+
   for (let i = 0; i < maxRetries; i++) {
     try {
       const controller = createTimeoutController(5000);
@@ -270,7 +270,7 @@ export async function checkHealthEndpoint(port: number, maxRetries: number = 5):
         method: 'GET',
         signal: controller.signal
       });
-      
+
       if (response.ok) {
         const healthData = await response.json() as HealthCheckResponse;
         return healthData;
@@ -283,13 +283,13 @@ export async function checkHealthEndpoint(port: number, maxRetries: number = 5):
       } else {
         lastError = error instanceof Error ? error : new Error(String(error));
       }
-      
+
       if (i < maxRetries - 1) {
         // Wait before retry
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
   }
-  
+
   throw lastError!;
 }

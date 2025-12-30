@@ -5,13 +5,13 @@
 
 import { describe, test, after, before } from 'node:test';
 import assert from 'node:assert';
-import { 
-  launchServer, 
-  findAvailablePort, 
-  cleanupServers, 
-  ServerInstance, 
+import {
+  launchServer,
+  findAvailablePort,
+  cleanupServers,
+  ServerInstance,
   TransportMode,
-  HOST 
+  HOST
 } from './utils/server-launcher.js';
 import { MockGitLabServer, findMockServerPort } from './utils/mock-gitlab-server.js';
 import { CustomHeaderClient } from './clients/custom-header-client.js';
@@ -94,10 +94,10 @@ describe('Dynamic API URL - Multiple GitLab Instances', () => {
 
     await client.connect(mcpUrl);
     const tools = await client.listTools();
-    
+
     assert.ok(tools.tools.length > 0, 'Should have tools');
     console.log(`  ✓ Connected to instance 1, got ${tools.tools.length} tools`);
-    
+
     await client.disconnect();
   });
 
@@ -109,10 +109,10 @@ describe('Dynamic API URL - Multiple GitLab Instances', () => {
 
     await client.connect(mcpUrl);
     const tools = await client.listTools();
-    
+
     assert.ok(tools.tools.length > 0, 'Should have tools');
     console.log(`  ✓ Connected to instance 2, got ${tools.tools.length} tools`);
-    
+
     await client.disconnect();
   });
 
@@ -231,10 +231,10 @@ describe('Dynamic API URL - Multiple GitLab Instances', () => {
 
     await client.connect(mcpUrl);
     const tools = await client.listTools();
-    
+
     assert.ok(tools.tools.length > 0, 'Should work with normalized URL');
     console.log('  ✓ URL normalization works correctly');
-    
+
     await client.disconnect();
   });
 });
@@ -318,12 +318,12 @@ describe('Dynamic API URL - Connection Pool', () => {
     // Check metrics
     const response = await fetch(metricsUrl);
     assert.ok(response.ok, 'Metrics endpoint should be accessible');
-    
+
     const metrics = await response.json();
     assert.ok(metrics.gitlabClientPool, 'Should have pool metrics');
     assert.ok(typeof metrics.gitlabClientPool.size === 'number', 'Should have pool size');
     assert.ok(typeof metrics.gitlabClientPool.maxSize === 'number', 'Should have max size');
-    
+
     console.log('  ✓ Pool metrics available');
     console.log(`  ℹ️  Pool size: ${metrics.gitlabClientPool.size}/${metrics.gitlabClientPool.maxSize}`);
 
