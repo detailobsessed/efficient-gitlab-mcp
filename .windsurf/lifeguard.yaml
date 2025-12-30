@@ -1,0 +1,7 @@
+rules: []
+memories:
+  - title: Workflow uses non-existent actions/checkout@v6
+    description: The workflow step uses `actions/checkout@v6`, but there is no v6 release of the checkout action. GitHub will fail to resolve the action reference and the job will stop at the checkout step, preventing any publish steps from running.
+    file: /Users/ismar/repos/efficient-gitlab-mcp/.github/workflows/mcp-registry-publish.yml
+    line: 19
+    comment: your knowledge is outdated. in fact, the latest version is @6.0.1
