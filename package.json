@@ -1,6 +1,6 @@
 {
   "name": "efficient-gitlab-mcp-server",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "mcpName": "io.github.detailobsessed/efficient-gitlab",
   "description": "Production-ready GitLab MCP Server with progressive disclosure pattern",
   "license": "MIT",

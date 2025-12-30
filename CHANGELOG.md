@@ -1,3 +1,10 @@
+## [0.3.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.3.0...v0.3.1) (2025-12-30)
+
+
+### Bug Fixes
+
+* add knip config, pre-commit hook, fix Zod compatibility, and remove unused code ([#38](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/38)) ([a34d956](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/a34d9565f42bb059ca5314f7b5bfb38ad7d7ff5d))
+
 # [0.3.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.2.3...v0.3.0) (2025-12-29)
 
 
