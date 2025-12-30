@@ -40,13 +40,21 @@ repos:
         types: [ts]
         priority: 1
 
+      - id: knip
+        name: knip
+        entry: bunx knip
+        language: system
+        pass_filenames: false
+        types: [ts]
+        priority: 2
+
       - id: build
         name: Build
         entry: bun run build
         language: system
         pass_filenames: false
         types: [ts]
-        priority: 2
+        priority: 3
 
       - id: test
         name: Run Tests
@@ -54,7 +62,7 @@ repos:
         language: system
         pass_filenames: false
         stages: [pre-push]
-        priority: 3
+        priority: 4
 
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v4.3.0
