@@ -1,3 +1,10 @@
+## [0.3.2](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.3.1...v0.3.2) (2025-12-30)
+
+
+### Bug Fixes
+
+* use workflow_run trigger for npm-publish (GITHUB_TOKEN releases don't emit events) ([#39](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/39)) ([b544db2](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/b544db28e676c6274c8ef5c180adf413e93fb02f))
+
 ## [0.3.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.3.0...v0.3.1) (2025-12-30)
 
 
