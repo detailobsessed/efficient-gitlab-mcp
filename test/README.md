@@ -4,25 +4,6 @@ This directory contains the test suite for the GitLab MCP server.
 
 ## Test Files
 
-### oauth-tests.ts
-Comprehensive tests for OAuth2 authentication functionality.
-
-**What it tests:**
-- OAuth class instantiation and configuration
-- Token storage and retrieval
-- Token expiration and validation
-- Token file permissions (Unix)
-- Port availability checking
-- Shared OAuth server concept
-- Environment variable configuration
-- Support for self-hosted GitLab instances
-- Custom redirect URI ports
-
-**Running the tests:**
-```bash
-npm run test:oauth
-```
-
 ### readonly-mcp-tests.ts
 Integration tests for all read-only MCP tools.
 
@@ -64,16 +45,10 @@ npm run test:all
 ```
 
 This will run:
-1. API validation tests
-2. Read-only MCP tests
-3. OAuth authentication tests
+1. Unit tests (bun test)
+2. Read-only MCP integration tests
 
 ## Environment Variables
-
-### For OAuth Tests
-- `GITLAB_OAUTH_CLIENT_ID` - Your OAuth application client ID (optional for basic tests)
-- `GITLAB_OAUTH_REDIRECT_URI` - OAuth callback URL (default: `http://127.0.0.1:8888/callback`)
-- `GITLAB_API_URL` - GitLab API URL (default: `https://gitlab.com/api/v4`)
 
 ### For Integration Tests
 - `GITLAB_PERSONAL_ACCESS_TOKEN` - GitLab personal access token (required)
@@ -83,7 +58,6 @@ This will run:
 ## Test Results
 
 Test results are saved as JSON files:
-- `test-results-oauth.json` - OAuth test results
 - `test-results-readonly.json` - Read-only MCP test results
 
 ## CI/CD Integration
@@ -104,20 +78,6 @@ test:
 
 ## Writing New Tests
 
-### Adding OAuth Tests
-
-Add new test functions to `oauth-tests.ts`:
-
-```typescript
-async function testNewFeature(): Promise<void> {
-  // Test implementation
-  assert(condition, 'Error message');
-}
-
-// Register in runOAuthTests()
-await runTest('New feature description', testNewFeature);
-```
-
 ### Adding MCP Tool Tests
 
 Add new tools to the `mcpTools` array in `readonly-mcp-tests.ts`:
@@ -134,11 +94,6 @@ Add parameter setup in `setupToolParameters()` if needed.
 
 ## Troubleshooting
 
-### OAuth Tests Failing
-- Ensure no OAuth server is running on port 8888
-- Check that test token files are cleaned up
-- Verify file system permissions for token storage
-
 ### Integration Tests Failing
 - Verify `GITLAB_PERSONAL_ACCESS_TOKEN` is valid
 - Check GitLab API URL is accessible
@@ -146,23 +101,11 @@ Add parameter setup in `setupToolParameters()` if needed.
 - Check rate limiting on GitLab API
 
 ### Permission Errors
-- OAuth token files require 0600 permissions on Unix systems
 - Ensure write access to test directories
-- Windows users: permission tests are automatically skipped
 
 ## Test Coverage
 
 Current test coverage:
-
-### OAuth Functionality
-- ✅ Class instantiation and configuration
-- ✅ Token lifecycle management
-- ✅ Expiration handling
-- ✅ File permissions
-- ✅ Port management
-- ✅ Environment configuration
-- ⏭️ Full OAuth flow (requires user interaction)
-- ⏭️ Token refresh flow (requires valid refresh token)
 
 ### MCP Tools
 - ✅ All read-only operations
@@ -172,8 +115,6 @@ Current test coverage:
 ## Future Improvements
 
 Planned test enhancements:
-- [ ] Mock OAuth server for full flow testing
-- [ ] Token refresh flow simulation
 - [ ] Write operation tests with cleanup
 - [ ] Performance benchmarking
 - [ ] Concurrent request testing

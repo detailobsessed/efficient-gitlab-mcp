@@ -6,7 +6,7 @@
 import * as path from 'path';
 import { describe, test, after, before } from 'node:test';
 import assert from 'node:assert';
-import fetch from 'node-fetch';
+// Using native fetch (available in Bun and Node 18+)
 import { 
   launchServer, 
   findAvailablePort, 
