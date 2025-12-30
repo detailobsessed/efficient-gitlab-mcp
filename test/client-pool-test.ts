@@ -5,13 +5,13 @@
 
 import { describe, test, after, before } from 'node:test';
 import assert from 'node:assert';
-import { 
-  launchServer, 
-  findAvailablePort, 
-  cleanupServers, 
-  ServerInstance, 
+import {
+  launchServer,
+  findAvailablePort,
+  cleanupServers,
+  ServerInstance,
   TransportMode,
-  HOST 
+  HOST
 } from './utils/server-launcher.js';
 import { MockGitLabServer, findMockServerPort } from './utils/mock-gitlab-server.js';
 import { CustomHeaderClient } from './clients/custom-header-client.js';
@@ -115,14 +115,14 @@ describe('Client Pool Limits', () => {
       'x-gitlab-api-url': 'https://gitlab-3.example.com/api/v4'
     });
     await client3.connect(mcpUrl);
-    
+
     try {
       await client3.callTool('list_projects', { per_page: 1 });
       assert.fail('Request 3 should have failed with pool limit error');
     } catch (error: any) {
       console.log('  ℹ️  Error received:', error.message);
       assert.ok(
-        error.message.includes('capacity reached') || error.message.includes('pool is full'), 
+        error.message.includes('capacity reached') || error.message.includes('pool is full'),
         'Error should be about server capacity'
       );
     }

@@ -64,14 +64,14 @@ const mcpTools: MCPTool[] = [
   { name: 'get_project', category: 'project', required: true },
   { name: 'list_project_members', category: 'project', required: true },
   { name: 'list_group_projects', category: 'project', required: false },
-  
+
   // 이슈 관련
   { name: 'list_issues', category: 'issue', required: true },
   { name: 'my_issues', category: 'issue', required: false },
   { name: 'get_issue', category: 'issue', required: true },
   { name: 'list_issue_discussions', category: 'issue', required: true },
   { name: 'list_issue_links', category: 'issue', required: true },
-  
+
   // 머지 리퀘스트 관련
   { name: 'list_merge_requests', category: 'merge_request', required: true },
   { name: 'get_merge_request', category: 'merge_request', required: true },
@@ -79,7 +79,7 @@ const mcpTools: MCPTool[] = [
   { name: 'list_merge_request_diffs', category: 'merge_request', required: true },
   { name: 'get_branch_diffs', category: 'merge_request', required: true },
   { name: 'mr_discussions', category: 'merge_request', required: true },
-  
+
   // 파이프라인 관련
   { name: 'list_pipelines', category: 'pipeline', required: true },
   { name: 'get_pipeline', category: 'pipeline', required: true },
@@ -87,40 +87,40 @@ const mcpTools: MCPTool[] = [
   { name: 'list_pipeline_trigger_jobs', category: 'pipeline', required: true },
   { name: 'get_pipeline_job', category: 'pipeline', required: true },
   { name: 'get_pipeline_job_output', category: 'pipeline', required: true },
-  
+
   // 파일 관리
   { name: 'get_file_contents', category: 'file', required: true },
   { name: 'get_repository_tree', category: 'file', required: true },
-  
+
   // 커밋 관련
   { name: 'list_commits', category: 'commit', required: true },
   { name: 'get_commit', category: 'commit', required: true },
   { name: 'get_commit_diff', category: 'commit', required: true },
-  
+
   // 라벨 관련
   { name: 'list_labels', category: 'label', required: true },
   { name: 'get_label', category: 'label', required: true },
-  
+
   // 네임스페이스 관련
   { name: 'list_namespaces', category: 'namespace', required: false },
   { name: 'get_namespace', category: 'namespace', required: false },
   { name: 'verify_namespace', category: 'namespace', required: false },
-  
+
   // 사용자 관련
   { name: 'get_users', category: 'user', required: false },
-  
+
   // 이벤트 관련
   { name: 'list_events', category: 'event', required: false },
   { name: 'get_project_events', category: 'event', required: true },
-  
+
   // 마일스톤 관련 (선택적)
   { name: 'list_milestones', category: 'milestone', required: true },
   { name: 'get_milestone', category: 'milestone', required: true },
-  
+
   // 위키 관련 (선택적)
   { name: 'list_wiki_pages', category: 'wiki', required: true },
   { name: 'get_wiki_page', category: 'wiki', required: true },
-  
+
   // 그룹 이터레이션 관련
   { name: 'list_group_iterations', category: 'iteration', required: false }
 ];
@@ -199,7 +199,7 @@ async function callMCPTool(toolName: string, parameters: Record<string, any> = {
 // 도구별 파라미터 설정 함수
 async function setupToolParameters(tool: MCPTool): Promise<Record<string, any>> {
   let parameters: Record<string, any> = {};
-  
+
   if (tool.required && TEST_PROJECT_ID) {
     parameters.project_id = TEST_PROJECT_ID;
   }
@@ -317,21 +317,21 @@ async function testTool(tool: MCPTool): Promise<TestResult> {
 
   try {
     console.log(`🧪 Testing ${tool.name}...`);
-    
+
     const parameters = await setupToolParameters(tool);
     const response = await callMCPTool(tool.name, parameters);
-    
+
     result.response = response;
     result.status = 'passed';
     result.duration = Date.now() - startTime;
-    
+
     console.log(`✅ ${tool.name} - PASSED (${result.duration}ms)`);
-    
+
   } catch (error) {
     result.status = 'failed';
     result.error = (error as Error).message;
     result.duration = Date.now() - startTime;
-    
+
     console.log(`❌ ${tool.name} - FAILED (${result.duration}ms)`);
     console.log(`   Error: ${(error as Error).message}`);
   }
@@ -371,7 +371,7 @@ async function runReadOnlyTests(): Promise<boolean> {
     const result = await testTool(tool);
     testResults.details.push(result);
     testResults.total++;
-    
+
     if (result.status === 'passed') {
       testResults.passed++;
     } else if (result.status === 'failed') {

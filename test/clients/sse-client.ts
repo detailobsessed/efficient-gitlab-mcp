@@ -110,4 +110,4 @@ export class SSETestClient implements MCPClientInterface {
   get isConnected(): boolean {
     return this.transport !== null;
   }
-} 
+}

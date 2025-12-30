@@ -5,13 +5,13 @@
 
 import { describe, test, after, before } from 'node:test';
 import assert from 'node:assert';
-import { 
-  launchServer, 
-  findAvailablePort, 
-  cleanupServers, 
-  ServerInstance, 
+import {
+  launchServer,
+  findAvailablePort,
+  cleanupServers,
+  ServerInstance,
   TransportMode,
-  HOST 
+  HOST
 } from './utils/server-launcher.js';
 import { MockGitLabServer, findMockServerPort } from './utils/mock-gitlab-server.js';
 import { CustomHeaderClient } from './clients/custom-header-client.js';
@@ -85,10 +85,10 @@ describe('Remote Authorization - Basic Functionality', () => {
 
     await client.connect(mcpUrl);
     const tools = await client.listTools();
-    
+
     assert.ok(tools.tools.length > 0, 'Should have tools');
     console.log(`  ✓ Connected successfully, got ${tools.tools.length} tools`);
-    
+
     await client.disconnect();
   });
 
@@ -99,10 +99,10 @@ describe('Remote Authorization - Basic Functionality', () => {
 
     await client.connect(mcpUrl);
     const tools = await client.listTools();
-    
+
     assert.ok(tools.tools.length > 0, 'Should have tools');
     console.log(`  ✓ Connected with Private-Token, got ${tools.tools.length} tools`);
-    
+
     await client.disconnect();
   });
 
@@ -112,17 +112,17 @@ describe('Remote Authorization - Basic Functionality', () => {
     });
 
     await client.connect(mcpUrl);
-    
+
     // List tools multiple times to verify auth persists
     const tools1 = await client.listTools();
     const tools2 = await client.listTools();
     const tools3 = await client.listTools();
-    
+
     assert.ok(tools1.tools.length > 0, 'Should have tools');
     assert.strictEqual(tools1.tools.length, tools2.tools.length, 'Tool count should be consistent');
     assert.strictEqual(tools2.tools.length, tools3.tools.length, 'Tool count should be consistent');
     console.log('  ✓ Multiple tool list calls successful with persistent auth');
-    
+
     await client.disconnect();
   });
 
@@ -170,7 +170,7 @@ describe('Remote Authorization - Session Timeout', () => {
     });
     servers.push(server);
     mcpUrl = `http://${HOST}:${mcpPort}/mcp`;
-    
+
     console.log(`Session timeout: ${SESSION_TIMEOUT_SECONDS} seconds`);
   });
 
@@ -260,4 +260,3 @@ describe('Remote Authorization - Session Timeout', () => {
     await clientWithAuth.disconnect();
   });
 });
-

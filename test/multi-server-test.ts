@@ -1,11 +1,11 @@
 import { describe, test, after, before } from 'node:test';
 import assert from 'node:assert';
-import { 
-  launchServer, 
-  findAvailablePort, 
-  ServerInstance, 
+import {
+  launchServer,
+  findAvailablePort,
+  ServerInstance,
   TransportMode,
-  HOST 
+  HOST
 } from './utils/server-launcher.js';
 import { MockGitLabServer, findMockServerPort } from './utils/mock-gitlab-server.js';
 import { CustomHeaderClient } from './clients/custom-header-client.js';

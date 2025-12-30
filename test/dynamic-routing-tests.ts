@@ -1,11 +1,11 @@
 import { describe, test, after, before } from 'node:test';
 import assert from 'node:assert';
-import { 
-  launchServer, 
-  findAvailablePort, 
-  ServerInstance, 
+import {
+  launchServer,
+  findAvailablePort,
+  ServerInstance,
   TransportMode,
-  HOST 
+  HOST
 } from './utils/server-launcher.js';
 import { MockGitLabServer, findMockServerPort } from './utils/mock-gitlab-server.js';
 import { CustomHeaderClient } from './clients/custom-header-client.js';
@@ -257,7 +257,7 @@ describe('Dynamic Routing and Authentication Scenarios', () => {
         }
       });
       await client.connect(mcpUrl);
-      
+
       await validateToolCalls(client, headerMockServer, MOCK_TOKEN_HEADER);
 
       await client.disconnect();
@@ -416,7 +416,7 @@ async function validateToolCalls(client: CustomHeaderClient, mockServer: MockGit
 
   for (const tool of toolsToTest) {
     mockServer.clearCustomHandlers();
-    
+
     let mockPath = '';
     let mockResponse: any;
 
@@ -468,7 +468,7 @@ async function validateToolCalls(client: CustomHeaderClient, mockServer: MockGit
 
     const result = await client.callTool(tool.name, tool.params);
     const resultContent = JSON.parse((result.content[0] as any).text);
-    
+
     // Basic validation that we got the expected object back
     if (Array.isArray(mockResponse)) {
       assert.ok(Array.isArray(resultContent));

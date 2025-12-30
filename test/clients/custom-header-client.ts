@@ -30,9 +30,9 @@ export class CustomHeaderClient {
       const opts = options as CustomHeaderClientOptions;
       this.customHeaders = opts.headers || {};
       this.timeout = opts.timeout || 30000;
-      this.client = new Client({ 
-        name: opts.clientName || "test-client-with-headers", 
-        version: opts.clientVersion || "1.0.0" 
+      this.client = new Client({
+        name: opts.clientName || "test-client-with-headers",
+        version: opts.clientVersion || "1.0.0"
       });
     } else {
       // Backward compatible: treat options as headers record
@@ -141,4 +141,3 @@ export class CustomHeaderClient {
     return this.transport !== null;
   }
 }
-

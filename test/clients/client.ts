@@ -64,4 +64,4 @@ export class MCPToolCallError extends MCPClientError {
     super(message, cause);
     this.name = 'MCPToolCallError';
   }
-} 
+}

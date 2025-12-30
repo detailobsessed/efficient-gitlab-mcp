@@ -29,14 +29,14 @@ export class StdioTestClient implements MCPClientInterface {
 
       // Prepare environment variables for the server process
       const serverEnv: Record<string, string> = {};
-      
+
       // Copy process.env, filtering out undefined values
       for (const [key, value] of Object.entries(process.env)) {
         if (value !== undefined) {
           serverEnv[key] = value;
         }
       }
-      
+
       // Add custom environment variables
       if (env) {
         Object.assign(serverEnv, env);
@@ -133,4 +133,4 @@ export class StdioTestClient implements MCPClientInterface {
   get isConnected(): boolean {
     return this.transport !== null;
   }
-} 
+}

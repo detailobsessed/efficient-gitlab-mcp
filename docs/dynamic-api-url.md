@@ -92,7 +92,7 @@ X-GitLab-API-URL: https://gitlab.example.com
 | `X-GitLab-API-URL` | Yes* | Full URL to GitLab API (e.g., `https://gitlab.example.com`) |
 | `MCP-Session-ID` | Yes** | Session identifier for maintaining state |
 
-\* Required when `ENABLE_DYNAMIC_API_URL=true`  
+\* Required when `ENABLE_DYNAMIC_API_URL=true`
 \** Required for subsequent requests in the same session
 
 ### URL Format

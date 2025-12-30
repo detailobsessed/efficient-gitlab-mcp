@@ -7,14 +7,14 @@ import * as path from 'path';
 import { describe, test, after, before } from 'node:test';
 import assert from 'node:assert';
 // Using native fetch (available in Bun and Node 18+)
-import { 
-  launchServer, 
-  findAvailablePort, 
-  cleanupServers, 
-  ServerInstance, 
-  TransportMode, 
-  checkHealthEndpoint, 
-  HOST 
+import {
+  launchServer,
+  findAvailablePort,
+  cleanupServers,
+  ServerInstance,
+  TransportMode,
+  checkHealthEndpoint,
+  HOST
 } from './utils/server-launcher.js';
 
 console.log('🔐 Remote Authorization Tests');
@@ -106,16 +106,16 @@ describe('Remote Authorization - Streamable HTTP with Authorization header', () 
     });
     servers.push(server);
     mcpUrl = `http://${HOST}:${port}/mcp`;
-    
+
     // Verify server started successfully
     assert.ok(server.process.pid !== undefined, 'Server process should have PID');
-    
+
     // Verify health check
     if (server.port) {
       const health = await checkHealthEndpoint(server.port);
       assert.strictEqual(health.status, 'healthy', 'Health status should be healthy');
     }
-    
+
     console.log('Server started with remote authorization enabled');
   });
 
@@ -149,7 +149,7 @@ describe('Remote Authorization - Streamable HTTP with Authorization header', () 
 
   test('should accept request with Authorization Bearer header', async () => {
     const sessionId = `test-session-bearer-${Date.now()}`;
-    
+
     const initRequest = {
       jsonrpc: '2.0',
       id: 1,
@@ -173,7 +173,7 @@ describe('Remote Authorization - Streamable HTTP with Authorization header', () 
 
   test('should reuse auth from first request in subsequent requests', async () => {
     const sessionId = `test-session-reuse-${Date.now()}`;
-    
+
     // First request with auth
     const initRequest = {
       jsonrpc: '2.0',
@@ -213,7 +213,7 @@ describe('Remote Authorization - Streamable HTTP with Authorization header', () 
 
   test('should call tool with Bearer token', async () => {
     const sessionId = `test-session-tool-${Date.now()}`;
-    
+
     // Initialize
     const initRequest = {
       jsonrpc: '2.0',
@@ -252,7 +252,7 @@ describe('Remote Authorization - Streamable HTTP with Authorization header', () 
     assert.ok(toolResponse.result.content, 'Should have content');
     assert.ok(Array.isArray(toolResponse.result.content), 'Content should be array');
     assert.ok(toolResponse.result.content.length > 0, 'Should have content items');
-    
+
     const projectData = JSON.parse(toolResponse.result.content[0].text);
     assert.ok(projectData.id, 'Should have project id');
     assert.ok(projectData.name, 'Should have project name');
@@ -280,7 +280,7 @@ describe('Remote Authorization - Streamable HTTP with Private-Token header', () 
     });
     servers.push(server);
     mcpUrl = `http://${HOST}:${port}/mcp`;
-    
+
     console.log('Server started for Private-Token tests');
   });
 
@@ -291,7 +291,7 @@ describe('Remote Authorization - Streamable HTTP with Private-Token header', () 
 
   test('should accept request with Private-Token header', async () => {
     const sessionId = `test-session-private-${Date.now()}`;
-    
+
     const initRequest = {
       jsonrpc: '2.0',
       id: 1,
@@ -314,7 +314,7 @@ describe('Remote Authorization - Streamable HTTP with Private-Token header', () 
 
   test('should call tool with Private-Token', async () => {
     const sessionId = `test-session-private-tool-${Date.now()}`;
-    
+
     // Initialize
     const initRequest = {
       jsonrpc: '2.0',
@@ -357,7 +357,7 @@ describe('Remote Authorization - Streamable HTTP with Private-Token header', () 
 describe('Remote Authorization - SSE mode should be disabled', () => {
   test('should fail to start with SSE and REMOTE_AUTHORIZATION', async () => {
     const port = await findAvailablePort();
-    
+
     try {
       const server = await launchServer({
         mode: TransportMode.SSE,
@@ -369,7 +369,7 @@ describe('Remote Authorization - SSE mode should be disabled', () => {
           GITLAB_API_URL: `${GITLAB_API_URL}/api/v4`,
         }
       });
-      
+
       // If we get here, the server started when it shouldn't have
       servers.push(server);
       assert.fail('Server should not start with SSE and REMOTE_AUTHORIZATION=true');
@@ -380,4 +380,3 @@ describe('Remote Authorization - SSE mode should be disabled', () => {
     }
   });
 });
-
