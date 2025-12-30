@@ -41,7 +41,7 @@ export interface ToolRegistrationTarget {
   ): void;
 }
 
-export class RegistryAdapter implements ToolRegistrationTarget {
+class RegistryAdapter implements ToolRegistrationTarget {
   constructor(
     private registry: ToolRegistry,
     private category: string,

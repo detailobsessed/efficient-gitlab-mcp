@@ -125,19 +125,3 @@ export class Logger {
     }
   }
 }
-
-// Default logger instance
-let defaultLogger: Logger | null = null;
-
-export function getLogger(): Logger {
-  if (!defaultLogger) {
-    const level = (process.env.LOG_LEVEL as LogLevel) || "info";
-    const format = (process.env.LOG_FORMAT as LogFormat) || "pretty";
-    defaultLogger = new Logger(level, format);
-  }
-  return defaultLogger;
-}
-
-export function setLogger(logger: Logger): void {
-  defaultLogger = logger;
-}

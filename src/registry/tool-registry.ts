@@ -7,7 +7,8 @@
  * Pattern inspired by unblu-mcp and efficient-discord-agent-mcp servers.
  */
 
-import type { ZodType } from "zod";
+// biome-ignore lint/suspicious/noExplicitAny: Required for Zod v3/v4 compatibility
+type ZodType = any;
 
 export interface ToolInfo {
   name: string;
@@ -392,18 +393,4 @@ interface ZodDef {
   options?: ZodType[];
   minLength?: { value: number };
   maxLength?: { value: number };
-}
-
-// Global registry instance
-let registryInstance: ToolRegistry | null = null;
-
-export function getRegistry(): ToolRegistry {
-  if (!registryInstance) {
-    registryInstance = new ToolRegistry();
-  }
-  return registryInstance;
-}
-
-export function resetRegistry(): void {
-  registryInstance = null;
 }

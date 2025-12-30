@@ -10,11 +10,6 @@ export interface FetchOptions {
   body?: string;
 }
 
-export interface GitLabClientConfig {
-  apiUrl: string;
-  token?: string;
-}
-
 export class GitLabClient {
   private apiUrl: string;
   private token: string;
