@@ -1,3 +1,31 @@
+# [2.1.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.0.19...v2.1.0) (2026-04-01)
+
+
+### Bug Fixes
+
+* add knip config, pre-commit hook, fix Zod compatibility, and remove unused code ([#38](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/38)) ([a34d956](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/a34d9565f42bb059ca5314f7b5bfb38ad7d7ff5d))
+* change default HOST from 0.0.0.0 to 127.0.0.1 ([#289](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/289)) ([4225366](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/422536652995018910074386a0038993f776b13d))
+* **ci:** add Node.js 22 setup for semantic-release ([#13](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/13)) ([941a64b](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/941a64b6af05f0cb9e987860c9fa60d35533ebaa))
+* **ci:** add permissions and secrets inherit for reusable workflow ([#15](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/15)) ([2a41bfc](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/2a41bfca90dfc3767cf759caf79ff72d735e3c40))
+* **ci:** checkout release tag in npm-publish workflow ([#21](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/21)) ([8094cd1](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/8094cd13893b9d0d5327d232cad12da0c0b6ce7c))
+* **ci:** remove persist-credentials false for semantic-release ([#14](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/14)) ([e9d9db1](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/e9d9db11ee5f16b43c252a7167d640b0b6c5c959))
+* correct bin format in package.json ([#26](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/26)) ([91a1e98](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/91a1e98bd4b2a94c8e4acd0ebcf320a0a6aa8987))
+* create_or_update_file now properly updates existing files ([#2](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/2)) ([6f97958](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/6f97958edff4447a81519e68137e4bfc39187864))
+* use Node.js 24 for npm OIDC trusted publishing ([#25](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/25)) ([5bcb716](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/5bcb7163d1ab2ff60c048a0bea9e38656c5350de))
+* use ubuntu-latest for npm publish (OIDC requires GitHub-hosted runners) ([#24](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/24)) ([28155bc](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/28155bcff6e4cfb69e941e82aacf119f59f8f893))
+* use workflow_run trigger for npm-publish (GITHUB_TOKEN releases don't emit events) ([#39](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/39)) ([b544db2](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/b544db28e676c6274c8ef5c180adf413e93fb02f))
+
+
+### Features
+
+* add 405 response for GET /mcp endpoint when STREAMABLE_HTTP is enabled. https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#listening-for-messages-from-the-server ([#295](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/295)) ([6a03064](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/6a03064885c376437f37bbf99082c7ef05e5d23a))
+* add GitLab search tools (global, project, group) ([#6](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/6)) ([3e2e279](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/3e2e279124adf943287af61e811fb856b765d6cc))
+* add GitLab tool modules with 52 tools and comprehensive tests ([#1](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/1)) ([14bc851](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/14bc8518ad823eabd32185f3079b1d45026ddc98))
+* add HTTP transport security features ([#9](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/9)) ([0eed0d6](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/0eed0d6ae003bfae0a6b2c752d8586707fc2d257))
+* add MCP protocol logging for agent observability ([#10](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/10)) ([85c4c50](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/85c4c50c6f7c4165ff97581012236e55d36ad2da))
+* add MCP Registry support with mcpName and server.json ([#30](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/30)) ([19dd31e](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/19dd31ea22b3de78d932061aa34ac97e4ecf2563))
+* add npm version badge to README ([#23](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/23)) ([1c2cc84](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/1c2cc845e661e1333a0f35f6a9a275d373615e66))
+
 ## [0.3.2](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v0.3.1...v0.3.2) (2025-12-30)
 
 
