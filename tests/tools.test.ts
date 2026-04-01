@@ -1,14 +1,19 @@
 import { describe, expect, it } from "bun:test";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerCommitTools } from "../src/tools/commits.js";
+import { registerGraphqlTools } from "../src/tools/graphql.js";
 import { registerIssueTools } from "../src/tools/issues.js";
 import { registerMergeRequestTools } from "../src/tools/merge-requests.js";
+import { registerMilestoneTools } from "../src/tools/milestones.js";
 import { registerNamespaceTools } from "../src/tools/namespaces.js";
 import { registerPipelineTools } from "../src/tools/pipelines.js";
 import { registerProjectTools } from "../src/tools/projects.js";
+import { registerReleaseTools } from "../src/tools/releases.js";
 import { registerRepositoryTools } from "../src/tools/repositories.js";
 import { registerSearchTools } from "../src/tools/search.js";
 import { registerUserTools } from "../src/tools/users.js";
+import { registerWebhookTools } from "../src/tools/webhooks.js";
+import { registerWikiTools } from "../src/tools/wiki.js";
 import { Logger } from "../src/utils/logger.js";
 
 const logger = new Logger("error", "pretty");
@@ -53,12 +58,14 @@ describe("Tool Registration", () => {
       const server = createTestServer();
       const tools = registerMergeRequestTools(server, logger);
 
-      expect(tools.size).toBe(13);
+      expect(tools.size).toBe(33);
       expect(tools.has("get_merge_request")).toBe(true);
       expect(tools.has("list_merge_requests")).toBe(true);
       expect(tools.has("create_merge_request")).toBe(true);
       expect(tools.has("merge_merge_request")).toBe(true);
       expect(tools.has("mr_discussions")).toBe(true);
+      expect(tools.has("approve_merge_request")).toBe(true);
+      expect(tools.has("list_draft_notes")).toBe(true);
     });
   });
 
@@ -82,9 +89,10 @@ describe("Tool Registration", () => {
       const server = createTestServer();
       const tools = registerProjectTools(server, logger);
 
-      expect(tools.size).toBe(9);
+      expect(tools.size).toBe(10);
       expect(tools.has("get_project")).toBe(true);
       expect(tools.has("list_labels")).toBe(true);
+      expect(tools.has("list_group_iterations")).toBe(true);
     });
   });
 
@@ -93,9 +101,11 @@ describe("Tool Registration", () => {
       const server = createTestServer();
       const tools = registerPipelineTools(server, logger);
 
-      expect(tools.size).toBe(10);
+      expect(tools.size).toBe(19);
       expect(tools.has("list_pipelines")).toBe(true);
       expect(tools.has("create_pipeline")).toBe(true);
+      expect(tools.has("list_deployments")).toBe(true);
+      expect(tools.has("list_environments")).toBe(true);
     });
   });
 
@@ -125,7 +135,7 @@ describe("Tool Registration", () => {
       const server = createTestServer();
       const tools = registerUserTools(server, logger);
 
-      expect(tools.size).toBe(3);
+      expect(tools.size).toBe(7);
     });
   });
 
@@ -134,12 +144,12 @@ describe("Tool Registration", () => {
       const server = createTestServer();
       const tools = registerSearchTools(server, logger);
 
-      expect(tools.size).toBe(3);
+      expect(tools.size).toBe(6);
     });
   });
 
   describe("All tools combined", () => {
-    it("should register 55 tools across 8 categories (without pipelines)", () => {
+    it("should register all tools across all categories (without pipelines)", () => {
       const server = createTestServer();
       let total = 0;
 
@@ -151,11 +161,16 @@ describe("Tool Registration", () => {
       total += registerNamespaceTools(server, logger).size;
       total += registerUserTools(server, logger).size;
       total += registerSearchTools(server, logger).size;
+      total += registerWikiTools(server, logger).size;
+      total += registerMilestoneTools(server, logger).size;
+      total += registerReleaseTools(server, logger).size;
+      total += registerWebhookTools(server, logger).size;
+      total += registerGraphqlTools(server, logger).size;
 
-      expect(total).toBe(55);
+      expect(total).toBe(113);
     });
 
-    it("should register 65 tools with pipelines enabled", () => {
+    it("should register all tools with pipelines enabled", () => {
       const server = createTestServer();
       let total = 0;
 
@@ -168,8 +183,13 @@ describe("Tool Registration", () => {
       total += registerUserTools(server, logger).size;
       total += registerSearchTools(server, logger).size;
       total += registerPipelineTools(server, logger).size;
+      total += registerWikiTools(server, logger).size;
+      total += registerMilestoneTools(server, logger).size;
+      total += registerReleaseTools(server, logger).size;
+      total += registerWebhookTools(server, logger).size;
+      total += registerGraphqlTools(server, logger).size;
 
-      expect(total).toBe(65);
+      expect(total).toBe(132);
     });
 
     it("should all start disabled", () => {

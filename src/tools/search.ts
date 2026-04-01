@@ -50,6 +50,66 @@ const ProjectSearchSchema = z.object({
   per_page: z.number().optional().describe("Results per page (max 100)"),
 });
 
+const SearchCodeSchema = z.object({
+  search: z
+    .string()
+    .describe(
+      'Code search query string. Supports rich inline syntax on instances with exact code search (Zoekt): "class foo" (exact match), foo file:\\.js$ (file pattern), foo lang:ruby (language), sym:foo (symbol search), foo -bar (negation), case:yes (case-sensitive).',
+    ),
+  filename: z.string().optional().describe("Filter by filename (supports * wildcard, e.g. '*.ts')"),
+  path: z
+    .string()
+    .optional()
+    .describe("Filter by file path (supports * wildcard, e.g. 'src/utils/*')"),
+  extension: z
+    .string()
+    .optional()
+    .describe("Filter by file extension without dot (e.g. 'py', 'ts')"),
+  page: z.number().optional().describe("Page number"),
+  per_page: z.number().optional().describe("Results per page (max 100)"),
+});
+
+const SearchProjectCodeSchema = z.object({
+  project_id: z.string().describe("Project ID or URL-encoded path"),
+  search: z
+    .string()
+    .describe(
+      "Code search query string. Supports rich inline syntax on instances with exact code search (Zoekt).",
+    ),
+  ref: z.string().optional().describe("Branch or tag to search in (defaults to default branch)"),
+  filename: z.string().optional().describe("Filter by filename (supports * wildcard, e.g. '*.ts')"),
+  path: z
+    .string()
+    .optional()
+    .describe("Filter by file path (supports * wildcard, e.g. 'src/utils/*')"),
+  extension: z
+    .string()
+    .optional()
+    .describe("Filter by file extension without dot (e.g. 'py', 'ts')"),
+  page: z.number().optional().describe("Page number"),
+  per_page: z.number().optional().describe("Results per page (max 100)"),
+});
+
+const SearchGroupCodeSchema = z.object({
+  group_id: z.string().describe("Group ID or URL-encoded path"),
+  search: z
+    .string()
+    .describe(
+      "Code search query string. Supports rich inline syntax on instances with exact code search (Zoekt).",
+    ),
+  filename: z.string().optional().describe("Filter by filename (supports * wildcard, e.g. '*.ts')"),
+  path: z
+    .string()
+    .optional()
+    .describe("Filter by file path (supports * wildcard, e.g. 'src/utils/*')"),
+  extension: z
+    .string()
+    .optional()
+    .describe("Filter by file extension without dot (e.g. 'py', 'ts')"),
+  page: z.number().optional().describe("Page number"),
+  per_page: z.number().optional().describe("Results per page (max 100)"),
+});
+
 const GroupSearchSchema = z.object({
   group_id: z.string().describe("Group ID or URL-encoded path"),
   scope: SearchScopeEnum.describe(
@@ -194,6 +254,110 @@ export function registerSearchTools(
   );
   toolRef3.disable();
   tools.set("group_search", toolRef3);
+
+  const toolRef4 = server.registerTool(
+    "search_code",
+    {
+      title: "Search Code",
+      description:
+        "Search for code across the entire GitLab instance using scope=blobs. Returns matching file content with line numbers. Supports Zoekt advanced syntax on compatible instances.",
+      inputSchema: {
+        search: z
+          .string()
+          .describe(
+            'Code search query string. Supports rich inline syntax: "class foo" (exact match), foo file:\\.js$ (file pattern), foo lang:ruby (language), sym:foo (symbol search).',
+          ),
+        filename: z.string().optional().describe("Filter by filename (supports * wildcard)"),
+        path: z.string().optional().describe("Filter by file path (supports * wildcard)"),
+        extension: z
+          .string()
+          .optional()
+          .describe("Filter by file extension without dot (e.g. 'py', 'ts')"),
+        page: z.number().optional().describe("Page number"),
+        per_page: z.number().optional().describe("Results per page (max 100)"),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async (params) => {
+      const args = SearchCodeSchema.parse(params);
+      const query = buildQueryString({ ...args, scope: "blobs" });
+
+      const results = await defaultClient.get(`/search${query}`);
+      return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+    },
+  );
+  toolRef4.disable();
+  tools.set("search_code", toolRef4);
+
+  const toolRef5 = server.registerTool(
+    "search_project_code",
+    {
+      title: "Search Project Code",
+      description:
+        "Search for code within a specific project using scope=blobs. Returns matching file content with line numbers.",
+      inputSchema: {
+        project_id: z.string().describe("Project ID or URL-encoded path"),
+        search: z.string().describe("Code search query string."),
+        ref: z
+          .string()
+          .optional()
+          .describe("Branch or tag to search in (defaults to default branch)"),
+        filename: z.string().optional().describe("Filter by filename (supports * wildcard)"),
+        path: z.string().optional().describe("Filter by file path (supports * wildcard)"),
+        extension: z
+          .string()
+          .optional()
+          .describe("Filter by file extension without dot (e.g. 'py', 'ts')"),
+        page: z.number().optional().describe("Page number"),
+        per_page: z.number().optional().describe("Results per page (max 100)"),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async (params) => {
+      const args = SearchProjectCodeSchema.parse(params);
+      const projectId = encodeProjectId(args.project_id);
+      const { project_id: _, ...queryParams } = args;
+      const query = buildQueryString({ ...queryParams, scope: "blobs" });
+
+      const results = await defaultClient.get(`/projects/${projectId}/search${query}`);
+      return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+    },
+  );
+  toolRef5.disable();
+  tools.set("search_project_code", toolRef5);
+
+  const toolRef6 = server.registerTool(
+    "search_group_code",
+    {
+      title: "Search Group Code",
+      description:
+        "Search for code within a specific group using scope=blobs. Returns matching file content with line numbers.",
+      inputSchema: {
+        group_id: z.string().describe("Group ID or URL-encoded path"),
+        search: z.string().describe("Code search query string."),
+        filename: z.string().optional().describe("Filter by filename (supports * wildcard)"),
+        path: z.string().optional().describe("Filter by file path (supports * wildcard)"),
+        extension: z
+          .string()
+          .optional()
+          .describe("Filter by file extension without dot (e.g. 'py', 'ts')"),
+        page: z.number().optional().describe("Page number"),
+        per_page: z.number().optional().describe("Results per page (max 100)"),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async (params) => {
+      const args = SearchGroupCodeSchema.parse(params);
+      const groupId = encodeProjectId(args.group_id);
+      const { group_id: _, ...queryParams } = args;
+      const query = buildQueryString({ ...queryParams, scope: "blobs" });
+
+      const results = await defaultClient.get(`/groups/${groupId}/search${query}`);
+      return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
+    },
+  );
+  toolRef6.disable();
+  tools.set("search_group_code", toolRef6);
 
   logger.debug("Search tools registered", { count: tools.size });
   return tools;

@@ -49,4 +49,25 @@ export const CATEGORIES: CategoryDef[] = [
     description:
       "Global, project, and group search across issues, merge requests, code, commits, and more.",
   },
+  {
+    name: "wiki",
+    description: "List, create, update, delete wiki pages for projects and groups.",
+  },
+  {
+    name: "milestones",
+    description:
+      "Create, edit, delete milestones. Get milestone issues, merge requests, and burndown events.",
+  },
+  {
+    name: "releases",
+    description: "List, create, update, delete releases. Download release assets.",
+  },
+  {
+    name: "webhooks",
+    description: "List project webhooks and their recent events.",
+  },
+  {
+    name: "graphql",
+    description: "Execute arbitrary GraphQL queries against the GitLab API.",
+  },
 ];

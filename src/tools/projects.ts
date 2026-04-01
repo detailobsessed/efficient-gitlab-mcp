@@ -66,6 +66,40 @@ const DeleteLabelSchema = z.object({
   label_id: z.union([z.string(), z.number()]).describe("Label ID or name"),
 });
 
+const ListGroupIterationsSchema = z.object({
+  group_id: z.string().describe("Group ID or URL-encoded path"),
+  state: z
+    .enum(["opened", "upcoming", "current", "closed", "all"])
+    .optional()
+    .describe("Return opened, upcoming, current, closed, or all iterations."),
+  search: z
+    .string()
+    .optional()
+    .describe("Return only iterations with a title matching the provided string."),
+  search_in: z
+    .array(z.enum(["title", "cadence_title"]))
+    .optional()
+    .describe("Fields in which fuzzy search should be performed. Default is [title]."),
+  include_ancestors: z
+    .boolean()
+    .optional()
+    .describe("Include iterations for group and its ancestors. Defaults to true."),
+  include_descendants: z
+    .boolean()
+    .optional()
+    .describe("Include iterations for group and its descendants. Defaults to false."),
+  updated_before: z
+    .string()
+    .optional()
+    .describe("Return only iterations updated before the given datetime (ISO 8601 format)."),
+  updated_after: z
+    .string()
+    .optional()
+    .describe("Return only iterations updated after the given datetime (ISO 8601 format)."),
+  page: z.number().optional().describe("Page number"),
+  per_page: z.number().optional().describe("Results per page"),
+});
+
 const ListGroupProjectsSchema = z.object({
   group_id: z.string().describe("Group ID or URL-encoded path"),
   search: z.string().optional().describe("Search query"),
@@ -336,6 +370,62 @@ export function registerProjectTools(
   );
   toolRef9.disable();
   tools.set("list_group_projects", toolRef9);
+
+  const toolRef10 = server.registerTool(
+    "list_group_iterations",
+    {
+      title: "List Group Iterations",
+      description: "List group iterations with filtering options",
+      inputSchema: {
+        group_id: z.string().describe("Group ID or URL-encoded path"),
+        state: z
+          .enum(["opened", "upcoming", "current", "closed", "all"])
+          .optional()
+          .describe("Return opened, upcoming, current, closed, or all iterations."),
+        search: z
+          .string()
+          .optional()
+          .describe("Return only iterations with a title matching the provided string."),
+        search_in: z
+          .array(z.enum(["title", "cadence_title"]))
+          .optional()
+          .describe("Fields in which fuzzy search should be performed. Default is [title]."),
+        include_ancestors: z
+          .boolean()
+          .optional()
+          .describe("Include iterations for group and its ancestors. Defaults to true."),
+        include_descendants: z
+          .boolean()
+          .optional()
+          .describe("Include iterations for group and its descendants. Defaults to false."),
+        updated_before: z
+          .string()
+          .optional()
+          .describe("Return only iterations updated before the given datetime (ISO 8601 format)."),
+        updated_after: z
+          .string()
+          .optional()
+          .describe("Return only iterations updated after the given datetime (ISO 8601 format)."),
+        page: z.number().optional().describe("Page number"),
+        per_page: z.number().optional().describe("Results per page"),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async (params) => {
+      const args = ListGroupIterationsSchema.parse(params);
+      const groupId = encodeURIComponent(args.group_id);
+      const { group_id: _, search_in: searchIn, ...queryParams } = args;
+      const query = buildQueryString({
+        ...queryParams,
+        in: searchIn?.join(","),
+      });
+
+      const iterations = await defaultClient.get(`/groups/${groupId}/iterations${query}`);
+      return { content: [{ type: "text", text: JSON.stringify(iterations, null, 2) }] };
+    },
+  );
+  toolRef10.disable();
+  tools.set("list_group_iterations", toolRef10);
 
   logger.debug("Project tools registered", { count: tools.size });
   return tools;

@@ -17,14 +17,19 @@ import express, { type Request, type Response } from "express";
 import { registerDisclosureTools, type ToolsByCategory } from "../registry/index.js";
 import {
   registerCommitTools,
+  registerGraphqlTools,
   registerIssueTools,
   registerMergeRequestTools,
+  registerMilestoneTools,
   registerNamespaceTools,
   registerPipelineTools,
   registerProjectTools,
+  registerReleaseTools,
   registerRepositoryTools,
   registerSearchTools,
   registerUserTools,
+  registerWebhookTools,
+  registerWikiTools,
 } from "../tools/index.js";
 import { Logger } from "../utils/logger.js";
 import { loadConfig } from "./config.js";
@@ -65,6 +70,11 @@ async function main() {
   toolsByCategory.set("namespaces", registerNamespaceTools(mcpServer, logger));
   toolsByCategory.set("users", registerUserTools(mcpServer, logger));
   toolsByCategory.set("search", registerSearchTools(mcpServer, logger));
+  toolsByCategory.set("wiki", registerWikiTools(mcpServer, logger));
+  toolsByCategory.set("milestones", registerMilestoneTools(mcpServer, logger));
+  toolsByCategory.set("releases", registerReleaseTools(mcpServer, logger));
+  toolsByCategory.set("webhooks", registerWebhookTools(mcpServer, logger));
+  toolsByCategory.set("graphql", registerGraphqlTools(mcpServer, logger));
 
   if (config.usePipeline) {
     toolsByCategory.set("pipelines", registerPipelineTools(mcpServer, logger));
