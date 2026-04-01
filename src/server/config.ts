@@ -14,7 +14,7 @@ type TransportMode = "stdio" | "sse" | "streamable-http";
 type LogLevel = "debug" | "info" | "warn" | "error";
 type LogFormat = "json" | "pretty";
 
-interface ServerConfig {
+export interface ServerConfig {
   // Server identity
   serverName: string;
   serverVersion: string;

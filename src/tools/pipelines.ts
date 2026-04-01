@@ -406,18 +406,9 @@ export function registerPipelineTools(
       const args = GetPipelineJobOutputSchema.parse(params);
       const projectId = encodeProjectId(args.project_id);
 
-      const response = await fetch(
-        `${defaultClient.getApiUrl()}/projects/${projectId}/jobs/${args.job_id}/trace`,
-        {
-          headers: {
-            "PRIVATE-TOKEN": process.env.GITLAB_PERSONAL_ACCESS_TOKEN ?? "",
-          },
-        },
+      const response = await defaultClient.rawFetch(
+        `/projects/${projectId}/jobs/${args.job_id}/trace`,
       );
-
-      if (!response.ok) {
-        throw new Error(`Failed to get job output: ${response.status}`);
-      }
 
       const trace = await response.text();
       return { content: [{ type: "text", text: trace }] };
@@ -745,22 +736,19 @@ export function registerPipelineTools(
       const args = DownloadJobArtifactsSchema.parse(params);
       const projectId = encodeProjectId(args.project_id);
 
-      const response = await fetch(
-        `${defaultClient.getApiUrl()}/projects/${projectId}/jobs/${args.job_id}/artifacts`,
-        {
-          headers: {
-            "PRIVATE-TOKEN": process.env.GITLAB_PERSONAL_ACCESS_TOKEN ?? "",
-          },
-        },
+      const response = await defaultClient.rawFetch(
+        `/projects/${projectId}/jobs/${args.job_id}/artifacts`,
       );
 
-      if (!response.ok) {
-        throw new Error(`Failed to download job artifacts: ${response.status}`);
-      }
-
-      const text = await response.text();
+      const buffer = await response.arrayBuffer();
+      const base64 = Buffer.from(buffer).toString("base64");
       return {
-        content: [{ type: "text", text: `Artifact archive downloaded (${text.length} bytes)` }],
+        content: [
+          {
+            type: "text",
+            text: `Artifact archive (${buffer.byteLength} bytes, base64-encoded):\n${base64}`,
+          },
+        ],
       };
     },
   );
@@ -788,18 +776,9 @@ export function registerPipelineTools(
         .map((segment) => encodeURIComponent(segment))
         .join("/");
 
-      const response = await fetch(
-        `${defaultClient.getApiUrl()}/projects/${projectId}/jobs/${args.job_id}/artifacts/${encodedArtifactPath}`,
-        {
-          headers: {
-            "PRIVATE-TOKEN": process.env.GITLAB_PERSONAL_ACCESS_TOKEN ?? "",
-          },
-        },
+      const response = await defaultClient.rawFetch(
+        `/projects/${projectId}/jobs/${args.job_id}/artifacts/${encodedArtifactPath}`,
       );
-
-      if (!response.ok) {
-        throw new Error(`Failed to get artifact file: ${response.status}`);
-      }
 
       const text = await response.text();
       return { content: [{ type: "text", text }] };

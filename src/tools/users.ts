@@ -283,9 +283,21 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
       const args = UploadMarkdownSchema.parse(params);
       const projectId = encodeProjectId(args.project_id);
 
-      const upload = await defaultClient.post(`/projects/${projectId}/uploads`, {
-        file: args.file_path,
+      // GitLab uploads API requires multipart/form-data
+      const { readFile } = await import("fs/promises");
+      const { basename } = await import("path");
+      const fileContent = await readFile(args.file_path);
+      const fileName = basename(args.file_path);
+
+      const formData = new FormData();
+      formData.append("file", new Blob([fileContent]), fileName);
+
+      const response = await defaultClient.rawFetch(`/projects/${projectId}/uploads`, {
+        method: "POST",
+        body: formData,
       });
+
+      const upload = JSON.parse(await response.text());
       return { content: [{ type: "text", text: JSON.stringify(upload, null, 2) }] };
     },
   );
@@ -310,18 +322,9 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
       const args = DownloadAttachmentSchema.parse(params);
       const projectId = encodeProjectId(args.project_id);
 
-      const response = await fetch(
-        `${defaultClient.getApiUrl()}/projects/${projectId}/uploads/${args.secret}/${args.filename}`,
-        {
-          headers: {
-            "PRIVATE-TOKEN": process.env.GITLAB_PERSONAL_ACCESS_TOKEN ?? "",
-          },
-        },
+      const response = await defaultClient.rawFetch(
+        `/projects/${projectId}/uploads/${args.secret}/${args.filename}`,
       );
-
-      if (!response.ok) {
-        throw new Error(`Failed to download attachment: ${response.status}`);
-      }
 
       const text = await response.text();
       return { content: [{ type: "text", text }] };

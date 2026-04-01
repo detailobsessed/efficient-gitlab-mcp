@@ -32,18 +32,14 @@ import {
   registerWikiTools,
 } from "../tools/index.js";
 import { Logger } from "../utils/logger.js";
-import { loadConfig } from "./config.js";
+import { loadConfig, type ServerConfig } from "./config.js";
 
-async function main() {
-  const config = loadConfig();
-  const logger = new Logger(config.logLevel, config.logFormat);
-
-  logger.info("Starting GitLab MCP Server", {
-    version: config.serverVersion,
-    transportMode: config.transportMode,
-  });
-
-  // Create MCP server with tools.listChanged capability for progressive disclosure
+/**
+ * Creates a fully configured McpServer with all tools registered (disabled)
+ * and disclosure meta-tools attached. Each call returns an independent server
+ * with its own tool state, ensuring HTTP sessions don't share disclosure state.
+ */
+function createMcpServer(config: ServerConfig, logger: Logger): McpServer {
   const mcpServer = new McpServer(
     {
       name: config.serverName,
@@ -57,10 +53,6 @@ async function main() {
     },
   );
 
-  // Register all tools directly with McpServer (all start disabled)
-  // Each register function returns a Map<string, RegisteredTool> for enable/disable control
-  logger.info("Registering tools (disabled, pending activation)...");
-
   const toolsByCategory: ToolsByCategory = new Map();
   toolsByCategory.set("repositories", registerRepositoryTools(mcpServer, logger));
   toolsByCategory.set("merge-requests", registerMergeRequestTools(mcpServer, logger));
@@ -70,12 +62,16 @@ async function main() {
   toolsByCategory.set("namespaces", registerNamespaceTools(mcpServer, logger));
   toolsByCategory.set("users", registerUserTools(mcpServer, logger));
   toolsByCategory.set("search", registerSearchTools(mcpServer, logger));
-  toolsByCategory.set("wiki", registerWikiTools(mcpServer, logger));
-  toolsByCategory.set("milestones", registerMilestoneTools(mcpServer, logger));
   toolsByCategory.set("releases", registerReleaseTools(mcpServer, logger));
   toolsByCategory.set("webhooks", registerWebhookTools(mcpServer, logger));
   toolsByCategory.set("graphql", registerGraphqlTools(mcpServer, logger));
 
+  if (config.useGitlabWiki) {
+    toolsByCategory.set("wiki", registerWikiTools(mcpServer, logger));
+  }
+  if (config.useMilestone) {
+    toolsByCategory.set("milestones", registerMilestoneTools(mcpServer, logger));
+  }
   if (config.usePipeline) {
     toolsByCategory.set("pipelines", registerPipelineTools(mcpServer, logger));
   }
@@ -85,21 +81,30 @@ async function main() {
     `Registered ${totalTools} tools across ${toolsByCategory.size} categories (all disabled)`,
   );
 
-  // Register 2 always-enabled meta-tools for progressive disclosure
   registerDisclosureTools(mcpServer, toolsByCategory, logger);
-
-  // Attach MCP server to logger for protocol logging
-  // This enables agent observability - LLMs can see server logs
   logger.attachMcpServer(mcpServer);
 
-  // Setup transport based on configuration
+  return mcpServer;
+}
+
+async function main() {
+  const config = loadConfig();
+  const logger = new Logger(config.logLevel, config.logFormat);
+
+  logger.info("Starting GitLab MCP Server", {
+    version: config.serverVersion,
+    transportMode: config.transportMode,
+  });
+
   if (config.transportMode === "stdio") {
+    // Stdio: single server, single client
+    const mcpServer = createMcpServer(config, logger);
     logger.info("Starting with stdio transport");
     const transport = new StdioServerTransport();
     await mcpServer.connect(transport);
     logger.info("MCP Server ready (stdio)");
   } else if (config.transportMode === "streamable-http") {
-    // HTTP transport with Express
+    // HTTP: per-session server for independent disclosure state
     logger.info("Starting with Streamable HTTP transport", {
       port: config.httpPort,
       host: config.httpHost,
@@ -110,8 +115,24 @@ async function main() {
     const app = express();
     app.use(express.json());
 
-    // Track active transports
-    const streamableTransports: Record<string, StreamableHTTPServerTransport> = {};
+    const sessions: Record<
+      string,
+      { server: McpServer; transport: StreamableHTTPServerTransport; lastActivity: number }
+    > = {};
+
+    // Session cleanup: evict idle sessions based on sessionTimeoutSeconds
+    const sessionTimeoutMs = config.sessionTimeoutSeconds * 1000;
+    const cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      for (const [sid, session] of Object.entries(sessions)) {
+        if (now - session.lastActivity > sessionTimeoutMs) {
+          logger.info(`Session timed out: ${sid}`);
+          session.transport.close().catch(() => {});
+          delete sessions[sid];
+        }
+      }
+    }, 30_000);
+    cleanupInterval.unref();
 
     // Health check endpoint
     app.get("/health", (_req: Request, res: Response) => {
@@ -121,36 +142,10 @@ async function main() {
           name: config.serverName,
           version: config.serverVersion,
         },
-        activeSessions: Object.keys(streamableTransports).length,
+        activeSessions: Object.keys(sessions).length,
       });
     });
 
-    // Helper to create a new transport with security features
-    const createTransport = (): StreamableHTTPServerTransport => {
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID(),
-        onsessioninitialized: (newSessionId: string) => {
-          streamableTransports[newSessionId] = transport;
-          logger.info(`Session initialized: ${newSessionId}`);
-        },
-        enableDnsRebindingProtection: config.httpEnableDnsRebindingProtection,
-        allowedHosts: config.httpAllowedHosts,
-        allowedOrigins:
-          config.httpAllowedOrigins.length > 0 ? config.httpAllowedOrigins : undefined,
-      });
-
-      transport.onclose = () => {
-        const sid = transport.sessionId;
-        if (sid && streamableTransports[sid]) {
-          logger.info(`Session closed: ${sid}`);
-          delete streamableTransports[sid];
-        }
-      };
-
-      return transport;
-    };
-
-    // Helper to send error response
     const sendErrorResponse = (res: Response, error: unknown) => {
       logger.error("Error handling MCP request", {
         error: error instanceof Error ? error.message : String(error),
@@ -164,16 +159,56 @@ async function main() {
       }
     };
 
-    // MCP endpoint
+    // Create a new session with its own server + tool state
+    const createSession = async () => {
+      const sessionServer = createMcpServer(config, logger);
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (newSessionId: string) => {
+          sessions[newSessionId] = {
+            server: sessionServer,
+            transport,
+            lastActivity: Date.now(),
+          };
+          logger.info(`Session initialized: ${newSessionId}`);
+        },
+        enableDnsRebindingProtection: config.httpEnableDnsRebindingProtection,
+        allowedHosts: config.httpAllowedHosts,
+        allowedOrigins:
+          config.httpAllowedOrigins.length > 0 ? config.httpAllowedOrigins : undefined,
+      });
+
+      transport.onclose = () => {
+        const sid = transport.sessionId;
+        if (sid && sessions[sid]) {
+          logger.info(`Session closed: ${sid}`);
+          delete sessions[sid];
+        }
+      };
+
+      await sessionServer.connect(transport);
+      return transport;
+    };
+
+    // MCP endpoint — each new session gets its own server + tool state
     app.post("/mcp", async (req: Request, res: Response) => {
       const sessionId = req.headers["mcp-session-id"] as string;
 
       try {
-        if (sessionId && streamableTransports[sessionId]) {
-          await streamableTransports[sessionId].handleRequest(req, res, req.body);
+        if (sessionId && sessions[sessionId]) {
+          sessions[sessionId].lastActivity = Date.now();
+          await sessions[sessionId].transport.handleRequest(req, res, req.body);
         } else {
-          const transport = createTransport();
-          await mcpServer.connect(transport);
+          if (config.maxSessions > 0 && Object.keys(sessions).length >= config.maxSessions) {
+            res.status(503).json({
+              jsonrpc: "2.0",
+              error: { code: -32000, message: "Maximum sessions reached" },
+              id: null,
+            });
+            return;
+          }
+
+          const transport = await createSession();
           await transport.handleRequest(req, res, req.body);
         }
       } catch (error) {
@@ -190,14 +225,14 @@ async function main() {
         return;
       }
 
-      const transport = streamableTransports[sessionId];
-      if (!transport) {
+      const session = sessions[sessionId];
+      if (!session) {
         res.status(404).json({ error: "Session not found" });
         return;
       }
 
       try {
-        await transport.close();
+        await session.transport.close();
         logger.info(`Session explicitly closed: ${sessionId}`);
         res.status(204).send();
       } catch (error) {
@@ -231,7 +266,6 @@ async function main() {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
-  // Log unhandled errors
   process.on("unhandledRejection", (reason, promise) => {
     logger.error("Unhandled Rejection", { reason: String(reason), promise: String(promise) });
   });

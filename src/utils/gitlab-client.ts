@@ -87,6 +87,29 @@ export class GitLabClient {
     return this.fetch<T>(endpoint, { method: "DELETE" });
   }
 
+  /**
+   * Raw fetch that returns the Response object directly.
+   * Use for binary downloads, streaming, or multipart uploads
+   * where the JSON-parsing fetch() method isn't appropriate.
+   */
+  async rawFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
+    const url = endpoint.startsWith("http") ? endpoint : `${this.apiUrl}${endpoint}`;
+
+    const headers = new Headers(options.headers);
+    if (this.token && !headers.has("PRIVATE-TOKEN")) {
+      headers.set("PRIVATE-TOKEN", this.token);
+    }
+
+    const response = await fetch(url, { ...options, headers });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`GitLab API error: ${response.status} ${response.statusText}\n${errorBody}`);
+    }
+
+    return response;
+  }
+
   getApiUrl(): string {
     return this.apiUrl;
   }
