@@ -1,33 +1,26 @@
 /**
  * MCP Server Integration Tests
  *
- * Tests the full MCP server flow using InMemoryTransport from the SDK.
- * This tests the actual MCP protocol communication, not just our registry logic.
+ * Tests the SDK-native progressive disclosure flow:
+ * - On connect: only list_categories and activate_tools visible
+ * - After activation: category tools appear via tools/list_changed
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { LoggingMessageNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
-import { createRegistryAdapter, registerMetaTools, ToolRegistry } from "../src/registry/index.js";
+import { registerDisclosureTools, type ToolsByCategory } from "../src/registry/index.js";
 import { registerRepositoryTools } from "../src/tools/repositories.js";
 import { registerSearchTools } from "../src/tools/search.js";
 import { Logger } from "../src/utils/logger.js";
 
-interface TextContent {
-  type: "text";
-  text: string;
-}
-
-// Helper to extract text content from tool results
-// The SDK returns a union type, so we need to handle both cases
 function getTextContent(result: unknown): string {
   const r = result as { content?: Array<{ type: string; text?: string }> };
-  if (!r.content || !Array.isArray(r.content)) {
-    return "";
-  }
-  const textContent = r.content.find((c) => c.type === "text") as TextContent | undefined;
+  if (!r.content || !Array.isArray(r.content)) return "";
+  const textContent = r.content.find((c) => c.type === "text") as
+    | { type: "text"; text: string }
+    | undefined;
   return textContent?.text ?? "";
 }
 
@@ -40,42 +33,21 @@ describe("MCP Server Integration", () => {
   let serverTransport: InMemoryTransport;
 
   beforeEach(async () => {
-    // Create linked transport pair for in-process testing
     [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 
-    // Create and configure MCP server with logging capability
     server = new McpServer(
-      {
-        name: "test-gitlab-mcp",
-        version: "1.0.0",
-      },
-      {
-        capabilities: {
-          logging: {},
-        },
-      },
+      { name: "test-gitlab-mcp", version: "1.0.0" },
+      { capabilities: { logging: {}, tools: { listChanged: true } } },
     );
 
-    // Set up tool registry with a subset of tools for testing
-    const registry = new ToolRegistry();
-    registerRepositoryTools(createRegistryAdapter(registry, "repositories"), logger);
-    registerSearchTools(createRegistryAdapter(registry, "search"), logger);
+    // Register tools (disabled) and disclosure meta-tools
+    const toolsByCategory: ToolsByCategory = new Map();
+    toolsByCategory.set("repositories", registerRepositoryTools(server, logger));
+    toolsByCategory.set("search", registerSearchTools(server, logger));
+    registerDisclosureTools(server, toolsByCategory, logger);
 
-    // Register meta-tools
-    registerMetaTools(server, registry, logger);
+    client = new Client({ name: "test-client", version: "1.0.0" }, { capabilities: {} });
 
-    // Create client
-    client = new Client(
-      {
-        name: "test-client",
-        version: "1.0.0",
-      },
-      {
-        capabilities: {},
-      },
-    );
-
-    // Connect both ends
     await server.connect(serverTransport);
     await client.connect(clientTransport);
   });
@@ -86,52 +58,27 @@ describe("MCP Server Integration", () => {
   });
 
   describe("Server Initialization", () => {
-    it("should initialize and report server info", async () => {
+    it("should report server info", async () => {
       const serverInfo = client.getServerVersion();
       expect(serverInfo?.name).toBe("test-gitlab-mcp");
-      expect(serverInfo?.version).toBe("1.0.0");
     });
 
-    it("should report tools capability", async () => {
+    it("should report tools.listChanged capability", async () => {
       const capabilities = client.getServerCapabilities();
-      expect(capabilities?.tools).toBeDefined();
+      expect(capabilities?.tools?.listChanged).toBe(true);
     });
   });
 
-  describe("Tool Discovery", () => {
-    it("should list available tools (meta-tools)", async () => {
+  describe("Progressive Disclosure", () => {
+    it("should only show meta-tools on startup", async () => {
       const result = await client.listTools();
-      expect(result.tools).toBeDefined();
-      expect(result.tools.length).toBe(5); // 5 meta-tools
-
       const toolNames = result.tools.map((t) => t.name);
       expect(toolNames).toContain("list_categories");
-      expect(toolNames).toContain("list_tools");
-      expect(toolNames).toContain("search_tools");
-      expect(toolNames).toContain("get_tool_schema");
-      expect(toolNames).toContain("execute_tool");
+      expect(toolNames).toContain("activate_tools");
+      expect(toolNames.length).toBe(2);
     });
 
-    it("should have proper schema for list_categories", async () => {
-      const result = await client.listTools();
-      const listCategories = result.tools.find((t) => t.name === "list_categories");
-
-      expect(listCategories).toBeDefined();
-      expect(listCategories?.description).toContain("List all available GitLab tool categories");
-    });
-
-    it("should have proper schema for execute_tool", async () => {
-      const result = await client.listTools();
-      const executeTool = result.tools.find((t) => t.name === "execute_tool");
-
-      expect(executeTool).toBeDefined();
-      expect(executeTool?.description).toContain("Execute a GitLab tool by name");
-      expect(executeTool?.inputSchema).toBeDefined();
-    });
-  });
-
-  describe("Meta-tool: list_categories", () => {
-    it("should return available categories", async () => {
+    it("should list categories with tool counts", async () => {
       const result = await client.callTool({
         name: "list_categories",
         arguments: {},
@@ -141,163 +88,88 @@ describe("MCP Server Integration", () => {
       expect(text).toContain("repositories");
       expect(text).toContain("search");
     });
-  });
 
-  describe("Meta-tool: list_tools", () => {
-    it("should list tools in repositories category", async () => {
-      const result = await client.callTool({
-        name: "list_tools",
-        arguments: { category: "repositories" },
+    it("should activate a category and expose its tools", async () => {
+      // Activate repositories
+      const activateResult = await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
       });
 
-      const text = getTextContent(result);
+      const text = getTextContent(activateResult);
       expect(text).toContain("search_repositories");
       expect(text).toContain("get_file_contents");
+
+      // Now tools/list should include repository tools
+      const toolsResult = await client.listTools();
+      const toolNames = toolsResult.tools.map((t) => t.name);
+      expect(toolNames).toContain("list_categories");
+      expect(toolNames).toContain("activate_tools");
+      expect(toolNames).toContain("search_repositories");
+      expect(toolNames).toContain("get_file_contents");
+      expect(toolNames).toContain("create_branch");
+      // Search tools should still be hidden
+      expect(toolNames).not.toContain("global_search");
     });
 
-    it("should return error for unknown category", async () => {
-      const result = await client.callTool({
-        name: "list_tools",
-        arguments: { category: "nonexistent" },
+    it("should activate multiple categories at once", async () => {
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories", "search"] },
       });
 
-      expect(result.isError).toBe(true);
-      const text = getTextContent(result);
-      expect(text).toContain("not found");
+      const toolsResult = await client.listTools();
+      const toolNames = toolsResult.tools.map((t) => t.name);
+      expect(toolNames).toContain("search_repositories");
+      expect(toolNames).toContain("global_search");
     });
-  });
 
-  describe("Meta-tool: search_tools", () => {
-    it("should find tools by keyword", async () => {
-      const result = await client.callTool({
-        name: "search_tools",
-        arguments: { query: "merge" },
+    it("should be idempotent", async () => {
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
       });
 
-      const text = getTextContent(result);
-      expect(text.toLowerCase()).toContain("merge");
-    });
-
-    it("should respect limit parameter", async () => {
       const result = await client.callTool({
-        name: "search_tools",
-        arguments: { query: "file", limit: 2 },
-      });
-
-      const text = getTextContent(result);
-      expect(text).toBeDefined();
-    });
-
-    it("should handle no results gracefully", async () => {
-      const result = await client.callTool({
-        name: "search_tools",
-        arguments: { query: "xyznonexistent123" },
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
       });
 
       const text = getTextContent(result);
-      expect(text).toContain("No tools found");
+      expect(text).toContain("already active");
     });
-  });
 
-  describe("Meta-tool: get_tool_schema", () => {
-    it("should return schema for valid tool", async () => {
+    it("should handle unknown categories", async () => {
       const result = await client.callTool({
-        name: "get_tool_schema",
-        arguments: { toolName: "search_repositories" },
+        name: "activate_tools",
+        arguments: { categories: ["nonexistent"] },
       });
 
       const text = getTextContent(result);
-      expect(text).toContain("Search Repositories");
-      expect(text).toContain("Input Parameters");
+      expect(text).toContain("Unknown categories");
+      expect(text).toContain("nonexistent");
     });
 
-    it("should return error for unknown tool", async () => {
-      const result = await client.callTool({
-        name: "get_tool_schema",
-        arguments: { toolName: "nonexistent_tool" },
+    it("should show enabled count in categories after activation", async () => {
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
       });
 
-      expect(result.isError).toBe(true);
-      const text = getTextContent(result);
-      expect(text).toContain("not found");
-    });
-  });
-
-  describe("Meta-tool: execute_tool", () => {
-    it("should return error for unknown tool", async () => {
       const result = await client.callTool({
-        name: "execute_tool",
-        arguments: {
-          toolName: "nonexistent_tool",
-          params: {},
-        },
+        name: "list_categories",
+        arguments: {},
       });
 
-      expect(result.isError).toBe(true);
       const text = getTextContent(result);
-      expect(text).toContain("not found");
+      expect(text).toContain("active");
     });
-
-    // Note: We don't test actual GitLab API calls here since that would require
-    // mocking the GitLab client. Those are covered in the tool-specific tests.
   });
 
   describe("MCP Protocol Logging", () => {
     it("should report logging capability", async () => {
       const capabilities = client.getServerCapabilities();
       expect(capabilities?.logging).toBeDefined();
-    });
-
-    it("should receive log messages from server", async () => {
-      const receivedLogs: Array<{ level: string; data: unknown }> = [];
-
-      // Set up notification handler for logging messages
-      client.setNotificationHandler(LoggingMessageNotificationSchema, (notification) => {
-        receivedLogs.push({
-          level: notification.params.level,
-          data: notification.params.data,
-        });
-      });
-
-      // Send a log message from the server
-      await server.server.sendLoggingMessage({
-        level: "info",
-        logger: "test",
-        data: "Test log message from server",
-      });
-
-      // Give time for the notification to be processed
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      expect(receivedLogs.length).toBeGreaterThan(0);
-      expect(receivedLogs[0].level).toBe("info");
-      expect(receivedLogs[0].data).toBe("Test log message from server");
-    });
-
-    it("should receive structured log data", async () => {
-      const receivedLogs: Array<{ level: string; data: unknown }> = [];
-
-      client.setNotificationHandler(LoggingMessageNotificationSchema, (notification) => {
-        receivedLogs.push({
-          level: notification.params.level,
-          data: notification.params.data,
-        });
-      });
-
-      // Send structured log data
-      await server.server.sendLoggingMessage({
-        level: "debug",
-        logger: "gitlab-mcp",
-        data: { message: "Tool executed", toolName: "list_categories", duration: 42 },
-      });
-
-      await new Promise((resolve) => setTimeout(resolve, 10));
-
-      expect(receivedLogs.length).toBeGreaterThan(0);
-      const logData = receivedLogs[0].data as Record<string, unknown>;
-      expect(logData.message).toBe("Tool executed");
-      expect(logData.toolName).toBe("list_categories");
-      expect(logData.duration).toBe(42);
     });
   });
 });

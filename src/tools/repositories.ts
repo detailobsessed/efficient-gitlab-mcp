@@ -1,5 +1,5 @@
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { ToolRegistrationTarget } from "../registry/tool-adapter.js";
 import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
@@ -78,10 +78,14 @@ const GetBranchDiffsSchema = z.object({
   straight: z.boolean().optional().describe("Use straight comparison"),
 });
 
-export function registerRepositoryTools(target: ToolRegistrationTarget, logger: Logger): void {
+export function registerRepositoryTools(
+  server: McpServer,
+  logger: Logger,
+): Map<string, RegisteredTool> {
   logger.debug("Registering repository tools");
+  const tools = new Map<string, RegisteredTool>();
 
-  target.registerTool(
+  const toolRef = server.registerTool(
     "search_repositories",
     {
       title: "Search Repositories",
@@ -109,8 +113,10 @@ export function registerRepositoryTools(target: ToolRegistrationTarget, logger: 
       };
     },
   );
+  toolRef.disable();
+  tools.set("search_repositories", toolRef);
 
-  target.registerTool(
+  const toolRef2 = server.registerTool(
     "get_file_contents",
     {
       title: "Get File Contents",
@@ -138,8 +144,10 @@ export function registerRepositoryTools(target: ToolRegistrationTarget, logger: 
       };
     },
   );
+  toolRef2.disable();
+  tools.set("get_file_contents", toolRef2);
 
-  target.registerTool(
+  const toolRef3 = server.registerTool(
     "create_repository",
     {
       title: "Create Repository",
@@ -166,8 +174,10 @@ export function registerRepositoryTools(target: ToolRegistrationTarget, logger: 
       };
     },
   );
+  toolRef3.disable();
+  tools.set("create_repository", toolRef3);
 
-  target.registerTool(
+  const toolRef4 = server.registerTool(
     "fork_repository",
     {
       title: "Fork Repository",
@@ -193,8 +203,10 @@ export function registerRepositoryTools(target: ToolRegistrationTarget, logger: 
       };
     },
   );
+  toolRef4.disable();
+  tools.set("fork_repository", toolRef4);
 
-  target.registerTool(
+  const toolRef5 = server.registerTool(
     "create_branch",
     {
       title: "Create Branch",
@@ -221,8 +233,10 @@ export function registerRepositoryTools(target: ToolRegistrationTarget, logger: 
       };
     },
   );
+  toolRef5.disable();
+  tools.set("create_branch", toolRef5);
 
-  target.registerTool(
+  const toolRef6 = server.registerTool(
     "get_repository_tree",
     {
       title: "Get Repository Tree",
@@ -251,8 +265,10 @@ export function registerRepositoryTools(target: ToolRegistrationTarget, logger: 
       };
     },
   );
+  toolRef6.disable();
+  tools.set("get_repository_tree", toolRef6);
 
-  target.registerTool(
+  const toolRef7 = server.registerTool(
     "create_or_update_file",
     {
       title: "Create or Update File",
@@ -304,8 +320,10 @@ export function registerRepositoryTools(target: ToolRegistrationTarget, logger: 
       };
     },
   );
+  toolRef7.disable();
+  tools.set("create_or_update_file", toolRef7);
 
-  target.registerTool(
+  const toolRef8 = server.registerTool(
     "push_files",
     {
       title: "Push Files",
@@ -350,8 +368,10 @@ export function registerRepositoryTools(target: ToolRegistrationTarget, logger: 
       };
     },
   );
+  toolRef8.disable();
+  tools.set("push_files", toolRef8);
 
-  target.registerTool(
+  const toolRef9 = server.registerTool(
     "get_branch_diffs",
     {
       title: "Get Branch Diffs",
@@ -381,6 +401,9 @@ export function registerRepositoryTools(target: ToolRegistrationTarget, logger: 
       };
     },
   );
+  toolRef9.disable();
+  tools.set("get_branch_diffs", toolRef9);
 
-  logger.debug("Repository tools registered", { count: 9 });
+  logger.debug("Repository tools registered", { count: tools.size });
+  return tools;
 }

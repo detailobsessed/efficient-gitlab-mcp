@@ -1,5 +1,5 @@
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { ToolRegistrationTarget } from "../registry/tool-adapter.js";
 import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
@@ -94,10 +94,11 @@ const UpdateIssueNoteSchema = z.object({
   body: z.string().describe("New note body"),
 });
 
-export function registerIssueTools(target: ToolRegistrationTarget, logger: Logger): void {
+export function registerIssueTools(server: McpServer, logger: Logger): Map<string, RegisteredTool> {
   logger.debug("Registering issue tools");
+  const tools = new Map<string, RegisteredTool>();
 
-  target.registerTool(
+  const toolRef = server.registerTool(
     "create_issue",
     {
       title: "Create Issue",
@@ -123,8 +124,10 @@ export function registerIssueTools(target: ToolRegistrationTarget, logger: Logge
       return { content: [{ type: "text", text: JSON.stringify(issue, null, 2) }] };
     },
   );
+  toolRef.disable();
+  tools.set("create_issue", toolRef);
 
-  target.registerTool(
+  const toolRef2 = server.registerTool(
     "list_issues",
     {
       title: "List Issues",
@@ -151,8 +154,10 @@ export function registerIssueTools(target: ToolRegistrationTarget, logger: Logge
       return { content: [{ type: "text", text: JSON.stringify(issues, null, 2) }] };
     },
   );
+  toolRef2.disable();
+  tools.set("list_issues", toolRef2);
 
-  target.registerTool(
+  const toolRef3 = server.registerTool(
     "my_issues",
     {
       title: "My Issues",
@@ -173,8 +178,10 @@ export function registerIssueTools(target: ToolRegistrationTarget, logger: Logge
       return { content: [{ type: "text", text: JSON.stringify(issues, null, 2) }] };
     },
   );
+  toolRef3.disable();
+  tools.set("my_issues", toolRef3);
 
-  target.registerTool(
+  const toolRef4 = server.registerTool(
     "get_issue",
     {
       title: "Get Issue",
@@ -193,8 +200,10 @@ export function registerIssueTools(target: ToolRegistrationTarget, logger: Logge
       return { content: [{ type: "text", text: JSON.stringify(issue, null, 2) }] };
     },
   );
+  toolRef4.disable();
+  tools.set("get_issue", toolRef4);
 
-  target.registerTool(
+  const toolRef5 = server.registerTool(
     "update_issue",
     {
       title: "Update Issue",
@@ -220,8 +229,10 @@ export function registerIssueTools(target: ToolRegistrationTarget, logger: Logge
       return { content: [{ type: "text", text: JSON.stringify(issue, null, 2) }] };
     },
   );
+  toolRef5.disable();
+  tools.set("update_issue", toolRef5);
 
-  target.registerTool(
+  const toolRef6 = server.registerTool(
     "delete_issue",
     {
       title: "Delete Issue",
@@ -240,8 +251,10 @@ export function registerIssueTools(target: ToolRegistrationTarget, logger: Logge
       return { content: [{ type: "text", text: "Issue deleted successfully" }] };
     },
   );
+  toolRef6.disable();
+  tools.set("delete_issue", toolRef6);
 
-  target.registerTool(
+  const toolRef7 = server.registerTool(
     "list_issue_links",
     {
       title: "List Issue Links",
@@ -262,8 +275,10 @@ export function registerIssueTools(target: ToolRegistrationTarget, logger: Logge
       return { content: [{ type: "text", text: JSON.stringify(links, null, 2) }] };
     },
   );
+  toolRef7.disable();
+  tools.set("list_issue_links", toolRef7);
 
-  target.registerTool(
+  const toolRef8 = server.registerTool(
     "create_issue_link",
     {
       title: "Create Issue Link",
@@ -295,8 +310,10 @@ export function registerIssueTools(target: ToolRegistrationTarget, logger: Logge
       return { content: [{ type: "text", text: JSON.stringify(link, null, 2) }] };
     },
   );
+  toolRef8.disable();
+  tools.set("create_issue_link", toolRef8);
 
-  target.registerTool(
+  const toolRef9 = server.registerTool(
     "delete_issue_link",
     {
       title: "Delete Issue Link",
@@ -318,8 +335,10 @@ export function registerIssueTools(target: ToolRegistrationTarget, logger: Logge
       return { content: [{ type: "text", text: "Issue link deleted successfully" }] };
     },
   );
+  toolRef9.disable();
+  tools.set("delete_issue_link", toolRef9);
 
-  target.registerTool(
+  const toolRef10 = server.registerTool(
     "list_issue_discussions",
     {
       title: "List Issue Discussions",
@@ -343,8 +362,10 @@ export function registerIssueTools(target: ToolRegistrationTarget, logger: Logge
       return { content: [{ type: "text", text: JSON.stringify(discussions, null, 2) }] };
     },
   );
+  toolRef10.disable();
+  tools.set("list_issue_discussions", toolRef10);
 
-  target.registerTool(
+  const toolRef11 = server.registerTool(
     "create_issue_note",
     {
       title: "Create Issue Note",
@@ -367,8 +388,10 @@ export function registerIssueTools(target: ToolRegistrationTarget, logger: Logge
       return { content: [{ type: "text", text: JSON.stringify(note, null, 2) }] };
     },
   );
+  toolRef11.disable();
+  tools.set("create_issue_note", toolRef11);
 
-  target.registerTool(
+  const toolRef12 = server.registerTool(
     "update_issue_note",
     {
       title: "Update Issue Note",
@@ -392,6 +415,9 @@ export function registerIssueTools(target: ToolRegistrationTarget, logger: Logge
       return { content: [{ type: "text", text: JSON.stringify(note, null, 2) }] };
     },
   );
+  toolRef12.disable();
+  tools.set("update_issue_note", toolRef12);
 
-  logger.debug("Issue tools registered", { count: 12 });
+  logger.debug("Issue tools registered", { count: tools.size });
+  return tools;
 }

@@ -1,9 +1,11 @@
 #!/usr/bin/env node
+
 /**
  * GitLab MCP Server Entry Point
  *
- * Uses progressive disclosure pattern to expose 5 meta-tools instead of 100+ individual tools,
- * dramatically reducing token consumption when the LLM loads the tool list.
+ * Uses SDK-native progressive disclosure: all tools are registered but disabled.
+ * Two meta-tools (list_categories, activate_tools) let the LLM discover and
+ * enable tool categories on demand via notifications/tools/list_changed.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -12,7 +14,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { randomUUID } from "crypto";
 import express, { type Request, type Response } from "express";
 
-import { createRegistryAdapter, registerMetaTools, ToolRegistry } from "../registry/index.js";
+import { registerDisclosureTools, type ToolsByCategory } from "../registry/index.js";
 import {
   registerCommitTools,
   registerIssueTools,
@@ -36,7 +38,7 @@ async function main() {
     transportMode: config.transportMode,
   });
 
-  // Create MCP server with logging capability for agent observability
+  // Create MCP server with tools.listChanged capability for progressive disclosure
   const mcpServer = new McpServer(
     {
       name: config.serverName,
@@ -45,36 +47,36 @@ async function main() {
     {
       capabilities: {
         logging: {},
+        tools: { listChanged: true },
       },
     },
   );
 
-  // Create tool registry for progressive disclosure
-  // We expose 5 meta-tools that allow the LLM to discover and execute tools on-demand
-  const registry = new ToolRegistry();
+  // Register all tools directly with McpServer (all start disabled)
+  // Each register function returns a Map<string, RegisteredTool> for enable/disable control
+  logger.info("Registering tools (disabled, pending activation)...");
 
-  // Register all tools with the registry (not directly with MCP server)
-  logger.info("Registering tools with registry...");
+  const toolsByCategory: ToolsByCategory = new Map();
+  toolsByCategory.set("repositories", registerRepositoryTools(mcpServer, logger));
+  toolsByCategory.set("merge-requests", registerMergeRequestTools(mcpServer, logger));
+  toolsByCategory.set("issues", registerIssueTools(mcpServer, logger));
+  toolsByCategory.set("projects", registerProjectTools(mcpServer, logger));
+  toolsByCategory.set("commits", registerCommitTools(mcpServer, logger));
+  toolsByCategory.set("namespaces", registerNamespaceTools(mcpServer, logger));
+  toolsByCategory.set("users", registerUserTools(mcpServer, logger));
+  toolsByCategory.set("search", registerSearchTools(mcpServer, logger));
 
-  // Register tools by category
-  registerRepositoryTools(createRegistryAdapter(registry, "repositories"), logger);
-  registerMergeRequestTools(createRegistryAdapter(registry, "merge-requests"), logger);
-  registerIssueTools(createRegistryAdapter(registry, "issues"), logger);
-  registerProjectTools(createRegistryAdapter(registry, "projects"), logger);
-  registerCommitTools(createRegistryAdapter(registry, "commits"), logger);
-  registerNamespaceTools(createRegistryAdapter(registry, "namespaces"), logger);
-  registerUserTools(createRegistryAdapter(registry, "users"), logger);
-  registerSearchTools(createRegistryAdapter(registry, "search"), logger);
-
-  // Pipeline tools are optional (controlled by USE_PIPELINE env var)
   if (config.usePipeline) {
-    registerPipelineTools(createRegistryAdapter(registry, "pipelines"), logger);
+    toolsByCategory.set("pipelines", registerPipelineTools(mcpServer, logger));
   }
 
-  // Register the 5 meta-tools with the MCP server
-  // These are the ONLY tools exposed to the LLM
-  logger.info("Registering meta-tools for progressive disclosure...");
-  registerMetaTools(mcpServer, registry, logger);
+  const totalTools = Array.from(toolsByCategory.values()).reduce((sum, m) => sum + m.size, 0);
+  logger.info(
+    `Registered ${totalTools} tools across ${toolsByCategory.size} categories (all disabled)`,
+  );
+
+  // Register 2 always-enabled meta-tools for progressive disclosure
+  registerDisclosureTools(mcpServer, toolsByCategory, logger);
 
   // Attach MCP server to logger for protocol logging
   // This enables agent observability - LLMs can see server logs

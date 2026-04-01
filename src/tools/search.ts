@@ -1,5 +1,5 @@
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { ToolRegistrationTarget } from "../registry/tool-adapter.js";
 import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
@@ -67,10 +67,14 @@ const GroupSearchSchema = z.object({
   per_page: z.number().optional().describe("Results per page (max 100)"),
 });
 
-export function registerSearchTools(target: ToolRegistrationTarget, logger: Logger): void {
+export function registerSearchTools(
+  server: McpServer,
+  logger: Logger,
+): Map<string, RegisteredTool> {
   logger.debug("Registering search tools");
+  const tools = new Map<string, RegisteredTool>();
 
-  target.registerTool(
+  const toolRef = server.registerTool(
     "global_search",
     {
       title: "Global Search",
@@ -105,8 +109,10 @@ export function registerSearchTools(target: ToolRegistrationTarget, logger: Logg
       };
     },
   );
+  toolRef.disable();
+  tools.set("global_search", toolRef);
 
-  target.registerTool(
+  const toolRef2 = server.registerTool(
     "project_search",
     {
       title: "Project Search",
@@ -145,8 +151,10 @@ export function registerSearchTools(target: ToolRegistrationTarget, logger: Logg
       };
     },
   );
+  toolRef2.disable();
+  tools.set("project_search", toolRef2);
 
-  target.registerTool(
+  const toolRef3 = server.registerTool(
     "group_search",
     {
       title: "Group Search",
@@ -184,6 +192,9 @@ export function registerSearchTools(target: ToolRegistrationTarget, logger: Logg
       };
     },
   );
+  toolRef3.disable();
+  tools.set("group_search", toolRef3);
 
-  logger.debug("Search tools registered", { count: 3 });
+  logger.debug("Search tools registered", { count: tools.size });
+  return tools;
 }

@@ -4,7 +4,7 @@ import { Logger } from "./logger.js";
 const config = loadConfig();
 const logger = new Logger(config.logLevel, config.logFormat);
 
-export interface FetchOptions {
+interface FetchOptions {
   method?: string;
   headers?: Record<string, string>;
   body?: string;

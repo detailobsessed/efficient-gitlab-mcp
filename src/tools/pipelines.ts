@@ -1,5 +1,5 @@
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { ToolRegistrationTarget } from "../registry/tool-adapter.js";
 import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
@@ -97,10 +97,14 @@ const CancelPipelineJobSchema = z.object({
   job_id: z.number().describe("Job ID"),
 });
 
-export function registerPipelineTools(target: ToolRegistrationTarget, logger: Logger): void {
+export function registerPipelineTools(
+  server: McpServer,
+  logger: Logger,
+): Map<string, RegisteredTool> {
   logger.debug("Registering pipeline tools");
+  const tools = new Map<string, RegisteredTool>();
 
-  target.registerTool(
+  const toolRef = server.registerTool(
     "list_pipelines",
     {
       title: "List Pipelines",
@@ -138,8 +142,10 @@ export function registerPipelineTools(target: ToolRegistrationTarget, logger: Lo
       return { content: [{ type: "text", text: JSON.stringify(pipelines, null, 2) }] };
     },
   );
+  toolRef.disable();
+  tools.set("list_pipelines", toolRef);
 
-  target.registerTool(
+  const toolRef2 = server.registerTool(
     "get_pipeline",
     {
       title: "Get Pipeline",
@@ -160,8 +166,10 @@ export function registerPipelineTools(target: ToolRegistrationTarget, logger: Lo
       return { content: [{ type: "text", text: JSON.stringify(pipeline, null, 2) }] };
     },
   );
+  toolRef2.disable();
+  tools.set("get_pipeline", toolRef2);
 
-  target.registerTool(
+  const toolRef3 = server.registerTool(
     "create_pipeline",
     {
       title: "Create Pipeline",
@@ -193,8 +201,10 @@ export function registerPipelineTools(target: ToolRegistrationTarget, logger: Lo
       return { content: [{ type: "text", text: JSON.stringify(pipeline, null, 2) }] };
     },
   );
+  toolRef3.disable();
+  tools.set("create_pipeline", toolRef3);
 
-  target.registerTool(
+  const toolRef4 = server.registerTool(
     "retry_pipeline",
     {
       title: "Retry Pipeline",
@@ -215,8 +225,10 @@ export function registerPipelineTools(target: ToolRegistrationTarget, logger: Lo
       return { content: [{ type: "text", text: JSON.stringify(pipeline, null, 2) }] };
     },
   );
+  toolRef4.disable();
+  tools.set("retry_pipeline", toolRef4);
 
-  target.registerTool(
+  const toolRef5 = server.registerTool(
     "cancel_pipeline",
     {
       title: "Cancel Pipeline",
@@ -237,8 +249,10 @@ export function registerPipelineTools(target: ToolRegistrationTarget, logger: Lo
       return { content: [{ type: "text", text: JSON.stringify(pipeline, null, 2) }] };
     },
   );
+  toolRef5.disable();
+  tools.set("cancel_pipeline", toolRef5);
 
-  target.registerTool(
+  const toolRef6 = server.registerTool(
     "list_pipeline_jobs",
     {
       title: "List Pipeline Jobs",
@@ -278,8 +292,10 @@ export function registerPipelineTools(target: ToolRegistrationTarget, logger: Lo
       return { content: [{ type: "text", text: JSON.stringify(jobs, null, 2) }] };
     },
   );
+  toolRef6.disable();
+  tools.set("list_pipeline_jobs", toolRef6);
 
-  target.registerTool(
+  const toolRef7 = server.registerTool(
     "get_pipeline_job_output",
     {
       title: "Get Pipeline Job Output",
@@ -311,8 +327,10 @@ export function registerPipelineTools(target: ToolRegistrationTarget, logger: Lo
       return { content: [{ type: "text", text: trace }] };
     },
   );
+  toolRef7.disable();
+  tools.set("get_pipeline_job_output", toolRef7);
 
-  target.registerTool(
+  const toolRef8 = server.registerTool(
     "play_pipeline_job",
     {
       title: "Play Pipeline Job",
@@ -342,8 +360,10 @@ export function registerPipelineTools(target: ToolRegistrationTarget, logger: Lo
       return { content: [{ type: "text", text: JSON.stringify(job, null, 2) }] };
     },
   );
+  toolRef8.disable();
+  tools.set("play_pipeline_job", toolRef8);
 
-  target.registerTool(
+  const toolRef9 = server.registerTool(
     "retry_pipeline_job",
     {
       title: "Retry Pipeline Job",
@@ -362,8 +382,10 @@ export function registerPipelineTools(target: ToolRegistrationTarget, logger: Lo
       return { content: [{ type: "text", text: JSON.stringify(job, null, 2) }] };
     },
   );
+  toolRef9.disable();
+  tools.set("retry_pipeline_job", toolRef9);
 
-  target.registerTool(
+  const toolRef10 = server.registerTool(
     "cancel_pipeline_job",
     {
       title: "Cancel Pipeline Job",
@@ -382,6 +404,9 @@ export function registerPipelineTools(target: ToolRegistrationTarget, logger: Lo
       return { content: [{ type: "text", text: JSON.stringify(job, null, 2) }] };
     },
   );
+  toolRef10.disable();
+  tools.set("cancel_pipeline_job", toolRef10);
 
-  logger.debug("Pipeline tools registered", { count: 10 });
+  logger.debug("Pipeline tools registered", { count: tools.size });
+  return tools;
 }

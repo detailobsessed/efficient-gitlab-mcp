@@ -1,5 +1,5 @@
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { ToolRegistrationTarget } from "../registry/tool-adapter.js";
 import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
@@ -79,10 +79,14 @@ const ListGroupProjectsSchema = z.object({
   per_page: z.number().optional().describe("Results per page"),
 });
 
-export function registerProjectTools(target: ToolRegistrationTarget, logger: Logger): void {
+export function registerProjectTools(
+  server: McpServer,
+  logger: Logger,
+): Map<string, RegisteredTool> {
   logger.debug("Registering project tools");
+  const tools = new Map<string, RegisteredTool>();
 
-  target.registerTool(
+  const toolRef = server.registerTool(
     "get_project",
     {
       title: "Get Project",
@@ -108,8 +112,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(project, null, 2) }] };
     },
   );
+  toolRef.disable();
+  tools.set("get_project", toolRef);
 
-  target.registerTool(
+  const toolRef2 = server.registerTool(
     "list_projects",
     {
       title: "List Projects",
@@ -138,8 +144,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(projects, null, 2) }] };
     },
   );
+  toolRef2.disable();
+  tools.set("list_projects", toolRef2);
 
-  target.registerTool(
+  const toolRef3 = server.registerTool(
     "list_project_members",
     {
       title: "List Project Members",
@@ -165,8 +173,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(members, null, 2) }] };
     },
   );
+  toolRef3.disable();
+  tools.set("list_project_members", toolRef3);
 
-  target.registerTool(
+  const toolRef4 = server.registerTool(
     "list_labels",
     {
       title: "List Labels",
@@ -192,8 +202,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(labels, null, 2) }] };
     },
   );
+  toolRef4.disable();
+  tools.set("list_labels", toolRef4);
 
-  target.registerTool(
+  const toolRef5 = server.registerTool(
     "get_label",
     {
       title: "Get Label",
@@ -213,8 +225,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(label, null, 2) }] };
     },
   );
+  toolRef5.disable();
+  tools.set("get_label", toolRef5);
 
-  target.registerTool(
+  const toolRef6 = server.registerTool(
     "create_label",
     {
       title: "Create Label",
@@ -237,8 +251,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(label, null, 2) }] };
     },
   );
+  toolRef6.disable();
+  tools.set("create_label", toolRef6);
 
-  target.registerTool(
+  const toolRef7 = server.registerTool(
     "update_label",
     {
       title: "Update Label",
@@ -263,8 +279,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(label, null, 2) }] };
     },
   );
+  toolRef7.disable();
+  tools.set("update_label", toolRef7);
 
-  target.registerTool(
+  const toolRef8 = server.registerTool(
     "delete_label",
     {
       title: "Delete Label",
@@ -284,8 +302,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: "Label deleted successfully" }] };
     },
   );
+  toolRef8.disable();
+  tools.set("delete_label", toolRef8);
 
-  target.registerTool(
+  const toolRef9 = server.registerTool(
     "list_group_projects",
     {
       title: "List Group Projects",
@@ -314,6 +334,9 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(projects, null, 2) }] };
     },
   );
+  toolRef9.disable();
+  tools.set("list_group_projects", toolRef9);
 
-  logger.debug("Project tools registered", { count: 9 });
+  logger.debug("Project tools registered", { count: tools.size });
+  return tools;
 }

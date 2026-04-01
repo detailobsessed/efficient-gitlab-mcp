@@ -1,5 +1,5 @@
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { ToolRegistrationTarget } from "../registry/tool-adapter.js";
 import { buildQueryString, defaultClient } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
@@ -17,10 +17,11 @@ const SearchUsersSchema = z.object({
   per_page: z.number().optional().describe("Results per page"),
 });
 
-export function registerUserTools(target: ToolRegistrationTarget, logger: Logger): void {
+export function registerUserTools(server: McpServer, logger: Logger): Map<string, RegisteredTool> {
   logger.debug("Registering user tools");
+  const tools = new Map<string, RegisteredTool>();
 
-  target.registerTool(
+  const toolRef = server.registerTool(
     "get_users",
     {
       title: "Get Users",
@@ -45,8 +46,10 @@ export function registerUserTools(target: ToolRegistrationTarget, logger: Logger
       return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
     },
   );
+  toolRef.disable();
+  tools.set("get_users", toolRef);
 
-  target.registerTool(
+  const toolRef2 = server.registerTool(
     "get_user",
     {
       title: "Get User",
@@ -62,8 +65,10 @@ export function registerUserTools(target: ToolRegistrationTarget, logger: Logger
       return { content: [{ type: "text", text: JSON.stringify(user, null, 2) }] };
     },
   );
+  toolRef2.disable();
+  tools.set("get_user", toolRef2);
 
-  target.registerTool(
+  const toolRef3 = server.registerTool(
     "search_users",
     {
       title: "Search Users",
@@ -83,6 +88,9 @@ export function registerUserTools(target: ToolRegistrationTarget, logger: Logger
       return { content: [{ type: "text", text: JSON.stringify(users, null, 2) }] };
     },
   );
+  toolRef3.disable();
+  tools.set("search_users", toolRef3);
 
-  logger.debug("User tools registered", { count: 3 });
+  logger.debug("User tools registered", { count: tools.size });
+  return tools;
 }

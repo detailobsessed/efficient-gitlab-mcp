@@ -10,11 +10,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenvConfig({ path: join(__dirname, "../../.env") });
 
-export type TransportMode = "stdio" | "sse" | "streamable-http";
-export type LogLevel = "debug" | "info" | "warn" | "error";
-export type LogFormat = "json" | "pretty";
+type TransportMode = "stdio" | "sse" | "streamable-http";
+type LogLevel = "debug" | "info" | "warn" | "error";
+type LogFormat = "json" | "pretty";
 
-export interface ServerConfig {
+interface ServerConfig {
   // Server identity
   serverName: string;
   serverVersion: string;

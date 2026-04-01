@@ -1,5 +1,5 @@
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { ToolRegistrationTarget } from "../registry/tool-adapter.js";
 import { buildQueryString, defaultClient } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
@@ -18,10 +18,14 @@ const VerifyNamespaceSchema = z.object({
   path: z.string().describe("Namespace path to verify"),
 });
 
-export function registerNamespaceTools(target: ToolRegistrationTarget, logger: Logger): void {
+export function registerNamespaceTools(
+  server: McpServer,
+  logger: Logger,
+): Map<string, RegisteredTool> {
   logger.debug("Registering namespace tools");
+  const tools = new Map<string, RegisteredTool>();
 
-  target.registerTool(
+  const toolRef = server.registerTool(
     "list_namespaces",
     {
       title: "List Namespaces",
@@ -42,8 +46,10 @@ export function registerNamespaceTools(target: ToolRegistrationTarget, logger: L
       return { content: [{ type: "text", text: JSON.stringify(namespaces, null, 2) }] };
     },
   );
+  toolRef.disable();
+  tools.set("list_namespaces", toolRef);
 
-  target.registerTool(
+  const toolRef2 = server.registerTool(
     "get_namespace",
     {
       title: "Get Namespace",
@@ -61,8 +67,10 @@ export function registerNamespaceTools(target: ToolRegistrationTarget, logger: L
       return { content: [{ type: "text", text: JSON.stringify(namespace, null, 2) }] };
     },
   );
+  toolRef2.disable();
+  tools.set("get_namespace", toolRef2);
 
-  target.registerTool(
+  const toolRef3 = server.registerTool(
     "verify_namespace",
     {
       title: "Verify Namespace",
@@ -80,6 +88,9 @@ export function registerNamespaceTools(target: ToolRegistrationTarget, logger: L
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     },
   );
+  toolRef3.disable();
+  tools.set("verify_namespace", toolRef3);
 
-  logger.debug("Namespace tools registered", { count: 3 });
+  logger.debug("Namespace tools registered", { count: tools.size });
+  return tools;
 }

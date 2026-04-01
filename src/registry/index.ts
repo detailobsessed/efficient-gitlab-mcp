@@ -1,3 +1,2 @@
-export { registerMetaTools } from "./meta-tools.js";
-export { createRegistryAdapter } from "./tool-adapter.js";
-export { ToolRegistry } from "./tool-registry.js";
+export type { ToolsByCategory } from "./disclosure.js";
+export { registerDisclosureTools } from "./disclosure.js";

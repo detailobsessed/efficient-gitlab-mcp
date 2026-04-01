@@ -1,5 +1,5 @@
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { ToolRegistrationTarget } from "../registry/tool-adapter.js";
 import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
@@ -124,10 +124,14 @@ const GetMergeRequestNotesSchema = z.object({
   per_page: z.number().optional().describe("Results per page"),
 });
 
-export function registerMergeRequestTools(target: ToolRegistrationTarget, logger: Logger): void {
+export function registerMergeRequestTools(
+  server: McpServer,
+  logger: Logger,
+): Map<string, RegisteredTool> {
   logger.debug("Registering merge request tools");
+  const tools = new Map<string, RegisteredTool>();
 
-  target.registerTool(
+  const toolRef = server.registerTool(
     "get_merge_request",
     {
       title: "Get Merge Request",
@@ -164,8 +168,10 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       throw new Error("Either merge_request_iid or branch_name must be provided");
     },
   );
+  toolRef.disable();
+  tools.set("get_merge_request", toolRef);
 
-  target.registerTool(
+  const toolRef2 = server.registerTool(
     "list_merge_requests",
     {
       title: "List Merge Requests",
@@ -189,8 +195,10 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       return { content: [{ type: "text", text: JSON.stringify(mrs, null, 2) }] };
     },
   );
+  toolRef2.disable();
+  tools.set("list_merge_requests", toolRef2);
 
-  target.registerTool(
+  const toolRef3 = server.registerTool(
     "create_merge_request",
     {
       title: "Create Merge Request",
@@ -219,8 +227,10 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       return { content: [{ type: "text", text: JSON.stringify(mr, null, 2) }] };
     },
   );
+  toolRef3.disable();
+  tools.set("create_merge_request", toolRef3);
 
-  target.registerTool(
+  const toolRef4 = server.registerTool(
     "update_merge_request",
     {
       title: "Update Merge Request",
@@ -251,8 +261,10 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       return { content: [{ type: "text", text: JSON.stringify(mr, null, 2) }] };
     },
   );
+  toolRef4.disable();
+  tools.set("update_merge_request", toolRef4);
 
-  target.registerTool(
+  const toolRef5 = server.registerTool(
     "merge_merge_request",
     {
       title: "Merge Merge Request",
@@ -284,8 +296,10 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       return { content: [{ type: "text", text: JSON.stringify(mr, null, 2) }] };
     },
   );
+  toolRef5.disable();
+  tools.set("merge_merge_request", toolRef5);
 
-  target.registerTool(
+  const toolRef6 = server.registerTool(
     "get_merge_request_diffs",
     {
       title: "Get Merge Request Diffs",
@@ -309,8 +323,10 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       return { content: [{ type: "text", text: JSON.stringify(diffs, null, 2) }] };
     },
   );
+  toolRef6.disable();
+  tools.set("get_merge_request_diffs", toolRef6);
 
-  target.registerTool(
+  const toolRef7 = server.registerTool(
     "mr_discussions",
     {
       title: "List MR Discussions",
@@ -334,8 +350,10 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       return { content: [{ type: "text", text: JSON.stringify(discussions, null, 2) }] };
     },
   );
+  toolRef7.disable();
+  tools.set("mr_discussions", toolRef7);
 
-  target.registerTool(
+  const toolRef8 = server.registerTool(
     "create_merge_request_thread",
     {
       title: "Create MR Thread",
@@ -371,8 +389,10 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       return { content: [{ type: "text", text: JSON.stringify(thread, null, 2) }] };
     },
   );
+  toolRef8.disable();
+  tools.set("create_merge_request_thread", toolRef8);
 
-  target.registerTool(
+  const toolRef9 = server.registerTool(
     "resolve_merge_request_thread",
     {
       title: "Resolve MR Thread",
@@ -396,8 +416,10 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       return { content: [{ type: "text", text: JSON.stringify(thread, null, 2) }] };
     },
   );
+  toolRef9.disable();
+  tools.set("resolve_merge_request_thread", toolRef9);
 
-  target.registerTool(
+  const toolRef10 = server.registerTool(
     "create_merge_request_note",
     {
       title: "Create MR Note",
@@ -420,8 +442,10 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       return { content: [{ type: "text", text: JSON.stringify(note, null, 2) }] };
     },
   );
+  toolRef10.disable();
+  tools.set("create_merge_request_note", toolRef10);
 
-  target.registerTool(
+  const toolRef11 = server.registerTool(
     "update_merge_request_note",
     {
       title: "Update MR Note",
@@ -445,8 +469,10 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       return { content: [{ type: "text", text: JSON.stringify(note, null, 2) }] };
     },
   );
+  toolRef11.disable();
+  tools.set("update_merge_request_note", toolRef11);
 
-  target.registerTool(
+  const toolRef12 = server.registerTool(
     "delete_merge_request_note",
     {
       title: "Delete MR Note",
@@ -468,8 +494,10 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       return { content: [{ type: "text", text: "Note deleted successfully" }] };
     },
   );
+  toolRef12.disable();
+  tools.set("delete_merge_request_note", toolRef12);
 
-  target.registerTool(
+  const toolRef13 = server.registerTool(
     "get_merge_request_notes",
     {
       title: "Get MR Notes",
@@ -493,6 +521,9 @@ export function registerMergeRequestTools(target: ToolRegistrationTarget, logger
       return { content: [{ type: "text", text: JSON.stringify(notes, null, 2) }] };
     },
   );
+  toolRef13.disable();
+  tools.set("get_merge_request_notes", toolRef13);
 
-  logger.debug("Merge request tools registered", { count: 13 });
+  logger.debug("Merge request tools registered", { count: tools.size });
+  return tools;
 }
