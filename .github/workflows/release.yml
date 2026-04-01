@@ -3,7 +3,7 @@ name: Release
 on:
   workflow_run:
     workflows: ["CI"]
-    branches: [main]
+    branches: [detailobsessed]
     types: [completed]
   workflow_dispatch:
 
