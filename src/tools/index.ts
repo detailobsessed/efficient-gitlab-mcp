@@ -12,3 +12,4 @@ export { registerSearchTools } from "./search.js";
 export { registerUserTools } from "./users.js";
 export { registerWebhookTools } from "./webhooks.js";
 export { registerWikiTools } from "./wiki.js";
+export { registerWorkItemTools } from "./work-items.js";

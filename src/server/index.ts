@@ -30,6 +30,7 @@ import {
   registerUserTools,
   registerWebhookTools,
   registerWikiTools,
+  registerWorkItemTools,
 } from "../tools/index.js";
 import { Logger } from "../utils/logger.js";
 import { loadConfig, type ServerConfig } from "./config.js";
@@ -64,6 +65,7 @@ function createMcpServer(config: ServerConfig, logger: Logger): McpServer {
   toolsByCategory.set("search", registerSearchTools(mcpServer, logger));
   toolsByCategory.set("releases", registerReleaseTools(mcpServer, logger));
   toolsByCategory.set("webhooks", registerWebhookTools(mcpServer, logger));
+  toolsByCategory.set("work-items", registerWorkItemTools(mcpServer, logger));
   toolsByCategory.set("graphql", registerGraphqlTools(mcpServer, logger));
 
   if (config.useGitlabWiki) {

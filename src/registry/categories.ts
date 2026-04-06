@@ -68,6 +68,11 @@ export const CATEGORIES: CategoryDef[] = [
     description: "List project webhooks and their recent events.",
   },
   {
+    name: "work-items",
+    description:
+      "Work items via GraphQL: create, update, convert types, manage hierarchy, notes, statuses, custom fields, and incident timeline events.",
+  },
+  {
     name: "graphql",
     description: "Execute arbitrary GraphQL queries against the GitLab API.",
   },
