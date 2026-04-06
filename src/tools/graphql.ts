@@ -27,21 +27,10 @@ export function registerGraphqlTools(
     },
     async (params) => {
       const args = ExecuteGraphQLSchema.parse(params);
+      logger.info("execute_graphql request");
 
-      // Derive the GraphQL endpoint from the REST API URL
-      const apiUrl = defaultClient.getApiUrl();
-      const idx = apiUrl.lastIndexOf("/api/v4");
-      const prefix = idx >= 0 ? apiUrl.slice(0, idx) : apiUrl;
-      const graphqlUrl = process.env.GITLAB_GRAPHQL_URL || `${prefix}/api/graphql`;
-
-      logger.info("execute_graphql request", { endpoint: graphqlUrl });
-
-      // Use the client's fetch method to leverage auth headers, but POST to graphql endpoint
       try {
-        const result = await defaultClient.post(graphqlUrl, {
-          query: args.query,
-          variables: args.variables || {},
-        });
+        const result = await defaultClient.graphql(args.query, args.variables || {});
         return {
           content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         };

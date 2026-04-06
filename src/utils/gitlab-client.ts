@@ -110,6 +110,29 @@ export class GitLabClient {
     return response;
   }
 
+  async graphql<T = unknown>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
+    const idx = this.apiUrl.lastIndexOf("/api/v4");
+    const prefix = idx >= 0 ? this.apiUrl.slice(0, idx) : this.apiUrl;
+    const graphqlUrl = process.env.GITLAB_GRAPHQL_URL || `${prefix}/api/graphql`;
+
+    const response = await fetch(graphqlUrl, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify({ query, variables }),
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`GraphQL request failed (${response.status}): ${errorBody}`);
+    }
+
+    const json = (await response.json()) as { data: T; errors?: Array<{ message: string }> };
+    if (json.errors && json.errors.length > 0) {
+      throw new Error(`GraphQL errors: ${json.errors.map((e) => e.message).join(", ")}`);
+    }
+    return json.data;
+  }
+
   getApiUrl(): string {
     return this.apiUrl;
   }
