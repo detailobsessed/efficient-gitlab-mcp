@@ -856,7 +856,21 @@ export function registerMergeRequestTools(
       }));
 
       if (args.excluded_file_patterns && args.excluded_file_patterns.length > 0) {
-        const patterns = args.excluded_file_patterns.map((p) => new RegExp(p));
+        const patterns: RegExp[] = [];
+        for (const p of args.excluded_file_patterns) {
+          try {
+            patterns.push(new RegExp(p));
+          } catch {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify({ error: `Invalid regex pattern: ${p}` }, null, 2),
+                },
+              ],
+            };
+          }
+        }
         files = files.filter(
           (f) => !patterns.some((re) => re.test(f.new_path) || re.test(f.old_path)),
         );
@@ -937,17 +951,29 @@ export function registerMergeRequestTools(
     async (params) => {
       const args = GetMergeRequestFileDiffSchema.parse(params);
       const projectId = encodeProjectId(args.project_id);
-      const query = buildQueryString({ unidiff: args.unidiff });
 
-      // Fetch all diffs for the MR, then filter by requested file paths
-      const allDiffs = await defaultClient.get<
-        Array<{ old_path: string; new_path: string; diff: string; [key: string]: unknown }>
-      >(`/projects/${projectId}/merge_requests/${args.merge_request_iid}/diffs${query}`);
+      // Fetch all diffs for the MR using pagination, then filter by requested file paths
+      const allDiffs: Array<{
+        old_path: string;
+        new_path: string;
+        diff: string;
+        [key: string]: unknown;
+      }> = [];
+      let page = 1;
+      const perPage = 100;
+      while (true) {
+        const pageQuery = buildQueryString({ unidiff: args.unidiff, page, per_page: perPage });
+        const pageDiffs = await defaultClient.get<
+          Array<{ old_path: string; new_path: string; diff: string; [key: string]: unknown }>
+        >(`/projects/${projectId}/merge_requests/${args.merge_request_iid}/diffs${pageQuery}`);
+        if (!Array.isArray(pageDiffs) || pageDiffs.length === 0) break;
+        allDiffs.push(...pageDiffs);
+        if (pageDiffs.length < perPage) break;
+        page++;
+      }
 
       const results = args.file_paths.map((filePath) => {
-        const found = (Array.isArray(allDiffs) ? allDiffs : []).find(
-          (d) => d.new_path === filePath || d.old_path === filePath,
-        );
+        const found = allDiffs.find((d) => d.new_path === filePath || d.old_path === filePath);
         if (found) {
           return found;
         }

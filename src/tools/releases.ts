@@ -417,15 +417,13 @@ export function registerReleaseTools(
         };
       }
 
-      const assetContent = await defaultClient.get<string>(assetUrl);
+      const response = await defaultClient.rawFetch(assetUrl);
+      const assetContent = await response.text();
       return {
         content: [
           {
             type: "text",
-            text:
-              typeof assetContent === "string"
-                ? assetContent
-                : JSON.stringify(assetContent, null, 2),
+            text: assetContent,
           },
         ],
       };
