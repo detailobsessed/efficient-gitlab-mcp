@@ -1,5 +1,5 @@
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { ToolRegistrationTarget } from "../registry/tool-adapter.js";
 import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
@@ -26,10 +26,14 @@ const GetCommitDiffSchema = z.object({
   per_page: z.number().optional().describe("Results per page"),
 });
 
-export function registerCommitTools(target: ToolRegistrationTarget, logger: Logger): void {
+export function registerCommitTools(
+  server: McpServer,
+  logger: Logger,
+): Map<string, RegisteredTool> {
   logger.debug("Registering commit tools");
+  const tools = new Map<string, RegisteredTool>();
 
-  target.registerTool(
+  const toolRef = server.registerTool(
     "list_commits",
     {
       title: "List Commits",
@@ -56,8 +60,10 @@ export function registerCommitTools(target: ToolRegistrationTarget, logger: Logg
       return { content: [{ type: "text", text: JSON.stringify(commits, null, 2) }] };
     },
   );
+  toolRef.disable();
+  tools.set("list_commits", toolRef);
 
-  target.registerTool(
+  const toolRef2 = server.registerTool(
     "get_commit",
     {
       title: "Get Commit",
@@ -78,8 +84,10 @@ export function registerCommitTools(target: ToolRegistrationTarget, logger: Logg
       return { content: [{ type: "text", text: JSON.stringify(commit, null, 2) }] };
     },
   );
+  toolRef2.disable();
+  tools.set("get_commit", toolRef2);
 
-  target.registerTool(
+  const toolRef3 = server.registerTool(
     "get_commit_diff",
     {
       title: "Get Commit Diff",
@@ -103,6 +111,9 @@ export function registerCommitTools(target: ToolRegistrationTarget, logger: Logg
       return { content: [{ type: "text", text: JSON.stringify(diff, null, 2) }] };
     },
   );
+  toolRef3.disable();
+  tools.set("get_commit_diff", toolRef3);
 
-  logger.debug("Commit tools registered", { count: 3 });
+  logger.debug("Commit tools registered", { count: tools.size });
+  return tools;
 }

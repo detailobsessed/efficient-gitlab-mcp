@@ -1,0 +1,43 @@
+# Configuration file for `prek`, a git hook framework written in Rust.
+# See https://prek.j178.dev for more information.
+#:schema https://www.schemastore.org/prek.json
+
+minimum_prek_version = "0.3.8"
+default_stages = ["pre-commit"]
+
+[[repos]]
+repo = "builtin"
+hooks = [
+    { id = "trailing-whitespace", priority = 0 },
+    { id = "end-of-file-fixer", priority = 0 },
+    { id = "check-yaml", priority = 0 },
+    { id = "check-json", priority = 0, exclude = '^tsconfig\.json$' },
+    { id = "check-toml", priority = 0 },
+    { id = "check-added-large-files", priority = 0 },
+    { id = "check-merge-conflict", priority = 0 },
+    { id = "check-case-conflict", priority = 0 },
+    { id = "detect-private-key", priority = 0 },
+]
+
+[[repos]]
+repo = "https://github.com/crate-ci/typos"
+rev = "v1.45.0"
+hooks = [
+    { id = "typos", priority = 1, exclude = '^CHANGELOG\.md$' },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+    { id = "biome", name = "biome", entry = "bunx biome check --write --no-errors-on-unmatched", language = "system", types = ["ts"], priority = 1 },
+    { id = "knip", name = "knip", entry = "bunx knip", language = "system", pass_filenames = false, types = ["ts"], priority = 2 },
+    { id = "build", name = "Build", entry = "bun run build", language = "system", pass_filenames = false, types = ["ts"], priority = 3 },
+    { id = "test", name = "Run Tests", entry = "bun test", language = "system", pass_filenames = false, stages = ["pre-push"], priority = 4 },
+]
+
+[[repos]]
+repo = "https://github.com/compilerla/conventional-pre-commit"
+rev = "v4.4.0"
+hooks = [
+    { id = "conventional-pre-commit", stages = ["commit-msg"], args = ["--verbose"] },
+]

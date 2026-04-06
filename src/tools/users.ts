@@ -1,6 +1,6 @@
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { ToolRegistrationTarget } from "../registry/tool-adapter.js";
-import { buildQueryString, defaultClient } from "../utils/gitlab-client.js";
+import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 const GetUsersSchema = z.object({
@@ -17,10 +17,82 @@ const SearchUsersSchema = z.object({
   per_page: z.number().optional().describe("Results per page"),
 });
 
-export function registerUserTools(target: ToolRegistrationTarget, logger: Logger): void {
-  logger.debug("Registering user tools");
+const ListEventsSchema = z.object({
+  action: z
+    .string()
+    .optional()
+    .describe("If defined, returns events with the specified action type"),
+  target_type: z
+    .enum(["epic", "issue", "merge_request", "milestone", "note", "project", "snippet", "user"])
+    .optional()
+    .describe("If defined, returns events with the specified target type"),
+  before: z
+    .string()
+    .optional()
+    .describe(
+      "Returns events created before the specified date (YYYY-MM-DD format). To include events on 2025-08-29, use before=2025-08-30",
+    ),
+  after: z
+    .string()
+    .optional()
+    .describe(
+      "Returns events created after the specified date (YYYY-MM-DD format). To include events on 2025-08-29, use after=2025-08-28",
+    ),
+  scope: z.string().optional().describe("Include all events across a user's projects"),
+  sort: z
+    .enum(["asc", "desc"])
+    .optional()
+    .describe("Direction to sort the results by creation date. Default: desc"),
+  page: z.number().optional().describe("Page number"),
+  per_page: z.number().optional().describe("Results per page"),
+});
 
-  target.registerTool(
+const GetProjectEventsSchema = z.object({
+  project_id: z.string().describe("Project ID or URL-encoded path"),
+  action: z
+    .string()
+    .optional()
+    .describe("If defined, returns events with the specified action type"),
+  target_type: z
+    .enum(["epic", "issue", "merge_request", "milestone", "note", "project", "snippet", "user"])
+    .optional()
+    .describe("If defined, returns events with the specified target type"),
+  before: z
+    .string()
+    .optional()
+    .describe(
+      "Returns events created before the specified date (YYYY-MM-DD format). To include events on 2025-08-29, use before=2025-08-30",
+    ),
+  after: z
+    .string()
+    .optional()
+    .describe(
+      "Returns events created after the specified date (YYYY-MM-DD format). To include events on 2025-08-29, use after=2025-08-28",
+    ),
+  sort: z
+    .enum(["asc", "desc"])
+    .optional()
+    .describe("Direction to sort the results by creation date. Default: desc"),
+  page: z.number().optional().describe("Page number"),
+  per_page: z.number().optional().describe("Results per page"),
+});
+
+const UploadMarkdownSchema = z.object({
+  project_id: z.string().describe("Project ID or URL-encoded path of the project"),
+  file_path: z.string().describe("Path to the file to upload"),
+});
+
+const DownloadAttachmentSchema = z.object({
+  project_id: z.string().describe("Project ID or URL-encoded path of the project"),
+  secret: z.string().describe("The 32-character secret of the upload"),
+  filename: z.string().describe("The filename of the upload"),
+});
+
+export function registerUserTools(server: McpServer, logger: Logger): Map<string, RegisteredTool> {
+  logger.debug("Registering user tools");
+  const tools = new Map<string, RegisteredTool>();
+
+  const toolRef = server.registerTool(
     "get_users",
     {
       title: "Get Users",
@@ -45,8 +117,10 @@ export function registerUserTools(target: ToolRegistrationTarget, logger: Logger
       return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
     },
   );
+  toolRef.disable();
+  tools.set("get_users", toolRef);
 
-  target.registerTool(
+  const toolRef2 = server.registerTool(
     "get_user",
     {
       title: "Get User",
@@ -62,8 +136,10 @@ export function registerUserTools(target: ToolRegistrationTarget, logger: Logger
       return { content: [{ type: "text", text: JSON.stringify(user, null, 2) }] };
     },
   );
+  toolRef2.disable();
+  tools.set("get_user", toolRef2);
 
-  target.registerTool(
+  const toolRef3 = server.registerTool(
     "search_users",
     {
       title: "Search Users",
@@ -83,6 +159,175 @@ export function registerUserTools(target: ToolRegistrationTarget, logger: Logger
       return { content: [{ type: "text", text: JSON.stringify(users, null, 2) }] };
     },
   );
+  toolRef3.disable();
+  tools.set("search_users", toolRef3);
 
-  logger.debug("User tools registered", { count: 3 });
+  const toolRef4 = server.registerTool(
+    "list_events",
+    {
+      title: "List Events",
+      description:
+        "List all events for the currently authenticated user. Note: before/after parameters accept date format YYYY-MM-DD only",
+      inputSchema: {
+        action: z
+          .string()
+          .optional()
+          .describe("If defined, returns events with the specified action type"),
+        target_type: z
+          .enum([
+            "epic",
+            "issue",
+            "merge_request",
+            "milestone",
+            "note",
+            "project",
+            "snippet",
+            "user",
+          ])
+          .optional()
+          .describe("If defined, returns events with the specified target type"),
+        before: z
+          .string()
+          .optional()
+          .describe("Returns events created before the specified date (YYYY-MM-DD format)"),
+        after: z
+          .string()
+          .optional()
+          .describe("Returns events created after the specified date (YYYY-MM-DD format)"),
+        scope: z.string().optional().describe("Include all events across a user's projects"),
+        sort: z.enum(["asc", "desc"]).optional().describe("Sort direction. Default: desc"),
+        page: z.number().optional().describe("Page number"),
+        per_page: z.number().optional().describe("Results per page"),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async (params) => {
+      const args = ListEventsSchema.parse(params);
+      const query = buildQueryString(args);
+
+      const events = await defaultClient.get(`/events${query}`);
+      return { content: [{ type: "text", text: JSON.stringify(events, null, 2) }] };
+    },
+  );
+  toolRef4.disable();
+  tools.set("list_events", toolRef4);
+
+  const toolRef5 = server.registerTool(
+    "get_project_events",
+    {
+      title: "Get Project Events",
+      description:
+        "List all visible events for a specified project. Note: before/after parameters accept date format YYYY-MM-DD only",
+      inputSchema: {
+        project_id: z.string().describe("Project ID or URL-encoded path"),
+        action: z
+          .string()
+          .optional()
+          .describe("If defined, returns events with the specified action type"),
+        target_type: z
+          .enum([
+            "epic",
+            "issue",
+            "merge_request",
+            "milestone",
+            "note",
+            "project",
+            "snippet",
+            "user",
+          ])
+          .optional()
+          .describe("If defined, returns events with the specified target type"),
+        before: z
+          .string()
+          .optional()
+          .describe("Returns events created before the specified date (YYYY-MM-DD format)"),
+        after: z
+          .string()
+          .optional()
+          .describe("Returns events created after the specified date (YYYY-MM-DD format)"),
+        sort: z.enum(["asc", "desc"]).optional().describe("Sort direction. Default: desc"),
+        page: z.number().optional().describe("Page number"),
+        per_page: z.number().optional().describe("Results per page"),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async (params) => {
+      const args = GetProjectEventsSchema.parse(params);
+      const projectId = encodeProjectId(args.project_id);
+      const { project_id: _, ...queryParams } = args;
+      const query = buildQueryString(queryParams);
+
+      const events = await defaultClient.get(`/projects/${projectId}/events${query}`);
+      return { content: [{ type: "text", text: JSON.stringify(events, null, 2) }] };
+    },
+  );
+  toolRef5.disable();
+  tools.set("get_project_events", toolRef5);
+
+  const toolRef6 = server.registerTool(
+    "upload_markdown",
+    {
+      title: "Upload Markdown",
+      description: "Upload a file to a GitLab project for use in markdown content",
+      inputSchema: {
+        project_id: z.string().describe("Project ID or URL-encoded path of the project"),
+        file_path: z.string().describe("Path to the file to upload"),
+      },
+      annotations: { destructiveHint: false },
+    },
+    async (params) => {
+      const args = UploadMarkdownSchema.parse(params);
+      const projectId = encodeProjectId(args.project_id);
+
+      // GitLab uploads API requires multipart/form-data
+      const { readFile } = await import("fs/promises");
+      const { basename } = await import("path");
+      const fileContent = await readFile(args.file_path);
+      const fileName = basename(args.file_path);
+
+      const formData = new FormData();
+      formData.append("file", new Blob([fileContent]), fileName);
+
+      const response = await defaultClient.rawFetch(`/projects/${projectId}/uploads`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const upload = JSON.parse(await response.text());
+      return { content: [{ type: "text", text: JSON.stringify(upload, null, 2) }] };
+    },
+  );
+  toolRef6.disable();
+  tools.set("upload_markdown", toolRef6);
+
+  const toolRef7 = server.registerTool(
+    "download_attachment",
+    {
+      title: "Download Attachment",
+      description:
+        "Download an uploaded file from a GitLab project by secret and filename. Returns the file content.",
+      inputSchema: {
+        project_id: z.string().describe("Project ID or URL-encoded path of the project"),
+        secret: z.string().describe("The 32-character secret of the upload"),
+        filename: z.string().describe("The filename of the upload"),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async (params) => {
+      const args = DownloadAttachmentSchema.parse(params);
+      const projectId = encodeProjectId(args.project_id);
+
+      const response = await defaultClient.rawFetch(
+        `/projects/${projectId}/uploads/${encodeURIComponent(args.secret)}/${encodeURIComponent(args.filename)}`,
+      );
+
+      const text = await response.text();
+      return { content: [{ type: "text", text }] };
+    },
+  );
+  toolRef7.disable();
+  tools.set("download_attachment", toolRef7);
+
+  logger.debug("User tools registered", { count: tools.size });
+  return tools;
 }

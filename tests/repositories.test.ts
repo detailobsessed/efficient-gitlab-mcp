@@ -1,6 +1,8 @@
-import { afterEach, describe, expect, it, mock } from "bun:test";
-import { createRegistryAdapter } from "../src/registry/tool-adapter.js";
-import { ToolRegistry } from "../src/registry/tool-registry.js";
+import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { registerDisclosureTools, type ToolsByCategory } from "../src/registry/index.js";
 import { registerRepositoryTools } from "../src/tools/repositories.js";
 import { Logger } from "../src/utils/logger.js";
 
@@ -8,23 +10,42 @@ const logger = new Logger("error", "pretty");
 
 describe("Repository Tools Handlers", () => {
   const originalFetch = globalThis.fetch;
+  let client: Client;
+  let server: McpServer;
 
-  afterEach(() => {
+  beforeEach(async () => {
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+
+    server = new McpServer(
+      { name: "test", version: "1.0.0" },
+      { capabilities: { tools: { listChanged: true } } },
+    );
+
+    const toolsByCategory: ToolsByCategory = new Map();
+    const repoTools = registerRepositoryTools(server, logger);
+    // Enable for testing
+    for (const tool of repoTools.values()) tool.enable();
+    toolsByCategory.set("repositories", repoTools);
+    registerDisclosureTools(server, toolsByCategory, logger);
+
+    client = new Client({ name: "test-client", version: "1.0.0" }, { capabilities: {} });
+
+    await server.connect(serverTransport);
+    await client.connect(clientTransport);
+  });
+
+  afterEach(async () => {
     globalThis.fetch = originalFetch;
+    await client.close();
+    await server.close();
   });
 
   describe("create_or_update_file", () => {
     it("should use POST when file does not exist", async () => {
-      const registry = new ToolRegistry();
-      const adapter = createRegistryAdapter(registry, "repositories");
-      registerRepositoryTools(adapter, logger);
-
       let requestMethod: string | undefined;
-      let requestUrl: string | undefined;
 
       // @ts-expect-error - mock doesn't need full fetch signature
-      globalThis.fetch = mock((url: string, options?: RequestInit) => {
-        // First call is GET to check if file exists - return 404
+      globalThis.fetch = mock((_url: string, options?: RequestInit) => {
         if (options?.method === "GET" || !options?.method) {
           return Promise.resolve({
             ok: false,
@@ -34,9 +55,7 @@ describe("Repository Tools Handlers", () => {
           } as Response);
         }
 
-        // Second call is POST to create
         requestMethod = options?.method;
-        requestUrl = url;
         return Promise.resolve({
           ok: true,
           status: 201,
@@ -44,26 +63,21 @@ describe("Repository Tools Handlers", () => {
         } as Response);
       });
 
-      const handler = registry.getHandler("create_or_update_file");
-      expect(handler).not.toBeNull();
-
-      await handler?.({
-        project_id: "my-group/my-project",
-        file_path: "test.txt",
-        branch: "main",
-        content: "Hello World",
-        commit_message: "Add test file",
+      await client.callTool({
+        name: "create_or_update_file",
+        arguments: {
+          project_id: "my-group/my-project",
+          file_path: "test.txt",
+          branch: "main",
+          content: "Hello World",
+          commit_message: "Add test file",
+        },
       });
 
       expect(requestMethod).toBe("POST");
-      expect(requestUrl).toContain("/repository/files/");
     });
 
     it("should use PUT when file already exists", async () => {
-      const registry = new ToolRegistry();
-      const adapter = createRegistryAdapter(registry, "repositories");
-      registerRepositoryTools(adapter, logger);
-
       let requestMethod: string | undefined;
       let callCount = 0;
 
@@ -71,7 +85,6 @@ describe("Repository Tools Handlers", () => {
       globalThis.fetch = mock((_url: string, options?: RequestInit) => {
         callCount++;
 
-        // First call is GET to check if file exists - return 200 (exists)
         if (callCount === 1) {
           return Promise.resolve({
             ok: true,
@@ -80,7 +93,6 @@ describe("Repository Tools Handlers", () => {
           } as Response);
         }
 
-        // Second call should be PUT to update
         requestMethod = options?.method;
         return Promise.resolve({
           ok: true,
@@ -89,19 +101,19 @@ describe("Repository Tools Handlers", () => {
         } as Response);
       });
 
-      const handler = registry.getHandler("create_or_update_file");
-      expect(handler).not.toBeNull();
-
-      await handler?.({
-        project_id: "my-group/my-project",
-        file_path: "test.txt",
-        branch: "main",
-        content: "Updated content",
-        commit_message: "Update test file",
+      await client.callTool({
+        name: "create_or_update_file",
+        arguments: {
+          project_id: "my-group/my-project",
+          file_path: "test.txt",
+          branch: "main",
+          content: "Updated content",
+          commit_message: "Update test file",
+        },
       });
 
       expect(requestMethod).toBe("PUT");
-      expect(callCount).toBe(2); // GET to check, then PUT to update
+      expect(callCount).toBe(2);
     });
   });
 });

@@ -1,9 +1,14 @@
 export { registerCommitTools } from "./commits.js";
+export { registerGraphqlTools } from "./graphql.js";
 export { registerIssueTools } from "./issues.js";
 export { registerMergeRequestTools } from "./merge-requests.js";
+export { registerMilestoneTools } from "./milestones.js";
 export { registerNamespaceTools } from "./namespaces.js";
 export { registerPipelineTools } from "./pipelines.js";
 export { registerProjectTools } from "./projects.js";
+export { registerReleaseTools } from "./releases.js";
 export { registerRepositoryTools } from "./repositories.js";
 export { registerSearchTools } from "./search.js";
 export { registerUserTools } from "./users.js";
+export { registerWebhookTools } from "./webhooks.js";
+export { registerWikiTools } from "./wiki.js";

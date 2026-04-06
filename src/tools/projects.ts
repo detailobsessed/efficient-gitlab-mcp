@@ -1,5 +1,5 @@
+import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { ToolRegistrationTarget } from "../registry/tool-adapter.js";
 import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
@@ -66,6 +66,40 @@ const DeleteLabelSchema = z.object({
   label_id: z.union([z.string(), z.number()]).describe("Label ID or name"),
 });
 
+const ListGroupIterationsSchema = z.object({
+  group_id: z.string().describe("Group ID or URL-encoded path"),
+  state: z
+    .enum(["opened", "upcoming", "current", "closed", "all"])
+    .optional()
+    .describe("Return opened, upcoming, current, closed, or all iterations."),
+  search: z
+    .string()
+    .optional()
+    .describe("Return only iterations with a title matching the provided string."),
+  search_in: z
+    .array(z.enum(["title", "cadence_title"]))
+    .optional()
+    .describe("Fields in which fuzzy search should be performed. Default is [title]."),
+  include_ancestors: z
+    .boolean()
+    .optional()
+    .describe("Include iterations for group and its ancestors. Defaults to true."),
+  include_descendants: z
+    .boolean()
+    .optional()
+    .describe("Include iterations for group and its descendants. Defaults to false."),
+  updated_before: z
+    .string()
+    .optional()
+    .describe("Return only iterations updated before the given datetime (ISO 8601 format)."),
+  updated_after: z
+    .string()
+    .optional()
+    .describe("Return only iterations updated after the given datetime (ISO 8601 format)."),
+  page: z.number().optional().describe("Page number"),
+  per_page: z.number().optional().describe("Results per page"),
+});
+
 const ListGroupProjectsSchema = z.object({
   group_id: z.string().describe("Group ID or URL-encoded path"),
   search: z.string().optional().describe("Search query"),
@@ -79,10 +113,14 @@ const ListGroupProjectsSchema = z.object({
   per_page: z.number().optional().describe("Results per page"),
 });
 
-export function registerProjectTools(target: ToolRegistrationTarget, logger: Logger): void {
+export function registerProjectTools(
+  server: McpServer,
+  logger: Logger,
+): Map<string, RegisteredTool> {
   logger.debug("Registering project tools");
+  const tools = new Map<string, RegisteredTool>();
 
-  target.registerTool(
+  const toolRef = server.registerTool(
     "get_project",
     {
       title: "Get Project",
@@ -108,8 +146,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(project, null, 2) }] };
     },
   );
+  toolRef.disable();
+  tools.set("get_project", toolRef);
 
-  target.registerTool(
+  const toolRef2 = server.registerTool(
     "list_projects",
     {
       title: "List Projects",
@@ -138,8 +178,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(projects, null, 2) }] };
     },
   );
+  toolRef2.disable();
+  tools.set("list_projects", toolRef2);
 
-  target.registerTool(
+  const toolRef3 = server.registerTool(
     "list_project_members",
     {
       title: "List Project Members",
@@ -165,8 +207,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(members, null, 2) }] };
     },
   );
+  toolRef3.disable();
+  tools.set("list_project_members", toolRef3);
 
-  target.registerTool(
+  const toolRef4 = server.registerTool(
     "list_labels",
     {
       title: "List Labels",
@@ -192,8 +236,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(labels, null, 2) }] };
     },
   );
+  toolRef4.disable();
+  tools.set("list_labels", toolRef4);
 
-  target.registerTool(
+  const toolRef5 = server.registerTool(
     "get_label",
     {
       title: "Get Label",
@@ -213,8 +259,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(label, null, 2) }] };
     },
   );
+  toolRef5.disable();
+  tools.set("get_label", toolRef5);
 
-  target.registerTool(
+  const toolRef6 = server.registerTool(
     "create_label",
     {
       title: "Create Label",
@@ -237,8 +285,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(label, null, 2) }] };
     },
   );
+  toolRef6.disable();
+  tools.set("create_label", toolRef6);
 
-  target.registerTool(
+  const toolRef7 = server.registerTool(
     "update_label",
     {
       title: "Update Label",
@@ -263,8 +313,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(label, null, 2) }] };
     },
   );
+  toolRef7.disable();
+  tools.set("update_label", toolRef7);
 
-  target.registerTool(
+  const toolRef8 = server.registerTool(
     "delete_label",
     {
       title: "Delete Label",
@@ -284,8 +336,10 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: "Label deleted successfully" }] };
     },
   );
+  toolRef8.disable();
+  tools.set("delete_label", toolRef8);
 
-  target.registerTool(
+  const toolRef9 = server.registerTool(
     "list_group_projects",
     {
       title: "List Group Projects",
@@ -314,6 +368,65 @@ export function registerProjectTools(target: ToolRegistrationTarget, logger: Log
       return { content: [{ type: "text", text: JSON.stringify(projects, null, 2) }] };
     },
   );
+  toolRef9.disable();
+  tools.set("list_group_projects", toolRef9);
 
-  logger.debug("Project tools registered", { count: 9 });
+  const toolRef10 = server.registerTool(
+    "list_group_iterations",
+    {
+      title: "List Group Iterations",
+      description: "List group iterations with filtering options",
+      inputSchema: {
+        group_id: z.string().describe("Group ID or URL-encoded path"),
+        state: z
+          .enum(["opened", "upcoming", "current", "closed", "all"])
+          .optional()
+          .describe("Return opened, upcoming, current, closed, or all iterations."),
+        search: z
+          .string()
+          .optional()
+          .describe("Return only iterations with a title matching the provided string."),
+        search_in: z
+          .array(z.enum(["title", "cadence_title"]))
+          .optional()
+          .describe("Fields in which fuzzy search should be performed. Default is [title]."),
+        include_ancestors: z
+          .boolean()
+          .optional()
+          .describe("Include iterations for group and its ancestors. Defaults to true."),
+        include_descendants: z
+          .boolean()
+          .optional()
+          .describe("Include iterations for group and its descendants. Defaults to false."),
+        updated_before: z
+          .string()
+          .optional()
+          .describe("Return only iterations updated before the given datetime (ISO 8601 format)."),
+        updated_after: z
+          .string()
+          .optional()
+          .describe("Return only iterations updated after the given datetime (ISO 8601 format)."),
+        page: z.number().optional().describe("Page number"),
+        per_page: z.number().optional().describe("Results per page"),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async (params) => {
+      const args = ListGroupIterationsSchema.parse(params);
+      const groupId = encodeURIComponent(args.group_id);
+      const { group_id: _, search_in: searchIn, ...queryParams } = args;
+      const query = buildQueryString({
+        ...queryParams,
+        in: searchIn?.join(","),
+      });
+
+      const iterations = await defaultClient.get(`/groups/${groupId}/iterations${query}`);
+      return { content: [{ type: "text", text: JSON.stringify(iterations, null, 2) }] };
+    },
+  );
+  toolRef10.disable();
+  tools.set("list_group_iterations", toolRef10);
+
+  logger.debug("Project tools registered", { count: tools.size });
+  return tools;
 }

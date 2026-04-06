@@ -8,10 +8,10 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
-export type LogLevel = "debug" | "info" | "warn" | "error";
-export type LogFormat = "json" | "pretty";
+type LogLevel = "debug" | "info" | "warn" | "error";
+type LogFormat = "json" | "pretty";
 
-export interface LogContext {
+interface LogContext {
   [key: string]: unknown;
 }
 
