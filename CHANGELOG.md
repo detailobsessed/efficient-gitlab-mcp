@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.1.0...v2.2.0) (2026-04-06)
+
+
+### Features
+
+* replace custom registry with SDK-native progressive disclosure ([#41](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/41)) ([29f4e3e](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/29f4e3eca5fcd8011e018fabe8e800b4da1db3b3))
+
 # [2.1.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.0.19...v2.1.0) (2026-04-01)
 
 
