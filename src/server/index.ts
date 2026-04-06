@@ -218,6 +218,18 @@ async function main() {
       }
     });
 
+    // GET SSE streams not supported in this implementation
+    app.get("/mcp", (_req: Request, res: Response) => {
+      res
+        .status(405)
+        .set("Allow", "POST, DELETE")
+        .json({
+          jsonrpc: "2.0",
+          error: { code: -32000, message: "Method not allowed. Use POST." },
+          id: null,
+        });
+    });
+
     // Delete session endpoint
     app.delete("/mcp", async (req: Request, res: Response) => {
       const sessionId = req.headers["mcp-session-id"] as string;
