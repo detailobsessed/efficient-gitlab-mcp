@@ -181,10 +181,6 @@ const ListJobArtifactsSchema = z.object({
 const DownloadJobArtifactsSchema = z.object({
   project_id: z.string().describe("Project ID or URL-encoded path"),
   job_id: z.number().describe("The ID of the job"),
-  local_path: z
-    .string()
-    .optional()
-    .describe("Local directory to save the artifact archive (defaults to current directory)"),
 });
 
 const GetJobArtifactFileSchema = z.object({

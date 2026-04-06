@@ -417,7 +417,11 @@ export function registerReleaseTools(
         };
       }
 
-      const response = await defaultClient.rawFetch(assetUrl);
+      // Only send auth headers to same-origin URLs to prevent token leakage
+      const isInternal =
+        !assetUrl.startsWith("http") ||
+        new URL(assetUrl).origin === new URL(defaultClient.getApiUrl()).origin;
+      const response = isInternal ? await defaultClient.rawFetch(assetUrl) : await fetch(assetUrl);
       const assetContent = await response.text();
       return {
         content: [

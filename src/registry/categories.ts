@@ -42,7 +42,8 @@ export const CATEGORIES: CategoryDef[] = [
   },
   {
     name: "users",
-    description: "Get user details by username.",
+    description:
+      "Look up users, search users, list audit/project events, and manage file uploads and attachments.",
   },
   {
     name: "search",

@@ -86,10 +86,6 @@ const DownloadAttachmentSchema = z.object({
   project_id: z.string().describe("Project ID or URL-encoded path of the project"),
   secret: z.string().describe("The 32-character secret of the upload"),
   filename: z.string().describe("The filename of the upload"),
-  local_path: z
-    .string()
-    .optional()
-    .describe("Local path to save the file (optional, defaults to current directory)"),
 });
 
 export function registerUserTools(server: McpServer, logger: Logger): Map<string, RegisteredTool> {
@@ -309,12 +305,11 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
     {
       title: "Download Attachment",
       description:
-        "Download an uploaded file from a GitLab project by secret and filename. Returns the file content or saves to disk.",
+        "Download an uploaded file from a GitLab project by secret and filename. Returns the file content.",
       inputSchema: {
         project_id: z.string().describe("Project ID or URL-encoded path of the project"),
         secret: z.string().describe("The 32-character secret of the upload"),
         filename: z.string().describe("The filename of the upload"),
-        local_path: z.string().optional().describe("Local path to save the file (optional)"),
       },
       annotations: { readOnlyHint: true },
     },
