@@ -63,6 +63,7 @@ describe("GraphQL Tools Handlers", () => {
         return Promise.resolve({
           ok: true,
           status: 200,
+          json: () => Promise.resolve(mockResponse),
           text: () => Promise.resolve(JSON.stringify(mockResponse)),
         } as Response);
       });
@@ -85,7 +86,8 @@ describe("GraphQL Tools Handlers", () => {
 
       const content = result.content as Array<{ type: string; text: string }>;
       const responseData = JSON.parse(content[0].text);
-      expect(responseData.data.project.name).toBe("My Project");
+      // graphql() unwraps the data field, so the tool receives json.data directly
+      expect(responseData.project.name).toBe("My Project");
     });
   });
 
