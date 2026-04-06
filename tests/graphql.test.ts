@@ -108,6 +108,8 @@ describe("GraphQL Tools Handlers", () => {
         },
       });
 
+      // GraphQL tool intentionally returns errors as content, not MCP errors
+      expect(result.isError).toBeFalsy();
       const content = result.content as Array<{ type: string; text: string }>;
       const responseData = JSON.parse(content[0].text);
       expect(responseData.error).toContain("GraphQL request failed");
