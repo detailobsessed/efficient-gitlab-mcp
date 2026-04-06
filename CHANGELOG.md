@@ -1,3 +1,10 @@
+# [2.6.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.5.0...v2.6.0) (2026-04-06)
+
+
+### Features
+
+* add get_issue_link and create_note tools, update tool count tests ([#46](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/46)) ([6a2b30a](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/6a2b30a2c7e8b9ea46a10131eda4b1c9ee24befc))
+
 # [2.5.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.4.0...v2.5.0) (2026-04-06)
 
 
