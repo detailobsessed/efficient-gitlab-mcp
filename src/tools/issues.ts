@@ -94,6 +94,21 @@ const UpdateIssueNoteSchema = z.object({
   body: z.string().describe("New note body"),
 });
 
+const GetIssueLinkSchema = z.object({
+  project_id: z.string().describe("Project ID or URL-encoded path"),
+  issue_iid: z.number().describe("Issue IID"),
+  issue_link_id: z.number().describe("ID of the issue relationship"),
+});
+
+const CreateNoteSchema = z.object({
+  project_id: z.string().describe("Project ID or URL-encoded path"),
+  notable_type: z
+    .enum(["issue", "merge_request"])
+    .describe("Type of notable (issue or merge_request)"),
+  notable_iid: z.string().describe("IID of the issue or merge request"),
+  body: z.string().describe("Note content"),
+});
+
 export function registerIssueTools(server: McpServer, logger: Logger): Map<string, RegisteredTool> {
   logger.debug("Registering issue tools");
   const tools = new Map<string, RegisteredTool>();
@@ -417,6 +432,59 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
   );
   toolRef12.disable();
   tools.set("update_issue_note", toolRef12);
+
+  const toolRef13 = server.registerTool(
+    "get_issue_link",
+    {
+      title: "Get Issue Link",
+      description: "Get a single issue link/relationship by ID",
+      inputSchema: {
+        project_id: z.string().describe("Project ID or URL-encoded path"),
+        issue_iid: z.number().describe("Issue IID"),
+        issue_link_id: z.number().describe("ID of the issue relationship"),
+      },
+      annotations: { readOnlyHint: true },
+    },
+    async (params) => {
+      const args = GetIssueLinkSchema.parse(params);
+      const projectId = encodeProjectId(args.project_id);
+      const link = await defaultClient.get(
+        `/projects/${projectId}/issues/${args.issue_iid}/links/${args.issue_link_id}`,
+      );
+      return { content: [{ type: "text", text: JSON.stringify(link, null, 2) }] };
+    },
+  );
+  toolRef13.disable();
+  tools.set("get_issue_link", toolRef13);
+
+  const toolRef14 = server.registerTool(
+    "create_note",
+    {
+      title: "Create Note",
+      description:
+        "Create a note/comment on an issue or merge request. Use notable_type to specify which.",
+      inputSchema: {
+        project_id: z.string().describe("Project ID or URL-encoded path"),
+        notable_type: z
+          .enum(["issue", "merge_request"])
+          .describe("Type of notable (issue or merge_request)"),
+        notable_iid: z.string().describe("IID of the issue or merge request"),
+        body: z.string().describe("Note content"),
+      },
+    },
+    async (params) => {
+      const args = CreateNoteSchema.parse(params);
+      const projectId = encodeProjectId(args.project_id);
+      const notablePlural = args.notable_type === "issue" ? "issues" : "merge_requests";
+      const note = await defaultClient.post(
+        `/projects/${projectId}/${notablePlural}/${args.notable_iid}/notes`,
+        { body: args.body },
+      );
+      return { content: [{ type: "text", text: JSON.stringify(note, null, 2) }] };
+    },
+  );
+  toolRef14.disable();
+  tools.set("create_note", toolRef14);
 
   logger.debug("Issue tools registered", { count: tools.size });
   return tools;

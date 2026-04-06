@@ -14,6 +14,7 @@ import { registerSearchTools } from "../src/tools/search.js";
 import { registerUserTools } from "../src/tools/users.js";
 import { registerWebhookTools } from "../src/tools/webhooks.js";
 import { registerWikiTools } from "../src/tools/wiki.js";
+import { registerWorkItemTools } from "../src/tools/work-items.js";
 import { Logger } from "../src/utils/logger.js";
 
 const logger = new Logger("error", "pretty");
@@ -74,13 +75,15 @@ describe("Tool Registration", () => {
       const server = createTestServer();
       const tools = registerIssueTools(server, logger);
 
-      expect(tools.size).toBe(12);
+      expect(tools.size).toBe(14);
       expect(tools.has("create_issue")).toBe(true);
       expect(tools.has("list_issues")).toBe(true);
       expect(tools.has("my_issues")).toBe(true);
       expect(tools.has("get_issue")).toBe(true);
       expect(tools.has("update_issue")).toBe(true);
       expect(tools.has("delete_issue")).toBe(true);
+      expect(tools.has("get_issue_link")).toBe(true);
+      expect(tools.has("create_note")).toBe(true);
     });
   });
 
@@ -165,9 +168,10 @@ describe("Tool Registration", () => {
       total += registerMilestoneTools(server, logger).size;
       total += registerReleaseTools(server, logger).size;
       total += registerWebhookTools(server, logger).size;
+      total += registerWorkItemTools(server, logger).size;
       total += registerGraphqlTools(server, logger).size;
 
-      expect(total).toBe(113);
+      expect(total).toBe(127);
     });
 
     it("should register all tools with pipelines enabled", () => {
@@ -187,9 +191,10 @@ describe("Tool Registration", () => {
       total += registerMilestoneTools(server, logger).size;
       total += registerReleaseTools(server, logger).size;
       total += registerWebhookTools(server, logger).size;
+      total += registerWorkItemTools(server, logger).size;
       total += registerGraphqlTools(server, logger).size;
 
-      expect(total).toBe(132);
+      expect(total).toBe(146);
     });
 
     it("should all start disabled", () => {
