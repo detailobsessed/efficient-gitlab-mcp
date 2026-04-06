@@ -85,6 +85,11 @@ const CreateIssueNoteSchema = z.object({
   project_id: z.string().describe("Project ID or URL-encoded path"),
   issue_iid: z.number().describe("Issue IID"),
   body: z.string().describe("Note body"),
+  discussion_id: z
+    .string()
+    .optional()
+    .describe("Discussion thread ID to reply to instead of creating a top-level note"),
+  created_at: z.string().optional().describe("ISO 8601 creation date (admin/project owner only)"),
 });
 
 const UpdateIssueNoteSchema = z.object({
@@ -384,11 +389,19 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     "create_issue_note",
     {
       title: "Create Issue Note",
-      description: "Add a new note to an existing issue",
+      description: "Add a note to an issue, or reply to a discussion thread",
       inputSchema: {
         project_id: z.string().describe("Project ID or URL-encoded path"),
         issue_iid: z.number().describe("Issue IID"),
         body: z.string().describe("Note body"),
+        discussion_id: z
+          .string()
+          .optional()
+          .describe("Discussion thread ID to reply to instead of creating a top-level note"),
+        created_at: z
+          .string()
+          .optional()
+          .describe("ISO 8601 creation date (admin/project owner only)"),
       },
       annotations: { destructiveHint: false },
     },
@@ -396,10 +409,14 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       const args = CreateIssueNoteSchema.parse(params);
       const projectId = encodeProjectId(args.project_id);
 
-      const note = await defaultClient.post(
-        `/projects/${projectId}/issues/${args.issue_iid}/notes`,
-        { body: args.body },
-      );
+      const endpoint = args.discussion_id
+        ? `/projects/${projectId}/issues/${args.issue_iid}/discussions/${args.discussion_id}/notes`
+        : `/projects/${projectId}/issues/${args.issue_iid}/notes`;
+
+      const note = await defaultClient.post(endpoint, {
+        body: args.body,
+        ...(args.created_at && { created_at: args.created_at }),
+      });
       return { content: [{ type: "text", text: JSON.stringify(note, null, 2) }] };
     },
   );
