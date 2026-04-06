@@ -3,6 +3,34 @@ import { z } from "zod";
 import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
+const MAX_PATTERN_LENGTH = 200;
+const NESTED_QUANTIFIER_RE = /(\+|\*|\{)\s*(\+|\*|\{)/;
+
+function safeCompilePatterns(patterns: string[]): RegExp[] {
+  return patterns
+    .map((p) => {
+      if (p.length > MAX_PATTERN_LENGTH || NESTED_QUANTIFIER_RE.test(p)) return null;
+      try {
+        return new RegExp(p);
+      } catch {
+        return null;
+      }
+    })
+    .filter((re): re is RegExp => re !== null);
+}
+
+function filterDiffsByPatterns<T extends { new_path: string; old_path?: string }>(
+  diffs: T[],
+  patterns: string[] | undefined,
+): T[] {
+  if (!patterns?.length) return diffs;
+  const regexes = safeCompilePatterns(patterns);
+  if (regexes.length === 0) return diffs;
+  return diffs.filter(
+    (d) => !regexes.some((re) => re.test(d.new_path) || (d.old_path ? re.test(d.old_path) : false)),
+  );
+}
+
 const GetMergeRequestSchema = z.object({
   project_id: z.string().describe("Project ID or URL-encoded path"),
   merge_request_iid: z.number().optional().describe("Merge request IID"),
@@ -63,6 +91,10 @@ const GetMergeRequestDiffsSchema = z.object({
   merge_request_iid: z.number().describe("Merge request IID"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
+  excluded_file_patterns: z
+    .array(z.string())
+    .optional()
+    .describe('Array of regex patterns to exclude files. Examples: ["^vendor/", "\\.pb\\.go$"]'),
 });
 
 const ListMergeRequestDiscussionsSchema = z.object({
@@ -472,12 +504,19 @@ export function registerMergeRequestTools(
     "get_merge_request_diffs",
     {
       title: "Get Merge Request Diffs",
-      description: "Get the changes/diffs of a merge request",
+      description:
+        "Get the changes/diffs of a merge request. Supports excluded_file_patterns filtering using regex.",
       inputSchema: {
         project_id: z.string().describe("Project ID or URL-encoded path"),
         merge_request_iid: z.number().describe("Merge request IID"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
+        excluded_file_patterns: z
+          .array(z.string())
+          .optional()
+          .describe(
+            'Array of regex patterns to exclude files. Examples: ["^vendor/", "\\.pb\\.go$"]',
+          ),
       },
       annotations: { readOnlyHint: true },
     },
@@ -486,10 +525,14 @@ export function registerMergeRequestTools(
       const projectId = encodeProjectId(args.project_id);
       const query = buildQueryString({ page: args.page, per_page: args.per_page });
 
-      const diffs = await defaultClient.get(
-        `/projects/${projectId}/merge_requests/${args.merge_request_iid}/changes${query}`,
-      );
-      return { content: [{ type: "text", text: JSON.stringify(diffs, null, 2) }] };
+      const mr = await defaultClient.get<{
+        changes?: Array<{ new_path: string; old_path: string; diff: string }>;
+      }>(`/projects/${projectId}/merge_requests/${args.merge_request_iid}/changes${query}`);
+
+      const changes = filterDiffsByPatterns(mr.changes ?? [], args.excluded_file_patterns);
+      return {
+        content: [{ type: "text", text: JSON.stringify({ ...mr, changes }, null, 2) }],
+      };
     },
   );
   toolRef6.disable();
@@ -855,26 +898,7 @@ export function registerMergeRequestTools(
         deleted_file: c.deleted_file,
       }));
 
-      if (args.excluded_file_patterns && args.excluded_file_patterns.length > 0) {
-        const patterns: RegExp[] = [];
-        for (const p of args.excluded_file_patterns) {
-          try {
-            patterns.push(new RegExp(p));
-          } catch {
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify({ error: `Invalid regex pattern: ${p}` }, null, 2),
-                },
-              ],
-            };
-          }
-        }
-        files = files.filter(
-          (f) => !patterns.some((re) => re.test(f.new_path) || re.test(f.old_path)),
-        );
-      }
+      files = filterDiffsByPatterns(files, args.excluded_file_patterns);
 
       return { content: [{ type: "text", text: JSON.stringify(files, null, 2) }] };
     },
