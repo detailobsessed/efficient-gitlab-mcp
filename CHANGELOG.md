@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.3.0...v2.4.0) (2026-04-06)
+
+
+### Features
+
+* port work items GraphQL toolset (12 tools) from upstream ([#44](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/44)) ([00aaa82](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/00aaa8242c3e7c96f7b6537146695b115b904b61))
+
 # [2.3.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.2.0...v2.3.0) (2026-04-06)
 
 
