@@ -66,13 +66,13 @@ The test suite can be integrated into CI/CD pipelines:
 
 ```yaml
 # Example GitLab CI configuration
+# CI_JOB_TOKEN is automatically detected — no need to map it to GITLAB_PERSONAL_ACCESS_TOKEN
 test:
   script:
     - npm install
     - npm run build
     - npm run test:all
   variables:
-    GITLAB_PERSONAL_ACCESS_TOKEN: $CI_JOB_TOKEN
     GITLAB_PROJECT_ID: $CI_PROJECT_ID
 ```
 

@@ -13,10 +13,24 @@ interface FetchOptions {
 export class GitLabClient {
   private apiUrl: string;
   private token: string;
+  private tokenHeader: "PRIVATE-TOKEN" | "JOB-TOKEN";
 
   constructor(apiUrl?: string, token?: string) {
     this.apiUrl = apiUrl ?? config.gitlabApiUrl;
-    this.token = token ?? process.env.GITLAB_PERSONAL_ACCESS_TOKEN ?? "";
+
+    const pat = token ?? process.env.GITLAB_PERSONAL_ACCESS_TOKEN;
+    const jobToken = process.env.CI_JOB_TOKEN;
+
+    if (pat) {
+      this.token = pat;
+      this.tokenHeader = "PRIVATE-TOKEN";
+    } else if (jobToken) {
+      this.token = jobToken;
+      this.tokenHeader = "JOB-TOKEN";
+    } else {
+      this.token = "";
+      this.tokenHeader = "PRIVATE-TOKEN";
+    }
   }
 
   private getHeaders(): Record<string, string> {
@@ -25,7 +39,7 @@ export class GitLabClient {
     };
 
     if (this.token) {
-      headers["PRIVATE-TOKEN"] = this.token;
+      headers[this.tokenHeader] = this.token;
     }
 
     return headers;
@@ -96,8 +110,8 @@ export class GitLabClient {
     const url = endpoint.startsWith("http") ? endpoint : `${this.apiUrl}${endpoint}`;
 
     const headers = new Headers(options.headers);
-    if (this.token && !headers.has("PRIVATE-TOKEN")) {
-      headers.set("PRIVATE-TOKEN", this.token);
+    if (this.token && !headers.has(this.tokenHeader)) {
+      headers.set(this.tokenHeader, this.token);
     }
 
     const response = await fetch(url, { ...options, headers });
