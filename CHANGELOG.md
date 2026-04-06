@@ -1,3 +1,10 @@
+# [2.5.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.4.0...v2.5.0) (2026-04-06)
+
+
+### Features
+
+* add ReDoS protection and excluded_file_patterns to get_merge_request_diffs ([#45](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/45)) ([a459fb4](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/a459fb48d1ade31d2b74c4b4567f1645be8c401c))
+
 # [2.4.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.3.0...v2.4.0) (2026-04-06)
 
 
