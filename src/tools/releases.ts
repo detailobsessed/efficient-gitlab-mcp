@@ -422,6 +422,20 @@ export function registerReleaseTools(
         !assetUrl.startsWith("http") ||
         new URL(assetUrl).origin === new URL(defaultClient.getApiUrl()).origin;
       const response = isInternal ? await defaultClient.rawFetch(assetUrl) : await fetch(assetUrl);
+      if (!response.ok) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                { error: `Failed to fetch asset: ${response.status} ${response.statusText}` },
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      }
       const assetContent = await response.text();
       return {
         content: [

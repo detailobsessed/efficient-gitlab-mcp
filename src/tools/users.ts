@@ -318,7 +318,7 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
       const projectId = encodeProjectId(args.project_id);
 
       const response = await defaultClient.rawFetch(
-        `/projects/${projectId}/uploads/${args.secret}/${args.filename}`,
+        `/projects/${projectId}/uploads/${encodeURIComponent(args.secret)}/${encodeURIComponent(args.filename)}`,
       );
 
       const text = await response.text();
