@@ -35,6 +35,10 @@ const GetMergeRequestSchema = z.object({
   project_id: z.string().describe("Project ID or URL-encoded path"),
   merge_request_iid: z.number().optional().describe("Merge request IID"),
   branch_name: z.string().optional().describe("Branch name to find MR"),
+  include_enrichments: z
+    .boolean()
+    .optional()
+    .describe("Include approval, commit, and deployment summaries (default: true)"),
 });
 
 const ListMergeRequestsSchema = z.object({
@@ -325,6 +329,34 @@ const BulkPublishDraftNotesSchema = z.object({
   merge_request_iid: z.number().describe("The IID of a merge request"),
 });
 
+async function fetchMrEnrichments(
+  projectId: string,
+  iid: number,
+  mr: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const enrichment: Record<string, unknown> = {};
+
+  const [approvals, commits, deployments] = await Promise.all([
+    defaultClient
+      .get(`/projects/${projectId}/merge_requests/${iid}/approval_state`)
+      .catch(() => null),
+    defaultClient
+      .get<unknown[]>(`/projects/${projectId}/merge_requests/${iid}/commits?per_page=1`)
+      .catch(() => null),
+    mr.merge_commit_sha
+      ? defaultClient
+          .get(`/projects/${projectId}/merge_requests/${iid}/deployments`)
+          .catch(() => null)
+      : Promise.resolve(null),
+  ]);
+
+  if (approvals) enrichment.approval_state = approvals;
+  if (commits) enrichment.recent_commit = commits[0] ?? null;
+  if (deployments) enrichment.deployments = deployments;
+
+  return enrichment;
+}
+
 export function registerMergeRequestTools(
   server: McpServer,
   logger: Logger,
@@ -341,32 +373,48 @@ export function registerMergeRequestTools(
         project_id: z.string().describe("Project ID or URL-encoded path"),
         merge_request_iid: z.number().optional().describe("Merge request IID"),
         branch_name: z.string().optional().describe("Branch name to find MR"),
+        include_enrichments: z
+          .boolean()
+          .optional()
+          .describe("Include approval, commit, and deployment summaries (default: true)"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = GetMergeRequestSchema.parse(params);
       const projectId = encodeProjectId(args.project_id);
+      const enrich = args.include_enrichments !== false;
+
+      let mr: Record<string, unknown>;
+      let iid: number | undefined;
 
       if (args.merge_request_iid) {
-        const mr = await defaultClient.get(
+        mr = await defaultClient.get(
           `/projects/${projectId}/merge_requests/${args.merge_request_iid}`,
         );
-        return { content: [{ type: "text", text: JSON.stringify(mr, null, 2) }] };
-      }
-
-      if (args.branch_name) {
+        iid = args.merge_request_iid;
+      } else if (args.branch_name) {
         const query = buildQueryString({ source_branch: args.branch_name, state: "opened" });
-        const mrs = await defaultClient.get<unknown[]>(
+        const mrs = await defaultClient.get<Record<string, unknown>[]>(
           `/projects/${projectId}/merge_requests${query}`,
         );
         if (mrs.length === 0) {
           return { content: [{ type: "text", text: "No merge request found for this branch" }] };
         }
-        return { content: [{ type: "text", text: JSON.stringify(mrs[0], null, 2) }] };
+        mr = mrs[0];
+        iid = mr.iid as number;
+      } else {
+        throw new Error("Either merge_request_iid or branch_name must be provided");
       }
 
-      throw new Error("Either merge_request_iid or branch_name must be provided");
+      if (enrich && iid) {
+        const enrichment = await fetchMrEnrichments(projectId, iid, mr);
+        if (Object.keys(enrichment).length > 0) {
+          mr._enrichment = enrichment;
+        }
+      }
+
+      return { content: [{ type: "text", text: JSON.stringify(mr, null, 2) }] };
     },
   );
   toolRef.disable();
