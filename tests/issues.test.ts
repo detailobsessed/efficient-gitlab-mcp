@@ -58,7 +58,7 @@ describe("Issue Tools Handlers", () => {
       // @ts-expect-error - mock doesn't need full fetch signature
       globalThis.fetch = mock((_url: string, options?: RequestInit) => {
         capturedUrl = _url;
-        capturedMethod = options?.method;
+        capturedMethod = options?.method ?? "GET";
         capturedBody = options?.body as string;
         return Promise.resolve({
           ok: true,
@@ -107,7 +107,7 @@ describe("Issue Tools Handlers", () => {
       // @ts-expect-error - mock doesn't need full fetch signature
       globalThis.fetch = mock((_url: string, options?: RequestInit) => {
         capturedUrl = _url;
-        capturedMethod = options?.method;
+        capturedMethod = options?.method ?? "GET";
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -157,7 +157,7 @@ describe("Issue Tools Handlers", () => {
       // @ts-expect-error - mock doesn't need full fetch signature
       globalThis.fetch = mock((_url: string, options?: RequestInit) => {
         capturedUrl = _url;
-        capturedMethod = options?.method;
+        capturedMethod = options?.method ?? "GET";
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -180,6 +180,73 @@ describe("Issue Tools Handlers", () => {
       const responseData = JSON.parse(content[0].text);
       expect(responseData.iid).toBe(10);
       expect(responseData.title).toBe("Important issue");
+    });
+  });
+
+  describe("error handling", () => {
+    it("should return error content on API 404", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: false,
+          status: 404,
+          statusText: "Not Found",
+          text: () => Promise.resolve("Project not found"),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "get_issue",
+        arguments: { project_id: "nonexistent/project", issue_iid: 1 },
+      });
+
+      expect(result.isError).toBe(true);
+      const content = result.content as Array<{ type: string; text: string }>;
+      expect(content[0].text).toContain("404 Not Found");
+    });
+
+    it("should return rate limit error on 403 with rate limit message", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: false,
+          status: 403,
+          statusText: "Forbidden",
+          text: () => Promise.resolve("Rate limit exceeded"),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "list_issues",
+        arguments: { project_id: "my-group/my-project" },
+      });
+
+      expect(result.isError).toBe(true);
+      const content = result.content as Array<{ type: string; text: string }>;
+      expect(content[0].text).toContain("Rate Limit Exceeded");
+    });
+  });
+
+  describe("authentication", () => {
+    it("should send Content-Type header on all requests", async () => {
+      let capturedHeaders: Record<string, string> | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string, options?: RequestInit) => {
+        capturedHeaders = options?.headers as Record<string, string>;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify([{ id: 1, title: "Test" }])),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_issues",
+        arguments: { project_id: "my-group/my-project" },
+      });
+
+      expect(capturedHeaders?.["Content-Type"]).toBe("application/json");
     });
   });
 });

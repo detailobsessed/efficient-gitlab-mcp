@@ -55,7 +55,7 @@ describe("Wiki Tools Handlers", () => {
       // @ts-expect-error - mock doesn't need full fetch signature
       globalThis.fetch = mock((_url: string, options?: RequestInit) => {
         capturedUrl = _url;
-        capturedMethod = options?.method;
+        capturedMethod = options?.method ?? "GET";
         capturedBody = options?.body as string;
         return Promise.resolve({
           ok: true,
@@ -104,7 +104,7 @@ describe("Wiki Tools Handlers", () => {
       // @ts-expect-error - mock doesn't need full fetch signature
       globalThis.fetch = mock((_url: string, options?: RequestInit) => {
         capturedUrl = _url;
-        capturedMethod = options?.method;
+        capturedMethod = options?.method ?? "GET";
         return Promise.resolve({
           ok: true,
           status: 200,

@@ -55,7 +55,7 @@ describe("Repository Tools Handlers", () => {
           } as Response);
         }
 
-        requestMethod = options?.method;
+        requestMethod = options?.method ?? "GET";
         return Promise.resolve({
           ok: true,
           status: 201,
@@ -93,7 +93,7 @@ describe("Repository Tools Handlers", () => {
           } as Response);
         }
 
-        requestMethod = options?.method;
+        requestMethod = options?.method ?? "GET";
         return Promise.resolve({
           ok: true,
           status: 200,

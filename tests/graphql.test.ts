@@ -88,4 +88,29 @@ describe("GraphQL Tools Handlers", () => {
       expect(responseData.data.project.name).toBe("My Project");
     });
   });
+
+  describe("error handling", () => {
+    it("should return error content instead of throwing on API failure", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: false,
+          status: 500,
+          statusText: "Internal Server Error",
+          text: () => Promise.resolve("Server error"),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "execute_graphql",
+        arguments: {
+          query: '{ project(fullPath: "test") { name } }',
+        },
+      });
+
+      const content = result.content as Array<{ type: string; text: string }>;
+      const responseData = JSON.parse(content[0].text);
+      expect(responseData.error).toContain("GraphQL request failed");
+    });
+  });
 });
