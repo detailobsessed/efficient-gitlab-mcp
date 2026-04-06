@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.2.0...v2.3.0) (2026-04-06)
+
+
+### Features
+
+* add graphql() method to GitLabClient, refactor execute_graphql tool ([#43](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/43)) ([d8f5a8d](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/d8f5a8d41eaa1561aebe478958653868210c7b63))
+
 # [2.2.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.1.0...v2.2.0) (2026-04-06)
 
 
