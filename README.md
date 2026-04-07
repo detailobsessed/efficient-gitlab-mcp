@@ -13,57 +13,63 @@
 
 ## What's Different From Upstream?
 
-This fork builds on the original GitLab MCP with substantial engineering improvements:
+This fork builds on [zereight/gitlab-mcp](https://github.com/zereight/gitlab-mcp) with a redesigned architecture focused on token efficiency and maintainability. We regularly review upstream commits and port new features and bugfixes while keeping our own structure.
+
+### Architecture at a Glance
 
 | Area | Upstream | This Fork |
 |------|----------|-----------|
+| **Architecture** | Single `index.ts` (~10K lines) | Modular `src/` with 15 tool modules |
+| **Tool Discovery** | All 100+ tools exposed at once | SDK-native progressive disclosure (2 meta-tools) |
+| **Configuration** | Flat individual exports | Typed `ServerConfig` interface with `loadConfig()` |
+| **Logging** | `console.log` | Structured MCP protocol logger for agent observability |
 | **Runtime** | Node.js + npm | Bun (faster builds, native TypeScript) |
-| **Tool Exposure** | 100+ tools directly | 5 meta-tools (progressive disclosure) |
-| **Testing** | Basic | Comprehensive test suite |
 | **Linting** | ESLint + Prettier | Strict Biome rules (`noExplicitAny`, `noNonNullAssertion`, cognitive complexity) |
 | **CI/CD** | Basic | GitHub Actions (lint, build, test, semantic-release) |
 | **Pre-commit** | None | prek hooks (typos, formatting, build verification) |
 
 ### Key Improvements
 
-- **Progressive Disclosure** — 5 meta-tools instead of 100+ individual tools (~90% token reduction)
-- **MCP Protocol Logging** — Structured logs sent to LLM clients for agent observability
-- **HTTP Transport Security** — DNS rebinding protection, configurable allowed hosts/origins
-- **Comprehensive Test Suite** — 120+ tests covering registry, config, logger, MCP integration, and meta-tools
-- **Strict Code Quality** — Zero `any` types, no non-null assertions, enforced cognitive complexity limits
-- **Modern Tooling** — Bun for fast builds, Biome for linting, prek for pre-commit hooks
-- **Automated Releases** — Semantic versioning with conventional commits
+- **Progressive Disclosure** — 2 meta-tools instead of 100+ individual tools (~90% token reduction). Uses the MCP SDK's native `enable()`/`disable()` API so tools are registered but hidden until the LLM activates a category.
+- **Modular Tool Organization** — Each GitLab domain (issues, merge requests, pipelines, etc.) lives in its own file under `src/tools/`, making it easy to find, test, and extend individual tools without navigating a monolithic file.
+- **Typed Configuration** — A `ServerConfig` interface ensures all config values are validated at startup, with IDE autocompletion and compile-time safety.
+- **MCP Protocol Logging** — Structured logs sent to LLM clients for agent observability, not just developer console output.
+- **HTTP Transport Security** — DNS rebinding protection, configurable allowed hosts/origins.
+- **Comprehensive Test Suite** — 120+ tests covering registry, config, logger, MCP integration, and meta-tools.
+- **Strict Code Quality** — Zero `any` types, no non-null assertions, enforced cognitive complexity limits.
+- **Modern Tooling** — Bun for fast builds, Biome for linting, prek for pre-commit hooks.
+- **Automated Releases** — Semantic versioning with conventional commits.
+
+### Upstream Tracking
+
+We maintain `main` as a read-only mirror of upstream. New features and bugfixes from upstream are reviewed and ported into our architecture as needed — we don't blindly rebase, since the codebases have structurally diverged. If you're looking for a specific upstream feature, check our [releases](https://github.com/detailobsessed/efficient-gitlab-mcp/releases) or open an issue.
 
 ---
 
 ## How It Works
 
-Instead of exposing 100+ individual tools, this server exposes **5 meta-tools**:
+Instead of exposing 100+ individual tools, this server exposes **2 meta-tools**:
 
 | Meta-Tool | Purpose |
 |-----------|---------|
-| `list_categories` | Discover available tool categories |
-| `list_tools` | List tools in a specific category |
-| `search_tools` | Search for tools by keyword |
-| `get_tool_schema` | Get full parameter schema for a tool |
-| `execute_tool` | Execute any GitLab tool by name |
+| `list_categories` | Discover available tool categories and their activation status |
+| `activate_tools` | Enable all tools in one or more categories |
 
 ### Token Savings
 
 | Approach | Tools Exposed | Approximate Token Cost |
 |----------|---------------|------------------------|
 | Traditional | 100+ tools | ~20,000+ tokens |
-| Progressive Disclosure | 5 meta-tools | ~1,500 tokens |
+| Progressive Disclosure | 2 meta-tools | ~1,500 tokens |
 
 **~90% reduction in tool definition tokens!**
 
 ### Example Workflow
 
 ```
-1. LLM calls list_categories() → sees "merge-requests" category
-2. LLM calls list_tools("merge-requests") → sees "create_merge_request", "merge_merge_request", etc.
-3. LLM calls get_tool_schema("create_merge_request") → sees required params
-4. LLM calls execute_tool("create_merge_request", {projectId: "123", title: "Fix bug", sourceBranch: "fix", targetBranch: "main"})
+1. LLM calls list_categories() → sees "merge-requests" category (20 tools, 0 active)
+2. LLM calls activate_tools(categories: ["merge-requests"]) → 20 tools now appear in tool list
+3. LLM calls create_merge_request({project_id: "123", title: "Fix bug", source_branch: "fix", target_branch: "main"})
 ```
 
 ---
@@ -81,14 +87,14 @@ All GitLab operations organized by category:
 | projects | Project details, members, labels |
 | commits | List commits, get diffs |
 | namespaces | List, get, verify namespaces |
+| users | User details, search users, audit/project events, file uploads |
 | search | Global, project, and group search across code, issues, MRs, commits |
-| milestones | Create, edit, delete milestones |
-| wiki | Wiki page management |
-| releases | Release management |
-| users | User details |
-| notes | Comments on issues and MRs |
-| events | User and project activity |
-| groups | Group projects and iterations |
+| wiki | Wiki page management for projects and groups |
+| milestones | Create, edit, delete milestones. Burndown events |
+| releases | List, create, update, delete releases. Download assets |
+| webhooks | List project webhooks and recent events |
+| work-items | GraphQL work items: create, update, hierarchy, notes, incidents |
+| graphql | Execute arbitrary GraphQL queries |
 
 ---
 
