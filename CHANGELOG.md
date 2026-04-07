@@ -1,3 +1,10 @@
+## [2.6.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.6.0...v2.6.1) (2026-04-07)
+
+
+### Bug Fixes
+
+* add optional discussion_id and created_at to create_issue_note ([#48](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/48)) ([1c98c5f](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/1c98c5f3ec867b1cfcf770a7d0cd2d1a8135df3e))
+
 # [2.6.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.5.0...v2.6.0) (2026-04-06)
 
 
