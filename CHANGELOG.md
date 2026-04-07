@@ -1,3 +1,10 @@
+# [2.7.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.6.1...v2.7.0) (2026-04-07)
+
+
+### Features
+
+* support CI_JOB_TOKEN auth with PAT priority ([#50](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/50)) ([d2a4958](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/d2a49584131cefca8eb3d7567ff1f3c5a0dec16e))
+
 ## [2.6.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.6.0...v2.6.1) (2026-04-07)
 
 
