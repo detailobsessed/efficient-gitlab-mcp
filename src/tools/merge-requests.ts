@@ -43,6 +43,30 @@ const ListMergeRequestsSchema = z.object({
   scope: z.enum(["created_by_me", "assigned_to_me", "all"]).optional().describe("Scope filter"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
+  author_id: z
+    .number()
+    .optional()
+    .describe("Author user ID (mutually exclusive with author_username)"),
+  author_username: z
+    .string()
+    .optional()
+    .describe("Author username (mutually exclusive with author_id)"),
+  assignee_id: z
+    .number()
+    .optional()
+    .describe("Assignee user ID (mutually exclusive with assignee_username)"),
+  assignee_username: z
+    .string()
+    .optional()
+    .describe("Assignee username (mutually exclusive with assignee_id)"),
+  reviewer_id: z
+    .number()
+    .optional()
+    .describe("Reviewer user ID (mutually exclusive with reviewer_username)"),
+  reviewer_username: z
+    .string()
+    .optional()
+    .describe("Reviewer username (mutually exclusive with reviewer_id)"),
 });
 
 const CreateMergeRequestSchema = z.object({
@@ -383,6 +407,30 @@ export function registerMergeRequestTools(
         scope: z.enum(["created_by_me", "assigned_to_me", "all"]).optional().describe("Scope"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
+        author_id: z
+          .number()
+          .optional()
+          .describe("Author user ID (mutually exclusive with author_username)"),
+        author_username: z
+          .string()
+          .optional()
+          .describe("Author username (mutually exclusive with author_id)"),
+        assignee_id: z
+          .number()
+          .optional()
+          .describe("Assignee user ID (mutually exclusive with assignee_username)"),
+        assignee_username: z
+          .string()
+          .optional()
+          .describe("Assignee username (mutually exclusive with assignee_id)"),
+        reviewer_id: z
+          .number()
+          .optional()
+          .describe("Reviewer user ID (mutually exclusive with reviewer_username)"),
+        reviewer_username: z
+          .string()
+          .optional()
+          .describe("Reviewer username (mutually exclusive with reviewer_id)"),
       },
       annotations: { readOnlyHint: true },
     },
@@ -390,6 +438,19 @@ export function registerMergeRequestTools(
       const args = ListMergeRequestsSchema.parse(params);
       const projectId = encodeProjectId(args.project_id);
       const { project_id: _, ...queryParams } = args;
+
+      // Prefer username over id when both provided (mutually exclusive in GitLab API)
+      // Use !== undefined (not truthiness) because id=0 is valid ("no assignee/reviewer")
+      if (queryParams.author_id !== undefined && queryParams.author_username) {
+        delete queryParams.author_id;
+      }
+      if (queryParams.assignee_id !== undefined && queryParams.assignee_username) {
+        delete queryParams.assignee_id;
+      }
+      if (queryParams.reviewer_id !== undefined && queryParams.reviewer_username) {
+        delete queryParams.reviewer_id;
+      }
+
       const query = buildQueryString(queryParams);
 
       const mrs = await defaultClient.get(`/projects/${projectId}/merge_requests${query}`);

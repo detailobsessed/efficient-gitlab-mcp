@@ -135,6 +135,110 @@ describe("Merge Request Tools Handlers", () => {
       expect(responseData).toHaveLength(2);
       expect(responseData[0].title).toBe("MR one");
     });
+
+    it("should pass user filter params as query parameters", async () => {
+      let capturedUrl = "";
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string, _options?: RequestInit) => {
+        capturedUrl = _url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_merge_requests",
+        arguments: {
+          project_id: "my-group/my-project",
+          author_username: "alice",
+          assignee_id: 42,
+        },
+      });
+
+      expect(capturedUrl).toContain("author_username=alice");
+      expect(capturedUrl).toContain("assignee_id=42");
+    });
+
+    it("should prefer author_username over author_id when both provided", async () => {
+      let capturedUrl = "";
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string, _options?: RequestInit) => {
+        capturedUrl = _url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_merge_requests",
+        arguments: {
+          project_id: "my-group/my-project",
+          author_id: 99,
+          author_username: "alice",
+        },
+      });
+
+      expect(capturedUrl).toContain("author_username=alice");
+      expect(capturedUrl).not.toContain("author_id=99");
+    });
+
+    it("should prefer reviewer_username over reviewer_id when both provided", async () => {
+      let capturedUrl = "";
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string, _options?: RequestInit) => {
+        capturedUrl = _url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_merge_requests",
+        arguments: {
+          project_id: "my-group/my-project",
+          reviewer_id: 7,
+          reviewer_username: "bob",
+        },
+      });
+
+      expect(capturedUrl).toContain("reviewer_username=bob");
+      expect(capturedUrl).not.toContain("reviewer_id=7");
+    });
+
+    it("should prefer assignee_username over assignee_id=0 when both provided", async () => {
+      let capturedUrl = "";
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string, _options?: RequestInit) => {
+        capturedUrl = _url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_merge_requests",
+        arguments: {
+          project_id: "my-group/my-project",
+          assignee_id: 0,
+          assignee_username: "alice",
+        },
+      });
+
+      expect(capturedUrl).toContain("assignee_username=alice");
+      expect(capturedUrl).not.toContain("assignee_id=0");
+    });
   });
 
   describe("approve_merge_request", () => {
