@@ -1,29 +1,41 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
+import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 const ListWikiPagesSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   with_content: z.boolean().optional().describe("Include content of the wiki pages"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
 
 const GetWikiPageSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   slug: z.string().describe("Slug of the wiki page (will be URL-encoded internally)"),
 });
 
 const CreateWikiPageSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   title: z.string().describe("Title of the wiki page"),
   content: z.string().describe("Content of the wiki page"),
   format: z.string().optional().describe("Content format, e.g., markdown, rdoc"),
 });
 
 const UpdateWikiPageSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   slug: z.string().describe("Slug of the wiki page (will be URL-encoded internally)"),
   title: z.string().optional().describe("New title of the wiki page"),
   content: z.string().optional().describe("New content of the wiki page"),
@@ -31,7 +43,10 @@ const UpdateWikiPageSchema = z.object({
 });
 
 const DeleteWikiPageSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   slug: z.string().describe("Slug of the wiki page (will be URL-encoded internally)"),
 });
 
@@ -77,7 +92,10 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
       title: "List Wiki Pages",
       description: "List wiki pages for a project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         with_content: z.boolean().optional().describe("Include content of the wiki pages"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
@@ -86,7 +104,7 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
     },
     async (params) => {
       const args = ListWikiPagesSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
@@ -103,14 +121,17 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
       title: "Get Wiki Page",
       description: "Get a specific wiki page by its slug",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         slug: z.string().describe("Slug of the wiki page (will be URL-encoded internally)"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = GetWikiPageSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const slug = encodeURIComponent(args.slug);
 
       const wikiPage = await defaultClient.get(`/projects/${projectId}/wikis/${slug}`);
@@ -126,7 +147,10 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
       title: "Create Wiki Page",
       description: "Create a new wiki page in a project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         title: z.string().describe("Title of the wiki page"),
         content: z.string().describe("Content of the wiki page"),
         format: z.string().optional().describe("Content format, e.g., markdown, rdoc"),
@@ -134,7 +158,7 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
     },
     async (params) => {
       const args = CreateWikiPageSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...body } = args;
 
       const wikiPage = await defaultClient.post(`/projects/${projectId}/wikis`, body);
@@ -150,7 +174,10 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
       title: "Update Wiki Page",
       description: "Update an existing wiki page in a project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         slug: z.string().describe("Slug of the wiki page (will be URL-encoded internally)"),
         title: z.string().optional().describe("New title of the wiki page"),
         content: z.string().optional().describe("New content of the wiki page"),
@@ -159,7 +186,7 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
     },
     async (params) => {
       const args = UpdateWikiPageSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const slug = encodeURIComponent(args.slug);
       const { project_id: _, slug: _s, ...body } = args;
 
@@ -176,14 +203,17 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
       title: "Delete Wiki Page",
       description: "Delete a wiki page from a project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         slug: z.string().describe("Slug of the wiki page (will be URL-encoded internally)"),
       },
       annotations: { destructiveHint: true },
     },
     async (params) => {
       const args = DeleteWikiPageSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const slug = encodeURIComponent(args.slug);
 
       await defaultClient.delete(`/projects/${projectId}/wikis/${slug}`);

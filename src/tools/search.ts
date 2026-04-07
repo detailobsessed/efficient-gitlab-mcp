@@ -1,6 +1,11 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
+import {
+  buildQueryString,
+  defaultClient,
+  encodeProjectId,
+  resolveProjectId,
+} from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 const SearchScopeEnum = z.enum([
@@ -33,7 +38,10 @@ const GlobalSearchSchema = z.object({
 });
 
 const ProjectSearchSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   scope: SearchScopeEnum.describe(
     "Search scope: issues, merge_requests, milestones, users. Premium/Ultimate: wiki_blobs, commits, blobs, notes",
   ),
@@ -70,7 +78,10 @@ const SearchCodeSchema = z.object({
 });
 
 const SearchProjectCodeSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   search: z
     .string()
     .describe(
@@ -179,7 +190,10 @@ export function registerSearchTools(
       description:
         "Search within a specific project. Scopes: issues, merge_requests, milestones, users. Premium/Ultimate adds: wiki_blobs, commits, blobs (code), notes.",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         scope: SearchScopeEnum.describe(
           "Search scope: issues, merge_requests, milestones, users. Premium/Ultimate: wiki_blobs, commits, blobs, notes",
         ),
@@ -201,7 +215,7 @@ export function registerSearchTools(
     },
     async (params) => {
       const args = ProjectSearchSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
@@ -296,7 +310,10 @@ export function registerSearchTools(
       description:
         "Search for code within a specific project using scope=blobs. Returns matching file content with line numbers.",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         search: z.string().describe("Code search query string."),
         ref: z
           .string()
@@ -315,7 +332,7 @@ export function registerSearchTools(
     },
     async (params) => {
       const args = SearchProjectCodeSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...queryParams } = args;
       const query = buildQueryString({ ...queryParams, scope: "blobs" });
 

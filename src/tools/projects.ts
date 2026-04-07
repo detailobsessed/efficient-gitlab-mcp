@@ -1,10 +1,13 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
+import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 const GetProjectSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   license: z.boolean().optional().describe("Include license info"),
   statistics: z.boolean().optional().describe("Include project statistics"),
   with_custom_attributes: z.boolean().optional().describe("Include custom attributes"),
@@ -26,26 +29,38 @@ const ListProjectsSchema = z.object({
 });
 
 const ListProjectMembersSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   query: z.string().optional().describe("Search query"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
 
 const ListLabelsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   search: z.string().optional().describe("Search query"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
 
 const GetLabelSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   label_id: z.union([z.string(), z.number()]).describe("Label ID or name"),
 });
 
 const CreateLabelSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   name: z.string().describe("Label name"),
   color: z.string().describe("Label color (hex format)"),
   description: z.string().optional().describe("Label description"),
@@ -53,7 +68,10 @@ const CreateLabelSchema = z.object({
 });
 
 const UpdateLabelSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   label_id: z.union([z.string(), z.number()]).describe("Label ID or name"),
   new_name: z.string().optional().describe("New label name"),
   color: z.string().optional().describe("New label color"),
@@ -62,7 +80,10 @@ const UpdateLabelSchema = z.object({
 });
 
 const DeleteLabelSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   label_id: z.union([z.string(), z.number()]).describe("Label ID or name"),
 });
 
@@ -126,7 +147,10 @@ export function registerProjectTools(
       title: "Get Project",
       description: "Get details of a specific project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         license: z.boolean().optional().describe("Include license info"),
         statistics: z.boolean().optional().describe("Include project statistics"),
         with_custom_attributes: z.boolean().optional().describe("Include custom attributes"),
@@ -135,7 +159,7 @@ export function registerProjectTools(
     },
     async (params) => {
       const args = GetProjectSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const query = buildQueryString({
         license: args.license,
         statistics: args.statistics,
@@ -187,7 +211,10 @@ export function registerProjectTools(
       title: "List Project Members",
       description: "List members of a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         query: z.string().optional().describe("Search query"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
@@ -196,7 +223,7 @@ export function registerProjectTools(
     },
     async (params) => {
       const args = ListProjectMembersSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const query = buildQueryString({
         query: args.query,
         page: args.page,
@@ -216,7 +243,10 @@ export function registerProjectTools(
       title: "List Labels",
       description: "List labels for a project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         search: z.string().optional().describe("Search query"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
@@ -225,7 +255,7 @@ export function registerProjectTools(
     },
     async (params) => {
       const args = ListLabelsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const query = buildQueryString({
         search: args.search,
         page: args.page,
@@ -245,14 +275,17 @@ export function registerProjectTools(
       title: "Get Label",
       description: "Get a single label from a project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         label_id: z.union([z.string(), z.number()]).describe("Label ID or name"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = GetLabelSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const labelId = encodeURIComponent(String(args.label_id));
 
       const label = await defaultClient.get(`/projects/${projectId}/labels/${labelId}`);
@@ -268,7 +301,10 @@ export function registerProjectTools(
       title: "Create Label",
       description: "Create a new label in a project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         name: z.string().describe("Label name"),
         color: z.string().describe("Label color (hex format)"),
         description: z.string().optional().describe("Label description"),
@@ -278,7 +314,7 @@ export function registerProjectTools(
     },
     async (params) => {
       const args = CreateLabelSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...body } = args;
 
       const label = await defaultClient.post(`/projects/${projectId}/labels`, body);
@@ -294,7 +330,10 @@ export function registerProjectTools(
       title: "Update Label",
       description: "Update an existing label in a project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         label_id: z.union([z.string(), z.number()]).describe("Label ID or name"),
         new_name: z.string().optional().describe("New label name"),
         color: z.string().optional().describe("New label color"),
@@ -305,7 +344,7 @@ export function registerProjectTools(
     },
     async (params) => {
       const args = UpdateLabelSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const labelId = encodeURIComponent(String(args.label_id));
       const { project_id: _, label_id: __, ...body } = args;
 
@@ -322,14 +361,17 @@ export function registerProjectTools(
       title: "Delete Label",
       description: "Delete a label from a project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         label_id: z.union([z.string(), z.number()]).describe("Label ID or name"),
       },
       annotations: { destructiveHint: true },
     },
     async (params) => {
       const args = DeleteLabelSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const labelId = encodeURIComponent(String(args.label_id));
 
       await defaultClient.delete(`/projects/${projectId}/labels/${labelId}`);

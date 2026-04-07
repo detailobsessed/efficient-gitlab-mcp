@@ -1,10 +1,13 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
+import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 const ListPipelinesSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   scope: z.enum(["running", "pending", "finished", "branches", "tags"]).optional(),
   status: z
     .enum([
@@ -29,12 +32,18 @@ const ListPipelinesSchema = z.object({
 });
 
 const GetPipelineSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   pipeline_id: z.number().describe("Pipeline ID"),
 });
 
 const CreatePipelineSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   ref: z.string().describe("Branch or tag name"),
   variables: z
     .array(
@@ -49,17 +58,26 @@ const CreatePipelineSchema = z.object({
 });
 
 const RetryPipelineSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   pipeline_id: z.number().describe("Pipeline ID"),
 });
 
 const CancelPipelineSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   pipeline_id: z.number().describe("Pipeline ID"),
 });
 
 const ListPipelineJobsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   pipeline_id: z.number().describe("Pipeline ID"),
   scope: z
     .enum(["created", "pending", "running", "failed", "success", "canceled", "skipped", "manual"])
@@ -69,12 +87,18 @@ const ListPipelineJobsSchema = z.object({
 });
 
 const GetPipelineJobOutputSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   job_id: z.number().describe("Job ID"),
 });
 
 const PlayPipelineJobSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   job_id: z.number().describe("Job ID"),
   job_variables_attributes: z
     .array(
@@ -88,17 +112,26 @@ const PlayPipelineJobSchema = z.object({
 });
 
 const RetryPipelineJobSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   job_id: z.number().describe("Job ID"),
 });
 
 const CancelPipelineJobSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   job_id: z.number().describe("Job ID"),
 });
 
 const ListDeploymentsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   environment: z.string().optional().describe("Filter by environment name"),
   ref: z.string().optional().describe("Filter by ref"),
   sha: z.string().optional().describe("Filter by commit SHA"),
@@ -121,12 +154,18 @@ const ListDeploymentsSchema = z.object({
 });
 
 const GetDeploymentSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   deployment_id: z.number().describe("The ID of the deployment"),
 });
 
 const ListEnvironmentsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   name: z.string().optional().describe("Return environments with this exact name"),
   search: z.string().optional().describe("Search environments by name"),
   states: z.enum(["available", "stopped"]).optional().describe("Filter environments by state"),
@@ -135,12 +174,18 @@ const ListEnvironmentsSchema = z.object({
 });
 
 const GetEnvironmentSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   environment_id: z.number().describe("The ID of the environment"),
 });
 
 const ListPipelineTriggerJobsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   pipeline_id: z.number().describe("The ID of the pipeline"),
   scope: z
     .enum([
@@ -164,12 +209,18 @@ const ListPipelineTriggerJobsSchema = z.object({
 });
 
 const GetPipelineJobSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   job_id: z.number().describe("The ID of the job"),
 });
 
 const ListJobArtifactsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   job_id: z.number().describe("The ID of the job"),
   path: z
     .string()
@@ -179,12 +230,18 @@ const ListJobArtifactsSchema = z.object({
 });
 
 const DownloadJobArtifactsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   job_id: z.number().describe("The ID of the job"),
 });
 
 const GetJobArtifactFileSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   job_id: z.number().describe("The ID of the job"),
   artifact_path: z.string().describe("Path to the file within the artifacts archive"),
 });
@@ -202,7 +259,10 @@ export function registerPipelineTools(
       title: "List Pipelines",
       description: "List pipelines in a GitLab project with filtering options",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         scope: z.enum(["running", "pending", "finished", "branches", "tags"]).optional(),
         status: z
           .enum([
@@ -226,7 +286,7 @@ export function registerPipelineTools(
     },
     async (params) => {
       const args = ListPipelinesSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
@@ -243,14 +303,17 @@ export function registerPipelineTools(
       title: "Get Pipeline",
       description: "Get details of a specific pipeline in a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         pipeline_id: z.number().describe("Pipeline ID"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = GetPipelineSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const pipeline = await defaultClient.get(
         `/projects/${projectId}/pipelines/${args.pipeline_id}`,
@@ -267,7 +330,10 @@ export function registerPipelineTools(
       title: "Create Pipeline",
       description: "Create a new pipeline for a branch or tag",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         ref: z.string().describe("Branch or tag name"),
         variables: z
           .array(
@@ -284,7 +350,7 @@ export function registerPipelineTools(
     },
     async (params) => {
       const args = CreatePipelineSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const pipeline = await defaultClient.post(`/projects/${projectId}/pipeline`, {
         ref: args.ref,
@@ -302,14 +368,17 @@ export function registerPipelineTools(
       title: "Retry Pipeline",
       description: "Retry a failed or canceled pipeline",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         pipeline_id: z.number().describe("Pipeline ID"),
       },
       annotations: { destructiveHint: false },
     },
     async (params) => {
       const args = RetryPipelineSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const pipeline = await defaultClient.post(
         `/projects/${projectId}/pipelines/${args.pipeline_id}/retry`,
@@ -326,14 +395,17 @@ export function registerPipelineTools(
       title: "Cancel Pipeline",
       description: "Cancel a running pipeline",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         pipeline_id: z.number().describe("Pipeline ID"),
       },
       annotations: { destructiveHint: true },
     },
     async (params) => {
       const args = CancelPipelineSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const pipeline = await defaultClient.post(
         `/projects/${projectId}/pipelines/${args.pipeline_id}/cancel`,
@@ -350,7 +422,10 @@ export function registerPipelineTools(
       title: "List Pipeline Jobs",
       description: "List all jobs in a specific pipeline",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         pipeline_id: z.number().describe("Pipeline ID"),
         scope: z
           .enum([
@@ -371,7 +446,7 @@ export function registerPipelineTools(
     },
     async (params) => {
       const args = ListPipelineJobsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const query = buildQueryString({
         scope: args.scope,
         page: args.page,
@@ -393,14 +468,17 @@ export function registerPipelineTools(
       title: "Get Pipeline Job Output",
       description: "Get the output/trace of a GitLab pipeline job",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("Job ID"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = GetPipelineJobOutputSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const response = await defaultClient.rawFetch(
         `/projects/${projectId}/jobs/${args.job_id}/trace`,
@@ -419,7 +497,10 @@ export function registerPipelineTools(
       title: "Play Pipeline Job",
       description: "Run a manual pipeline job",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("Job ID"),
         job_variables_attributes: z
           .array(
@@ -435,7 +516,7 @@ export function registerPipelineTools(
     },
     async (params) => {
       const args = PlayPipelineJobSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const job = await defaultClient.post(`/projects/${projectId}/jobs/${args.job_id}/play`, {
         job_variables_attributes: args.job_variables_attributes,
@@ -452,14 +533,17 @@ export function registerPipelineTools(
       title: "Retry Pipeline Job",
       description: "Retry a failed or canceled pipeline job",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("Job ID"),
       },
       annotations: { destructiveHint: false },
     },
     async (params) => {
       const args = RetryPipelineJobSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const job = await defaultClient.post(`/projects/${projectId}/jobs/${args.job_id}/retry`);
       return { content: [{ type: "text", text: JSON.stringify(job, null, 2) }] };
@@ -474,14 +558,17 @@ export function registerPipelineTools(
       title: "Cancel Pipeline Job",
       description: "Cancel a running pipeline job",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("Job ID"),
       },
       annotations: { destructiveHint: true },
     },
     async (params) => {
       const args = CancelPipelineJobSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const job = await defaultClient.post(`/projects/${projectId}/jobs/${args.job_id}/cancel`);
       return { content: [{ type: "text", text: JSON.stringify(job, null, 2) }] };
@@ -496,7 +583,10 @@ export function registerPipelineTools(
       title: "List Deployments",
       description: "List deployments in a GitLab project with filtering options",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         environment: z.string().optional().describe("Filter by environment name"),
         ref: z.string().optional().describe("Filter by ref"),
         sha: z.string().optional().describe("Filter by commit SHA"),
@@ -521,7 +611,7 @@ export function registerPipelineTools(
     },
     async (params) => {
       const args = ListDeploymentsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
@@ -538,14 +628,17 @@ export function registerPipelineTools(
       title: "Get Deployment",
       description: "Get details of a specific deployment in a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         deployment_id: z.number().describe("The ID of the deployment"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = GetDeploymentSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const deployment = await defaultClient.get(
         `/projects/${projectId}/deployments/${args.deployment_id}`,
@@ -562,7 +655,10 @@ export function registerPipelineTools(
       title: "List Environments",
       description: "List environments in a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         name: z.string().optional().describe("Return environments with this exact name"),
         search: z.string().optional().describe("Search environments by name"),
         states: z
@@ -576,7 +672,7 @@ export function registerPipelineTools(
     },
     async (params) => {
       const args = ListEnvironmentsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
@@ -593,14 +689,17 @@ export function registerPipelineTools(
       title: "Get Environment",
       description: "Get details of a specific environment in a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         environment_id: z.number().describe("The ID of the environment"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = GetEnvironmentSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const environment = await defaultClient.get(
         `/projects/${projectId}/environments/${args.environment_id}`,
@@ -618,7 +717,10 @@ export function registerPipelineTools(
       description:
         "List all trigger jobs (bridges) in a specific pipeline that trigger downstream pipelines",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         pipeline_id: z.number().describe("The ID of the pipeline"),
         scope: z
           .enum([
@@ -644,7 +746,7 @@ export function registerPipelineTools(
     },
     async (params) => {
       const args = ListPipelineTriggerJobsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const query = buildQueryString({
         scope: args.scope,
         page: args.page,
@@ -666,14 +768,17 @@ export function registerPipelineTools(
       title: "Get Pipeline Job",
       description: "Get details of a GitLab pipeline job number",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("The ID of the job"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = GetPipelineJobSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const job = await defaultClient.get(`/projects/${projectId}/jobs/${args.job_id}`);
       return { content: [{ type: "text", text: JSON.stringify(job, null, 2) }] };
@@ -689,7 +794,10 @@ export function registerPipelineTools(
       description:
         "List artifact files in a job's artifacts archive. Returns file names, paths, types, and sizes.",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("The ID of the job"),
         path: z
           .string()
@@ -701,7 +809,7 @@ export function registerPipelineTools(
     },
     async (params) => {
       const args = ListJobArtifactsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const query = buildQueryString({
         path: args.path,
         recursive: args.recursive,
@@ -723,14 +831,17 @@ export function registerPipelineTools(
       description:
         "Download the entire artifact archive (zip) for a job. Returns the artifact archive content.",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("The ID of the job"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = DownloadJobArtifactsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const response = await defaultClient.rawFetch(
         `/projects/${projectId}/jobs/${args.job_id}/artifacts`,
@@ -758,7 +869,10 @@ export function registerPipelineTools(
       description:
         "Get the content of a single file from a job's artifacts by its path within the archive",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("The ID of the job"),
         artifact_path: z.string().describe("Path to the file within the artifacts archive"),
       },
@@ -766,7 +880,7 @@ export function registerPipelineTools(
     },
     async (params) => {
       const args = GetJobArtifactFileSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const encodedArtifactPath = args.artifact_path
         .split("/")
         .map((segment) => encodeURIComponent(segment))

@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, mock } from "bun:test";
-import { buildQueryString, encodeProjectId, GitLabClient } from "../src/utils/gitlab-client.js";
+import {
+  buildQueryString,
+  encodeProjectId,
+  GitLabClient,
+  getEffectiveProjectId,
+} from "../src/utils/gitlab-client.js";
 
 describe("GitLab Client Utilities", () => {
   describe("encodeProjectId", () => {
@@ -17,6 +22,58 @@ describe("GitLab Client Utilities", () => {
 
     it("should handle special characters", () => {
       expect(encodeProjectId("my-group/my-project")).toBe("my-group%2Fmy-project");
+    });
+  });
+
+  describe("getEffectiveProjectId", () => {
+    const noConfig = { gitlabProjectId: undefined, gitlabAllowedProjectIds: [] };
+
+    describe("with GITLAB_ALLOWED_PROJECT_IDS", () => {
+      it("should return explicit project_id when in allowed list", () => {
+        const cfg = { gitlabProjectId: undefined, gitlabAllowedProjectIds: ["proj-a", "proj-b"] };
+        expect(getEffectiveProjectId("proj-a", cfg)).toBe("proj-a");
+      });
+
+      it("should throw when explicit project_id is not in allowed list", () => {
+        const cfg = { gitlabProjectId: undefined, gitlabAllowedProjectIds: ["proj-a", "proj-b"] };
+        expect(() => getEffectiveProjectId("proj-c", cfg)).toThrow(
+          "not in GITLAB_ALLOWED_PROJECT_IDS",
+        );
+      });
+
+      it("should default to single allowed project when no project_id given", () => {
+        const cfg = { gitlabProjectId: undefined, gitlabAllowedProjectIds: ["only-project"] };
+        expect(getEffectiveProjectId(undefined, cfg)).toBe("only-project");
+      });
+
+      it("should throw when multiple allowed projects and no project_id given", () => {
+        const cfg = { gitlabProjectId: undefined, gitlabAllowedProjectIds: ["proj-a", "proj-b"] };
+        expect(() => getEffectiveProjectId(undefined, cfg)).toThrow(
+          "required when multiple allowed projects",
+        );
+      });
+    });
+
+    describe("with GITLAB_PROJECT_ID only", () => {
+      it("should return explicit project_id (priority over env default)", () => {
+        const cfg = { gitlabProjectId: "env-project", gitlabAllowedProjectIds: [] };
+        expect(getEffectiveProjectId("explicit-project", cfg)).toBe("explicit-project");
+      });
+
+      it("should fall back to GITLAB_PROJECT_ID when no project_id given", () => {
+        const cfg = { gitlabProjectId: "env-project", gitlabAllowedProjectIds: [] };
+        expect(getEffectiveProjectId(undefined, cfg)).toBe("env-project");
+      });
+    });
+
+    describe("with neither env var set", () => {
+      it("should return explicit project_id", () => {
+        expect(getEffectiveProjectId("my-project", noConfig)).toBe("my-project");
+      });
+
+      it("should throw when no project_id given", () => {
+        expect(() => getEffectiveProjectId(undefined, noConfig)).toThrow("project_id is required");
+      });
     });
   });
 

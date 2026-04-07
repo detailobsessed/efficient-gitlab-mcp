@@ -158,6 +158,47 @@ export function encodeProjectId(projectId: string): string {
   return encodeURIComponent(projectId);
 }
 
+/**
+ * Resolve the effective project ID from an explicit parameter, env-based defaults,
+ * and the allowed-projects security list.
+ *
+ * Two modes (mutually exclusive):
+ * - With GITLAB_ALLOWED_PROJECT_IDS: explicit param (validated) > single-allowed default > error
+ * - Without: explicit param > GITLAB_PROJECT_ID fallback > error
+ *
+ * Uses exact string matching — allowed list format must match what callers provide
+ * (e.g., numeric ID vs namespace path).
+ */
+export function getEffectiveProjectId(
+  paramProjectId?: string,
+  configOverride?: { gitlabProjectId?: string; gitlabAllowedProjectIds: string[] },
+): string {
+  const { gitlabAllowedProjectIds, gitlabProjectId } = configOverride ?? config;
+
+  if (gitlabAllowedProjectIds.length > 0) {
+    if (paramProjectId) {
+      if (!gitlabAllowedProjectIds.includes(paramProjectId)) {
+        throw new Error(`Project "${paramProjectId}" is not in GITLAB_ALLOWED_PROJECT_IDS`);
+      }
+      return paramProjectId;
+    }
+    if (gitlabAllowedProjectIds.length === 1) {
+      return gitlabAllowedProjectIds[0];
+    }
+    throw new Error("project_id is required when multiple allowed projects are configured");
+  }
+
+  if (paramProjectId) return paramProjectId;
+  if (gitlabProjectId) return gitlabProjectId;
+
+  throw new Error("project_id is required (or set GITLAB_PROJECT_ID / GITLAB_ALLOWED_PROJECT_IDS)");
+}
+
+/** Resolve effective project ID and URL-encode it for API paths. */
+export function resolveProjectId(paramProjectId?: string): string {
+  return encodeProjectId(getEffectiveProjectId(paramProjectId));
+}
+
 export function buildQueryString(params: Record<string, unknown>): string {
   const searchParams = new URLSearchParams();
 
