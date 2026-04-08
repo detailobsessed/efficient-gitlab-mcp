@@ -1,3 +1,10 @@
+## [2.7.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.7.0...v2.7.1) (2026-04-08)
+
+
+### Bug Fixes
+
+* add user filter params with mutual exclusion to list_merge_requests ([#53](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/53)) ([b5b0016](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/b5b00162fcd32f9b5c22683cb4d7f421cbda5c5e))
+
 # [2.7.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.6.1...v2.7.0) (2026-04-07)
 
 
