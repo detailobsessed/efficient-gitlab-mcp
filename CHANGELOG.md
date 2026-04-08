@@ -1,3 +1,10 @@
+## [2.11.2](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.1...v2.11.2) (2026-04-08)
+
+
+### Bug Fixes
+
+* narrow bare catch to 404-only in create_or_update_file ([#61](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/61)) ([89b1a26](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/89b1a269f0f8e6ef1bc011faf96a58efb43daa3e))
+
 ## [2.11.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.0...v2.11.1) (2026-04-08)
 
 
