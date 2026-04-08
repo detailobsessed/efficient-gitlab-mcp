@@ -1,3 +1,10 @@
+# [2.10.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.9.0...v2.10.0) (2026-04-08)
+
+
+### Features
+
+* auto-detect PAT scopes for read-only mode ([#51](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/51)) ([#58](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/58)) ([cbcecc9](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/cbcecc972ad974ae99821950a56f8bc9a7401a5f))
+
 # [2.9.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.8.0...v2.9.0) (2026-04-08)
 
 
