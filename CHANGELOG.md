@@ -1,3 +1,10 @@
+# [2.8.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.7.1...v2.8.0) (2026-04-08)
+
+
+### Features
+
+* add getEffectiveProjectId with default fallback and allowed-projects validation ([#54](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/54)) ([76d1dd8](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/76d1dd89c05eb59ca4316251d5357ea513d25e97))
+
 ## [2.7.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.7.0...v2.7.1) (2026-04-08)
 
 
