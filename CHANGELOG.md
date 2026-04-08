@@ -1,3 +1,10 @@
+# [2.11.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.10.0...v2.11.0) (2026-04-08)
+
+
+### Features
+
+* improve 403 error messages with PAT scope guidance ([#51](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/51)) ([#59](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/59)) ([779f11c](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/779f11c45047af50d9b20887b3afd8e42809bfa0))
+
 # [2.10.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.9.0...v2.10.0) (2026-04-08)
 
 
