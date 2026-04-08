@@ -165,7 +165,7 @@ describe("GitLabClient", () => {
 
       const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
 
-      expect(client.get("/projects/999")).rejects.toThrow("GitLab API error: 404 Not Found");
+      await expect(client.get("/projects/999")).rejects.toThrow("GitLab API error: 404 Not Found");
     });
 
     it("should throw rate limit error on 403 with rate limit message", async () => {
@@ -181,7 +181,7 @@ describe("GitLabClient", () => {
 
       const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
 
-      expect(client.get("/projects")).rejects.toThrow("GitLab API Rate Limit Exceeded");
+      await expect(client.get("/projects")).rejects.toThrow("GitLab API Rate Limit Exceeded");
     });
 
     it("should include PAT scope guidance on non-rate-limit 403", async () => {
@@ -197,7 +197,7 @@ describe("GitLabClient", () => {
 
       const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
 
-      expect(client.get("/projects/1/issues")).rejects.toThrow("insufficient token scopes");
+      await expect(client.get("/projects/1/issues")).rejects.toThrow("insufficient token scopes");
     });
 
     it("should not include PAT scope guidance on non-403 errors", async () => {
@@ -233,7 +233,7 @@ describe("GitLabClient", () => {
 
       const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
 
-      expect(client.rawFetch("/projects/1/repository/archive")).rejects.toThrow(
+      await expect(client.rawFetch("/projects/1/repository/archive")).rejects.toThrow(
         "insufficient token scopes",
       );
     });
@@ -253,7 +253,7 @@ describe("GitLabClient", () => {
 
       const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
 
-      expect(client.graphql("{ currentUser { name } }")).rejects.toThrow(
+      await expect(client.graphql("{ currentUser { name } }")).rejects.toThrow(
         "insufficient token scopes",
       );
     });
