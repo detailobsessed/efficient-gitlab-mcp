@@ -213,13 +213,9 @@ describe("GitLabClient", () => {
 
       const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
 
-      try {
-        await client.get("/projects/999");
-      } catch (e) {
-        const msg = (e as Error).message;
-        expect(msg).toContain("404");
-        expect(msg).not.toContain("insufficient token scopes");
-      }
+      const error = await client.get("/projects/999").catch((e: Error) => e);
+      expect((error as Error).message).toContain("404");
+      expect((error as Error).message).not.toContain("insufficient token scopes");
     });
   });
 

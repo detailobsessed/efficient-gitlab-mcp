@@ -17,9 +17,9 @@ const SCOPE_GUIDANCE =
 
 function throwIfForbidden(status: number, errorBody: string, prefix: string): void {
   if (status !== 403) return;
-  if (errorBody.includes("Rate limit")) {
-    logger.error("GitLab API Rate Limit Exceeded", { error: errorBody });
-    throw new Error(`GitLab API Rate Limit Exceeded: ${errorBody}`);
+  if (errorBody.toLowerCase().includes("rate limit")) {
+    logger.error(`${prefix} Rate Limit Exceeded`, { error: errorBody });
+    throw new Error(`${prefix} Rate Limit Exceeded: ${errorBody}`);
   }
   throw new Error(`${prefix} permission denied (403): ${errorBody}\n\n${SCOPE_GUIDANCE}`);
 }
