@@ -221,6 +221,7 @@ export function registerReleaseTools(
     {
       title: "Create Release",
       description: "Create a new release for a project",
+      annotations: { destructiveHint: false },
       inputSchema: {
         project_id: z
           .string()
@@ -288,6 +289,7 @@ export function registerReleaseTools(
     {
       title: "Update Release",
       description: "Update an existing release",
+      annotations: { destructiveHint: true },
       inputSchema: {
         project_id: z
           .string()
@@ -364,6 +366,7 @@ export function registerReleaseTools(
     {
       title: "Create Release Evidence",
       description: "Create evidence for an existing release",
+      annotations: { destructiveHint: false },
       inputSchema: {
         project_id: z
           .string()

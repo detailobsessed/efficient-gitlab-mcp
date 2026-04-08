@@ -146,6 +146,7 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
     {
       title: "Create Wiki Page",
       description: "Create a new wiki page in a project",
+      annotations: { destructiveHint: false },
       inputSchema: {
         project_id: z
           .string()
@@ -173,6 +174,7 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
     {
       title: "Update Wiki Page",
       description: "Update an existing wiki page in a project",
+      annotations: { destructiveHint: true },
       inputSchema: {
         project_id: z
           .string()
@@ -288,6 +290,7 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
     {
       title: "Create Group Wiki Page",
       description: "Create a new wiki page in a group",
+      annotations: { destructiveHint: false },
       inputSchema: {
         group_id: z.string().describe("Group ID or URL-encoded path"),
         title: z.string().describe("Title of the wiki page"),
@@ -312,6 +315,7 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
     {
       title: "Update Group Wiki Page",
       description: "Update an existing wiki page in a group",
+      annotations: { destructiveHint: true },
       inputSchema: {
         group_id: z.string().describe("Group ID or URL-encoded path"),
         slug: z.string().describe("Slug of the wiki page (will be URL-encoded internally)"),
