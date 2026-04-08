@@ -38,11 +38,6 @@ export interface ServerConfig {
   gitlabProjectId?: string;
   gitlabAllowedProjectIds: string[];
 
-  // Feature flags
-  useGitlabWiki: boolean;
-  useMilestone: boolean;
-  usePipeline: boolean;
-
   // Remote authorization
   remoteAuthorization: boolean;
   enableDynamicApiUrl: boolean;
@@ -119,11 +114,6 @@ export function loadConfig(): ServerConfig {
       process.env.GITLAB_ALLOWED_PROJECT_IDS?.split(",")
         .map((id) => id.trim())
         .filter(Boolean) || [],
-
-    // Feature flags
-    useGitlabWiki: process.env.USE_GITLAB_WIKI === "true",
-    useMilestone: process.env.USE_MILESTONE === "true",
-    usePipeline: process.env.USE_PIPELINE === "true",
 
     // Remote authorization
     remoteAuthorization: process.env.REMOTE_AUTHORIZATION === "true",

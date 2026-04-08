@@ -80,28 +80,6 @@ describe("loadConfig", () => {
     });
   });
 
-  describe("feature flags", () => {
-    it("should default feature flags to false", () => {
-      delete process.env.USE_GITLAB_WIKI;
-      delete process.env.USE_MILESTONE;
-      delete process.env.USE_PIPELINE;
-      const config = loadConfig();
-      expect(config.useGitlabWiki).toBe(false);
-      expect(config.useMilestone).toBe(false);
-      expect(config.usePipeline).toBe(false);
-    });
-
-    it("should enable feature flags when set to true", () => {
-      process.env.USE_GITLAB_WIKI = "true";
-      process.env.USE_MILESTONE = "true";
-      process.env.USE_PIPELINE = "true";
-      const config = loadConfig();
-      expect(config.useGitlabWiki).toBe(true);
-      expect(config.useMilestone).toBe(true);
-      expect(config.usePipeline).toBe(true);
-    });
-  });
-
   describe("remote authorization", () => {
     it("should default to disabled", () => {
       delete process.env.REMOTE_AUTHORIZATION;

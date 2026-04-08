@@ -27,6 +27,7 @@ This fork builds on [zereight/gitlab-mcp](https://github.com/zereight/gitlab-mcp
 | **Linting** | ESLint + Prettier | Strict Biome rules (`noExplicitAny`, `noNonNullAssertion`, cognitive complexity) |
 | **CI/CD** | Basic | GitHub Actions (lint, build, test, semantic-release) |
 | **Pre-commit** | None | prek hooks (typos, formatting, build verification) |
+| **Feature Flags** | `USE_PIPELINE`, `USE_MILESTONE`, `USE_GITLAB_WIKI` required | None — all categories available via progressive disclosure |
 
 ### Key Improvements
 
@@ -38,6 +39,7 @@ This fork builds on [zereight/gitlab-mcp](https://github.com/zereight/gitlab-mcp
 - **Comprehensive Test Suite** — 120+ tests covering registry, config, logger, MCP integration, and meta-tools.
 - **Strict Code Quality** — Zero `any` types, no non-null assertions, enforced cognitive complexity limits.
 - **Modern Tooling** — Bun for fast builds, Biome for linting, prek for pre-commit hooks.
+- **No Feature Flags Needed** — Upstream requires `USE_PIPELINE`, `USE_MILESTONE`, and `USE_GITLAB_WIKI` env vars to enable core tools. Progressive disclosure eliminates this — all 15 categories are registered but dormant until activated, so there's zero token cost and zero config overhead.
 - **Automated Releases** — Semantic versioning with conventional commits.
 
 ### Upstream Tracking
@@ -152,9 +154,11 @@ For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL.
 ```bash
 # stdio transport (default)
 claude mcp add gitlab-agent -- npx efficient-gitlab-mcp-server
+# or with Bun:
+claude mcp add gitlab-agent -- bunx efficient-gitlab-mcp-server
 
 # HTTP transport (requires running from source)
-STREAMABLE_HTTP=true npx efficient-gitlab-mcp-server
+STREAMABLE_HTTP=true bun start
 claude mcp add --transport http gitlab-agent http://localhost:3002/mcp
 ```
 
@@ -242,14 +246,6 @@ bun run build
 | `SSE` | No | `false` | Enable SSE transport |
 | `PORT` | No | `3002` | HTTP server port |
 | `HOST` | No | `127.0.0.1` | HTTP server host |
-
-### Feature Flags
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `USE_GITLAB_WIKI` | No | `false` | Enable wiki tools |
-| `USE_MILESTONE` | No | `false` | Enable milestone tools |
-| `USE_PIPELINE` | No | `false` | Enable pipeline tools |
 
 ### Logging & Security
 
