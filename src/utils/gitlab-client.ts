@@ -18,8 +18,8 @@ export class GitLabClient {
   constructor(apiUrl?: string, token?: string) {
     this.apiUrl = apiUrl ?? config.gitlabApiUrl;
 
-    const pat = token ?? process.env.GITLAB_PERSONAL_ACCESS_TOKEN;
-    const jobToken = process.env.CI_JOB_TOKEN;
+    const pat = token ?? config.gitlabPersonalAccessToken;
+    const jobToken = config.ciJobToken;
 
     if (pat) {
       this.token = pat;

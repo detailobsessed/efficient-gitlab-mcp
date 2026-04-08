@@ -20,7 +20,7 @@ This fork builds on [zereight/gitlab-mcp](https://github.com/zereight/gitlab-mcp
 | Area | Upstream | This Fork |
 |------|----------|-----------|
 | **Architecture** | Single `index.ts` (~10K lines) | Modular `src/` with 15 tool modules |
-| **Tool Discovery** | All 100+ tools exposed at once | SDK-native progressive disclosure (2 meta-tools) |
+| **Tool Discovery** | All 140+ tools exposed at once | SDK-native progressive disclosure (2 meta-tools) |
 | **Configuration** | Flat individual exports | Typed `ServerConfig` interface with `loadConfig()` |
 | **Logging** | `console.log` | Structured MCP protocol logger for agent observability |
 | **Runtime** | Node.js + npm | Bun (faster builds, native TypeScript) |
@@ -31,12 +31,12 @@ This fork builds on [zereight/gitlab-mcp](https://github.com/zereight/gitlab-mcp
 
 ### Key Improvements
 
-- **Progressive Disclosure** — 2 meta-tools instead of 100+ individual tools (~90% token reduction). Uses the MCP SDK's native `enable()`/`disable()` API so tools are registered but hidden until the LLM activates a category.
+- **Progressive Disclosure** — 2 meta-tools instead of 140+ individual tools (~90% token reduction). Uses the MCP SDK's native `enable()`/`disable()` API so tools are registered but hidden until the LLM activates a category.
 - **Modular Tool Organization** — Each GitLab domain (issues, merge requests, pipelines, etc.) lives in its own file under `src/tools/`, making it easy to find, test, and extend individual tools without navigating a monolithic file.
 - **Typed Configuration** — A `ServerConfig` interface ensures all config values are validated at startup, with IDE autocompletion and compile-time safety.
 - **MCP Protocol Logging** — Structured logs sent to LLM clients for agent observability, not just developer console output.
 - **HTTP Transport Security** — DNS rebinding protection, configurable allowed hosts/origins.
-- **Comprehensive Test Suite** — 120+ tests covering registry, config, logger, MCP integration, and meta-tools.
+- **Comprehensive Test Suite** — 135+ tests covering registry, config, logger, MCP integration, and meta-tools.
 - **Strict Code Quality** — Zero `any` types, no non-null assertions, enforced cognitive complexity limits.
 - **Modern Tooling** — Bun for fast builds, Biome for linting, prek for pre-commit hooks.
 - **No Feature Flags Needed** — Upstream requires `USE_PIPELINE`, `USE_MILESTONE`, and `USE_GITLAB_WIKI` env vars to enable core tools. Progressive disclosure eliminates this — all 15 categories are registered but dormant until activated, so there's zero token cost and zero config overhead.
@@ -50,7 +50,7 @@ We maintain `main` as a read-only mirror of upstream. New features and bugfixes 
 
 ## How It Works
 
-Instead of exposing 100+ individual tools, this server exposes **2 meta-tools**:
+Instead of exposing 140+ individual tools, this server exposes **2 meta-tools**:
 
 | Meta-Tool | Purpose |
 |-----------|---------|
@@ -61,7 +61,7 @@ Instead of exposing 100+ individual tools, this server exposes **2 meta-tools**:
 
 | Approach | Tools Exposed | Approximate Token Cost |
 |----------|---------------|------------------------|
-| Traditional | 100+ tools | ~20,000+ tokens |
+| Traditional | 140+ tools | ~20,000+ tokens |
 | Progressive Disclosure | 2 meta-tools | ~1,500 tokens |
 
 **~90% reduction in tool definition tokens!**
@@ -110,6 +110,7 @@ All GitLab operations organized by category:
   - `read_api` — Read-only API access (if you only need read operations)
   - `read_repository` — Read repository files
   - `write_repository` — Push to repositories
+- Or `CI_JOB_TOKEN` — automatically detected in GitLab CI pipelines (PAT takes priority if both are set)
 
 ### MCP Client Configuration
 
@@ -231,12 +232,15 @@ bun run build
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GITLAB_PERSONAL_ACCESS_TOKEN` | Yes* | - | GitLab personal access token |
+| `GITLAB_PERSONAL_ACCESS_TOKEN` | Yes* | - | GitLab personal access token (takes priority over CI_JOB_TOKEN) |
+| `CI_JOB_TOKEN` | No | - | GitLab CI job token (auto-detected in CI pipelines) |
 | `GITLAB_API_URL` | No | `https://gitlab.com` | GitLab instance URL |
-| `GITLAB_PROJECT_ID` | No | - | Default project ID |
-| `GITLAB_ALLOWED_PROJECT_IDS` | No | - | Comma-separated allowed project IDs |
+| `GITLAB_PROJECT_ID` | No | - | Default project ID when tools omit `project_id` |
+| `GITLAB_ALLOWED_PROJECT_IDS` | No | - | Restrict tools to these projects (comma-separated). With a single project, acts as default. With multiple, `project_id` is required per call |
 | `GITLAB_READ_ONLY_MODE` | No | `false` | Disable write operations |
 | `GITLAB_IS_OLD` | No | `false` | For older GitLab instances |
+
+\*PAT is recommended. `CI_JOB_TOKEN` is auto-detected in GitLab CI pipelines when no PAT is set. OAuth support is planned (see DET-44).
 
 ### Transport Settings
 
@@ -266,7 +270,7 @@ bun run build
 | `MAX_SESSIONS` | No | `1000` | Maximum concurrent sessions |
 | `MAX_REQUESTS_PER_MINUTE` | No | `60` | Rate limit per session |
 
-*Or use OAuth authentication - see [OAuth Setup Guide](./docs/oauth-setup.md)
+*Or use `CI_JOB_TOKEN` in GitLab CI pipelines. OAuth authentication is planned — see [OAuth Setup Guide](./docs/oauth-setup.md) for the design.
 
 ---
 
