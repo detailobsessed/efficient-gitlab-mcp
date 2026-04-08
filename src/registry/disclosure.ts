@@ -67,8 +67,12 @@ function formatActivationResult(
     const available = Array.from(toolsByCategory.keys()).join(", ");
     lines.push(`Unknown categories: ${notFound.join(", ")}. Available: ${available}`);
   }
-  if (enabled.length === 0 && notFound.length === 0 && skipped === 0) {
-    lines.push("All tools in the requested categories are already active.");
+  if (enabled.length === 0 && notFound.length === 0) {
+    if (skipped === 0) {
+      lines.push("All tools in the requested categories are already active.");
+    } else {
+      lines.push("All available read-only tools are already active.");
+    }
   }
   return lines.join("\n");
 }
@@ -94,21 +98,26 @@ export function registerDisclosureTools(
       },
     },
     async () => {
-      const categories = CATEGORIES.filter((cat) => toolsByCategory.has(cat.name)).map((cat) => {
-        const tools = toolsByCategory.get(cat.name);
-        const toolCount = readOnlyMode
-          ? tools
-            ? Array.from(tools.values()).filter(isToolReadOnly).length
-            : 0
-          : (tools?.size ?? 0);
-        const enabledCount = tools ? Array.from(tools.values()).filter((t) => t.enabled).length : 0;
-        return {
-          name: cat.name,
-          description: cat.description,
-          toolCount,
-          enabledCount,
-        };
-      });
+      const categories = CATEGORIES.filter((cat) => toolsByCategory.has(cat.name))
+        .map((cat) => {
+          const tools = toolsByCategory.get(cat.name);
+          const eligible = readOnlyMode
+            ? tools
+              ? Array.from(tools.values()).filter(isToolReadOnly)
+              : []
+            : tools
+              ? Array.from(tools.values())
+              : [];
+          const toolCount = eligible.length;
+          const enabledCount = eligible.filter((t) => t.enabled).length;
+          return {
+            name: cat.name,
+            description: cat.description,
+            toolCount,
+            enabledCount,
+          };
+        })
+        .filter((c) => c.toolCount > 0);
 
       logger.info("Listed categories", { count: categories.length });
 

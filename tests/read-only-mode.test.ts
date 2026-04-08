@@ -148,6 +148,21 @@ describe("Read-Only Mode", () => {
       expect(toolNames).toContain("search_group_code");
     });
 
+    it("should show 'already active' on repeated activation in read-only mode", async () => {
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+
+      const result = await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+
+      const text = getTextContent(result);
+      expect(text).toContain("already active");
+    });
+
     it("should not enable any issue write tools", async () => {
       await client.callTool({
         name: "activate_tools",
