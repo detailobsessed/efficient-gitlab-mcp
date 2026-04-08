@@ -81,6 +81,132 @@ describe("Release Tools Handlers", () => {
     });
   });
 
+  describe("download_release_asset", () => {
+    const mockRelease = (assetUrl: string) => ({
+      tag_name: "v1.0.0",
+      assets: {
+        links: [{ direct_asset_path: "/binaries/app.tar.gz", direct_asset_url: assetUrl }],
+      },
+    });
+
+    it("should download an internal asset via rawFetch", async () => {
+      const calls: string[] = [];
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string, _options?: RequestInit) => {
+        calls.push(_url);
+        // First call: GET release metadata
+        if (_url.includes("/releases/")) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            text: () =>
+              Promise.resolve(
+                JSON.stringify(
+                  mockRelease(
+                    "https://gitlab.com/api/v4/projects/1/packages/generic/app/1.0/app.tar.gz",
+                  ),
+                ),
+              ),
+          } as Response);
+        }
+        // Second call: rawFetch for internal asset
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("binary-content-here"),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "download_release_asset",
+        arguments: {
+          project_id: "my-group/my-project",
+          tag_name: "v1.0.0",
+          direct_asset_path: "/binaries/app.tar.gz",
+        },
+      });
+
+      const content = result.content as Array<{ type: string; text: string }>;
+      expect(content[0].text).toBe("binary-content-here");
+      // Two fetches: release metadata + asset download
+      expect(calls).toHaveLength(2);
+      expect(calls[1]).toContain("gitlab.com");
+    });
+
+    it("should download an external asset via bare fetch", async () => {
+      const calls: string[] = [];
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string, _options?: RequestInit) => {
+        calls.push(_url);
+        if (_url.includes("/releases/")) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            text: () =>
+              Promise.resolve(
+                JSON.stringify(mockRelease("https://cdn.example.com/assets/app.tar.gz")),
+              ),
+          } as Response);
+        }
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("external-content"),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "download_release_asset",
+        arguments: {
+          project_id: "my-group/my-project",
+          tag_name: "v1.0.0",
+          direct_asset_path: "/binaries/app.tar.gz",
+        },
+      });
+
+      const content = result.content as Array<{ type: string; text: string }>;
+      expect(content[0].text).toBe("external-content");
+      expect(calls[1]).toBe("https://cdn.example.com/assets/app.tar.gz");
+    });
+
+    it("should return error when external asset fetch fails", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string) => {
+        if (_url.includes("/releases/")) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            text: () =>
+              Promise.resolve(
+                JSON.stringify(mockRelease("https://cdn.example.com/assets/app.tar.gz")),
+              ),
+          } as Response);
+        }
+        return Promise.resolve({
+          ok: false,
+          status: 404,
+          statusText: "Not Found",
+          text: () => Promise.resolve(""),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "download_release_asset",
+        arguments: {
+          project_id: "my-group/my-project",
+          tag_name: "v1.0.0",
+          direct_asset_path: "/binaries/app.tar.gz",
+        },
+      });
+
+      const content = result.content as Array<{ type: string; text: string }>;
+      const parsed = JSON.parse(content[0].text);
+      expect(parsed.error).toContain("Failed to fetch asset: 404 Not Found");
+    });
+  });
+
   describe("create_release", () => {
     it("should POST with tag_name, name, and description in body", async () => {
       let capturedUrl = "";
