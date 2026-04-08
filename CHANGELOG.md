@@ -1,3 +1,10 @@
+# [2.9.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.8.0...v2.9.0) (2026-04-08)
+
+
+### Features
+
+* enforce GITLAB_READ_ONLY_MODE ([#51](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/51)) ([#57](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/57)) ([70c677f](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/70c677f0be8eb9d501ebfeb68e69f928aac3ca5e)), closes [#4](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/4) [#5](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/5)
+
 # [2.8.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.7.1...v2.8.0) (2026-04-08)
 
 
