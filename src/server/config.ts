@@ -32,6 +32,7 @@ export interface ServerConfig {
   // GitLab API
   gitlabApiUrl: string;
   gitlabPersonalAccessToken?: string;
+  ciJobToken?: string;
   gitlabUseOAuth: boolean;
   gitlabIsOld: boolean;
   gitlabReadOnlyMode: boolean;
@@ -106,6 +107,7 @@ export function loadConfig(): ServerConfig {
     // GitLab API
     gitlabApiUrl: normalizeGitLabApiUrl(process.env.GITLAB_API_URL || "https://gitlab.com"),
     gitlabPersonalAccessToken: process.env.GITLAB_PERSONAL_ACCESS_TOKEN,
+    ciJobToken: process.env.CI_JOB_TOKEN,
     gitlabUseOAuth: process.env.GITLAB_USE_OAUTH === "true",
     gitlabIsOld: process.env.GITLAB_IS_OLD === "true",
     gitlabReadOnlyMode: process.env.GITLAB_READ_ONLY_MODE === "true",

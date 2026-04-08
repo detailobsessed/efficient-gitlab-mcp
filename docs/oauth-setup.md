@@ -1,5 +1,7 @@
 # OAuth2 Authentication Setup Guide
 
+> **Note:** OAuth proxy mode is not yet implemented in this fork. This document serves as a design reference for the planned implementation (see [DET-44](https://linear.app/ismar/issue/DET-44)). For now, use a Personal Access Token or CI_JOB_TOKEN for authentication.
+
 This guide explains how to set up OAuth2 authentication for the GitLab MCP server.
 
 ## Why Use OAuth2?
