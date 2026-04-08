@@ -32,7 +32,9 @@ import {
   registerWikiTools,
   registerWorkItemTools,
 } from "../tools/index.js";
+import { defaultClient } from "../utils/gitlab-client.js";
 import { Logger } from "../utils/logger.js";
+import { detectReadOnlyFromScopes } from "../utils/token-scopes.js";
 import { loadConfig, type ServerConfig } from "./config.js";
 
 /**
@@ -40,7 +42,11 @@ import { loadConfig, type ServerConfig } from "./config.js";
  * and disclosure meta-tools attached. Each call returns an independent server
  * with its own tool state, ensuring HTTP sessions don't share disclosure state.
  */
-function createMcpServer(config: ServerConfig, logger: Logger): McpServer {
+function createMcpServer(
+  config: ServerConfig,
+  logger: Logger,
+  readOnlyOverride?: boolean,
+): McpServer {
   const mcpServer = new McpServer(
     {
       name: config.serverName,
@@ -77,9 +83,10 @@ function createMcpServer(config: ServerConfig, logger: Logger): McpServer {
     `Registered ${totalTools} tools across ${toolsByCategory.size} categories (all disabled)`,
   );
 
-  registerDisclosureTools(mcpServer, toolsByCategory, logger, config.gitlabReadOnlyMode);
+  const effectiveReadOnly = readOnlyOverride ?? config.gitlabReadOnlyMode;
+  registerDisclosureTools(mcpServer, toolsByCategory, logger, effectiveReadOnly);
 
-  if (config.gitlabReadOnlyMode) {
+  if (effectiveReadOnly) {
     logger.info("Read-only mode enabled — write tools will not be activated");
   }
 
@@ -97,9 +104,20 @@ async function main() {
     transportMode: config.transportMode,
   });
 
+  // Auto-detect read-only mode from PAT scopes (unless explicitly configured via env)
+  let readOnlyOverride: boolean | undefined;
+  const readOnlyExplicitlySet = process.env.GITLAB_READ_ONLY_MODE !== undefined;
+  if (!readOnlyExplicitlySet) {
+    const autoDetected = await detectReadOnlyFromScopes(defaultClient, logger);
+    if (autoDetected === true) {
+      readOnlyOverride = true;
+      logger.info("Auto-detected read-only token (no 'api' scope)");
+    }
+  }
+
   if (config.transportMode === "stdio") {
     // Stdio: single server, single client
-    const mcpServer = createMcpServer(config, logger);
+    const mcpServer = createMcpServer(config, logger, readOnlyOverride);
     logger.info("Starting with stdio transport");
     const transport = new StdioServerTransport();
     await mcpServer.connect(transport);
@@ -162,7 +180,7 @@ async function main() {
 
     // Create a new session with its own server + tool state
     const createSession = async () => {
-      const sessionServer = createMcpServer(config, logger);
+      const sessionServer = createMcpServer(config, logger, readOnlyOverride);
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         onsessioninitialized: (newSessionId: string) => {
