@@ -106,16 +106,24 @@ All GitLab operations organized by category:
 ### Prerequisites
 
 - Node.js 18+ (for `npx`) or [Bun](https://bun.sh/) 1.0+ (for `bunx`)
-- A GitLab personal access token with the following scopes:
-  - `api` — Full API access (required for most operations)
-  - `read_api` — Read-only API access (if you only need read operations)
-  - `read_repository` — Read repository files
-  - `write_repository` — Push to repositories
-- Or `CI_JOB_TOKEN` — automatically detected in GitLab CI pipelines (PAT takes priority if both are set)
+- A GitLab Personal Access Token — scope determines what the server can do:
+  - `api` — Full access (create issues, merge MRs, manage pipelines, etc.)
+  - `read_api` — Read-only (server auto-detects and hides write tools)
+- Or `CI_JOB_TOKEN` — automatically detected in GitLab CI pipelines
 
-### MCP Client Configuration
+### Full Access (recommended for most users)
 
-Add this to your MCP client configuration (e.g., `~/.config/claude/claude_desktop_config.json` for Claude Desktop, or your IDE's MCP settings):
+Use an `api` scope PAT to get all 146 tools across 15 categories:
+
+**Claude Code CLI:**
+
+```bash
+claude mcp add gitlab -- npx efficient-gitlab-mcp-server \
+  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
+  -e GITLAB_API_URL=https://gitlab.com
+```
+
+**MCP client config** (Claude Desktop, IDE extensions, etc.):
 
 ```json
 {
@@ -132,37 +140,28 @@ Add this to your MCP client configuration (e.g., `~/.config/claude/claude_deskto
 }
 ```
 
-Or with Bun:
+### Read-Only Mode (security-conscious setup)
 
-```json
-{
-  "mcpServers": {
-    "gitlab": {
-      "command": "bunx",
-      "args": ["efficient-gitlab-mcp-server"],
-      "env": {
-        "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx",
-        "GITLAB_API_URL": "https://gitlab.com"
-      }
-    }
-  }
-}
-```
+Use a `read_api` scope PAT — the server auto-detects the limited scope and only exposes read tools. No extra config needed:
 
-For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL.
-
-### Connect via CLI
+**Claude Code CLI:**
 
 ```bash
-# stdio transport (default)
-claude mcp add gitlab-agent -- npx efficient-gitlab-mcp-server
-# or with Bun:
-claude mcp add gitlab-agent -- bunx efficient-gitlab-mcp-server
-
-# HTTP transport (requires running from source)
-STREAMABLE_HTTP=true bun start
-claude mcp add --transport http gitlab-agent http://localhost:3002/mcp
+claude mcp add gitlab -- npx efficient-gitlab-mcp-server \
+  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-your-read-only-token \
+  -e GITLAB_API_URL=https://gitlab.com
 ```
+
+Or force read-only mode explicitly (regardless of token scopes):
+
+```bash
+claude mcp add gitlab -- npx efficient-gitlab-mcp-server \
+  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
+  -e GITLAB_API_URL=https://gitlab.com \
+  -e GITLAB_READ_ONLY_MODE=true
+```
+
+For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL. Replace `npx` with `bunx` if using Bun.
 
 ### Install from Source (Development)
 
