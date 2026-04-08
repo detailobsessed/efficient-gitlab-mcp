@@ -207,6 +207,7 @@ export function registerMilestoneTools(
     {
       title: "Create Milestone",
       description: "Create a new project milestone",
+      annotations: { destructiveHint: false },
       inputSchema: {
         project_id: z
           .string()
@@ -235,6 +236,7 @@ export function registerMilestoneTools(
     {
       title: "Edit Milestone",
       description: "Edit an existing project milestone",
+      annotations: { destructiveHint: true },
       inputSchema: {
         project_id: z
           .string()
@@ -364,6 +366,7 @@ export function registerMilestoneTools(
     {
       title: "Promote Milestone",
       description: "Promote a project milestone to a group milestone",
+      annotations: { destructiveHint: true },
       inputSchema: {
         project_id: z
           .string()

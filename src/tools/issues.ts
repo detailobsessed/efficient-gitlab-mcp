@@ -555,6 +555,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "Create Note",
       description:
         "Create a note/comment on an issue or merge request. Use notable_type to specify which.",
+      annotations: { destructiveHint: false },
       inputSchema: {
         project_id: z
           .string()

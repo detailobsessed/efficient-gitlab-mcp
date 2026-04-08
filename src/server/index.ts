@@ -77,7 +77,12 @@ function createMcpServer(config: ServerConfig, logger: Logger): McpServer {
     `Registered ${totalTools} tools across ${toolsByCategory.size} categories (all disabled)`,
   );
 
-  registerDisclosureTools(mcpServer, toolsByCategory, logger);
+  registerDisclosureTools(mcpServer, toolsByCategory, logger, config.gitlabReadOnlyMode);
+
+  if (config.gitlabReadOnlyMode) {
+    logger.info("Read-only mode enabled — write tools will not be activated");
+  }
+
   logger.attachMcpServer(mcpServer);
 
   return mcpServer;

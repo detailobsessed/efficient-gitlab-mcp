@@ -16,11 +16,17 @@ import { CATEGORIES } from "./categories.js";
 
 export type ToolsByCategory = Map<string, Map<string, RegisteredTool>>;
 
+function isToolReadOnly(tool: RegisteredTool): boolean {
+  return tool.annotations?.readOnlyHint === true;
+}
+
 function activateCategories(
   categoryNames: string[],
   toolsByCategory: ToolsByCategory,
-): { enabled: string[]; notFound: string[] } {
+  readOnlyMode: boolean,
+): { enabled: string[]; skipped: number; notFound: string[] } {
   const enabled: string[] = [];
+  let skipped = 0;
   const notFound: string[] = [];
 
   for (const name of categoryNames) {
@@ -30,6 +36,10 @@ function activateCategories(
       continue;
     }
     for (const [toolName, tool] of tools) {
+      if (readOnlyMode && !isToolReadOnly(tool)) {
+        skipped++;
+        continue;
+      }
       if (!tool.enabled) {
         tool.enable();
         enabled.push(toolName);
@@ -37,11 +47,12 @@ function activateCategories(
     }
   }
 
-  return { enabled, notFound };
+  return { enabled, skipped, notFound };
 }
 
 function formatActivationResult(
   enabled: string[],
+  skipped: number,
   notFound: string[],
   toolsByCategory: ToolsByCategory,
 ): string {
@@ -49,11 +60,14 @@ function formatActivationResult(
   if (enabled.length > 0) {
     lines.push(`Enabled ${enabled.length} tool(s): ${enabled.join(", ")}`);
   }
+  if (skipped > 0) {
+    lines.push(`${skipped} write tool(s) skipped (read-only mode).`);
+  }
   if (notFound.length > 0) {
     const available = Array.from(toolsByCategory.keys()).join(", ");
     lines.push(`Unknown categories: ${notFound.join(", ")}. Available: ${available}`);
   }
-  if (enabled.length === 0 && notFound.length === 0) {
+  if (enabled.length === 0 && notFound.length === 0 && skipped === 0) {
     lines.push("All tools in the requested categories are already active.");
   }
   return lines.join("\n");
@@ -63,6 +77,7 @@ export function registerDisclosureTools(
   server: McpServer,
   toolsByCategory: ToolsByCategory,
   logger: Logger,
+  readOnlyMode = false,
 ): void {
   server.registerTool(
     "list_categories",
@@ -81,7 +96,11 @@ export function registerDisclosureTools(
     async () => {
       const categories = CATEGORIES.filter((cat) => toolsByCategory.has(cat.name)).map((cat) => {
         const tools = toolsByCategory.get(cat.name);
-        const toolCount = tools?.size ?? 0;
+        const toolCount = readOnlyMode
+          ? tools
+            ? Array.from(tools.values()).filter(isToolReadOnly).length
+            : 0
+          : (tools?.size ?? 0);
         const enabledCount = tools ? Array.from(tools.values()).filter((t) => t.enabled).length : 0;
         return {
           name: cat.name,
@@ -93,16 +112,22 @@ export function registerDisclosureTools(
 
       logger.info("Listed categories", { count: categories.length });
 
+      const preamble = readOnlyMode
+        ? "**Read-only mode active** — only read operations are available.\n\n"
+        : "";
+
       return {
         content: [
           {
             type: "text" as const,
-            text: categories
-              .map(
-                (c) =>
-                  `- **${c.name}** (${c.toolCount} tools${c.enabledCount > 0 ? `, ${c.enabledCount} active` : ""}): ${c.description}`,
-              )
-              .join("\n"),
+            text:
+              preamble +
+              categories
+                .map(
+                  (c) =>
+                    `- **${c.name}** (${c.toolCount} tools${c.enabledCount > 0 ? `, ${c.enabledCount} active` : ""}): ${c.description}`,
+                )
+                .join("\n"),
           },
         ],
       };
@@ -130,7 +155,11 @@ export function registerDisclosureTools(
     },
     async ({ categories: categoryNames }) => {
       const names = categoryNames as string[];
-      const { enabled, notFound } = activateCategories(names, toolsByCategory);
+      const { enabled, skipped, notFound } = activateCategories(
+        names,
+        toolsByCategory,
+        readOnlyMode,
+      );
 
       if (enabled.length > 0) {
         server.sendToolListChanged();
@@ -139,6 +168,7 @@ export function registerDisclosureTools(
       logger.info("Activated tools", {
         categories: names,
         enabledCount: enabled.length,
+        skipped,
         notFound,
       });
 
@@ -146,7 +176,7 @@ export function registerDisclosureTools(
         content: [
           {
             type: "text" as const,
-            text: formatActivationResult(enabled, notFound, toolsByCategory),
+            text: formatActivationResult(enabled, skipped, notFound, toolsByCategory),
           },
         ],
       };
