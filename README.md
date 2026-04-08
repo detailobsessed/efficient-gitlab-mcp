@@ -36,7 +36,8 @@ This fork builds on [zereight/gitlab-mcp](https://github.com/zereight/gitlab-mcp
 - **Typed Configuration** — A `ServerConfig` interface ensures all config values are validated at startup, with IDE autocompletion and compile-time safety.
 - **MCP Protocol Logging** — Structured logs sent to LLM clients for agent observability, not just developer console output.
 - **HTTP Transport Security** — DNS rebinding protection, configurable allowed hosts/origins.
-- **Comprehensive Test Suite** — 135+ tests covering registry, config, logger, MCP integration, and meta-tools.
+- **Read-Only Mode & PAT Safety** — Automatic PAT scope detection, explicit read-only mode, and actionable 403 error messages. Uses `readOnlyHint` annotations on all 146 tools to filter write operations.
+- **Comprehensive Test Suite** — 160+ tests covering registry, config, logger, MCP integration, read-only mode, and meta-tools.
 - **Strict Code Quality** — Zero `any` types, no non-null assertions, enforced cognitive complexity limits.
 - **Modern Tooling** — Bun for fast builds, Biome for linting, prek for pre-commit hooks.
 - **No Feature Flags Needed** — Upstream requires `USE_PIPELINE`, `USE_MILESTONE`, and `USE_GITLAB_WIKI` env vars to enable core tools. Progressive disclosure eliminates this — all 15 categories are registered but dormant until activated, so there's zero token cost and zero config overhead.
@@ -177,6 +178,24 @@ bun start
 
 ## Features
 
+### Read-Only Mode & PAT Safety
+
+The server provides three layers of protection for users with limited-scope Personal Access Tokens:
+
+**1. Explicit read-only mode** — Set `GITLAB_READ_ONLY_MODE=true` to restrict the server to read-only tools. Write tools won't appear in `list_categories` counts or be activated by `activate_tools`. This is controlled by the `readOnlyHint` annotation on every tool.
+
+**2. Automatic PAT scope detection** — On startup, the server calls GitLab's `GET /personal_access_tokens/self` to inspect your token's scopes. If the token lacks the `api` scope (e.g., only has `read_api`), read-only mode is automatically enabled. No configuration needed — it just works.
+
+**3. Actionable 403 error messages** — If a tool call hits a 403 Forbidden error, the error message includes specific guidance about which PAT scopes are needed, so the LLM can inform the user rather than retrying blindly.
+
+```
+# Explicit read-only mode
+GITLAB_READ_ONLY_MODE=true
+
+# Or just use a read_api token — auto-detected!
+GITLAB_PERSONAL_ACCESS_TOKEN=glpat-your-read-only-token
+```
+
 ### MCP Protocol Logging
 
 The server supports MCP protocol logging for agent observability. When connected, LLM clients can receive structured log messages showing what the server is doing:
@@ -237,7 +256,7 @@ bun run build
 | `GITLAB_API_URL` | No | `https://gitlab.com` | GitLab instance URL |
 | `GITLAB_PROJECT_ID` | No | - | Default project ID when tools omit `project_id` |
 | `GITLAB_ALLOWED_PROJECT_IDS` | No | - | Restrict tools to these projects (comma-separated). With a single project, acts as default. With multiple, `project_id` is required per call |
-| `GITLAB_READ_ONLY_MODE` | No | `false` | Disable write operations |
+| `GITLAB_READ_ONLY_MODE` | No | `false` | Only expose read-only tools. Auto-detected from PAT scopes if not set |
 | `GITLAB_IS_OLD` | No | `false` | For older GitLab instances |
 
 \*PAT is recommended. `CI_JOB_TOKEN` is auto-detected in GitLab CI pipelines when no PAT is set. OAuth support is planned (see DET-44).
