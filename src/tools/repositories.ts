@@ -1,6 +1,11 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
+import {
+  buildQueryString,
+  defaultClient,
+  isNotFoundError,
+  resolveProjectId,
+} from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 const SearchRepositoriesSchema = z.object({
@@ -336,7 +341,10 @@ export function registerRepositoryTools(
         const ref = args.branch ? `?ref=${encodeURIComponent(args.branch)}` : "";
         await defaultClient.get(`/projects/${projectId}/repository/files/${filePath}${ref}`);
         fileExists = true;
-      } catch {
+      } catch (error) {
+        if (!isNotFoundError(error)) {
+          throw error;
+        }
         // File doesn't exist, will create
       }
 
