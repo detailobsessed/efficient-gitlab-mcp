@@ -104,9 +104,10 @@ async function main() {
     transportMode: config.transportMode,
   });
 
-  // Auto-detect read-only mode from PAT scopes (unless already set via env)
+  // Auto-detect read-only mode from PAT scopes (unless explicitly configured via env)
   let readOnlyOverride: boolean | undefined;
-  if (!config.gitlabReadOnlyMode) {
+  const readOnlyExplicitlySet = process.env.GITLAB_READ_ONLY_MODE !== undefined;
+  if (!readOnlyExplicitlySet) {
     const autoDetected = await detectReadOnlyFromScopes(defaultClient, logger);
     if (autoDetected === true) {
       readOnlyOverride = true;
