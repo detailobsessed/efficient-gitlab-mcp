@@ -118,9 +118,17 @@ Use an `api` scope PAT to get all 146 tools across 15 categories:
 **Claude Code CLI:**
 
 ```bash
-claude mcp add gitlab -- npx efficient-gitlab-mcp-server \
+# With npx (Node.js)
+claude mcp add gitlab \
   -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
-  -e GITLAB_API_URL=https://gitlab.com
+  -e GITLAB_API_URL=https://gitlab.com \
+  -- npx efficient-gitlab-mcp-server
+
+# With bunx (Bun)
+claude mcp add gitlab \
+  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
+  -e GITLAB_API_URL=https://gitlab.com \
+  -- bunx efficient-gitlab-mcp-server
 ```
 
 **MCP client config** (Claude Desktop, IDE extensions, etc.):
@@ -147,21 +155,38 @@ Use a `read_api` scope PAT — the server auto-detects the limited scope and onl
 **Claude Code CLI:**
 
 ```bash
-claude mcp add gitlab -- npx efficient-gitlab-mcp-server \
+# With npx (Node.js)
+claude mcp add gitlab \
   -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-your-read-only-token \
-  -e GITLAB_API_URL=https://gitlab.com
+  -e GITLAB_API_URL=https://gitlab.com \
+  -- npx efficient-gitlab-mcp-server
+
+# With bunx (Bun)
+claude mcp add gitlab \
+  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-your-read-only-token \
+  -e GITLAB_API_URL=https://gitlab.com \
+  -- bunx efficient-gitlab-mcp-server
 ```
 
 Or force read-only mode explicitly (regardless of token scopes):
 
 ```bash
-claude mcp add gitlab -- npx efficient-gitlab-mcp-server \
+# With npx (Node.js)
+claude mcp add gitlab \
   -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
   -e GITLAB_API_URL=https://gitlab.com \
-  -e GITLAB_READ_ONLY_MODE=true
+  -e GITLAB_READ_ONLY_MODE=true \
+  -- npx efficient-gitlab-mcp-server
+
+# With bunx (Bun)
+claude mcp add gitlab \
+  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
+  -e GITLAB_API_URL=https://gitlab.com \
+  -e GITLAB_READ_ONLY_MODE=true \
+  -- bunx efficient-gitlab-mcp-server
 ```
 
-For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL. Replace `npx` with `bunx` if using Bun.
+For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL.
 
 ### Install from Source (Development)
 
