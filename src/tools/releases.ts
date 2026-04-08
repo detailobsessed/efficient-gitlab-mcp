@@ -466,22 +466,30 @@ export function registerReleaseTools(
       const isInternal =
         !assetUrl.startsWith("http") ||
         new URL(assetUrl).origin === new URL(defaultClient.getApiUrl()).origin;
-      const response = isInternal ? await defaultClient.rawFetch(assetUrl) : await fetch(assetUrl);
-      if (!response.ok) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(
-                { error: `Failed to fetch asset: ${response.status} ${response.statusText}` },
-                null,
-                2,
-              ),
-            },
-          ],
-        };
+
+      let assetContent: string;
+      if (isInternal) {
+        // rawFetch throws on !response.ok, no need to check here
+        const response = await defaultClient.rawFetch(assetUrl);
+        assetContent = await response.text();
+      } else {
+        const response = await fetch(assetUrl);
+        if (!response.ok) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  { error: `Failed to fetch asset: ${response.status} ${response.statusText}` },
+                  null,
+                  2,
+                ),
+              },
+            ],
+          };
+        }
+        assetContent = await response.text();
       }
-      const assetContent = await response.text();
       return {
         content: [
           {
