@@ -165,7 +165,7 @@ describe("GitLabClient", () => {
 
       const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
 
-      expect(client.get("/projects/999")).rejects.toThrow("GitLab API error: 404 Not Found");
+      await expect(client.get("/projects/999")).rejects.toThrow("GitLab API error: 404 Not Found");
     });
 
     it("should throw rate limit error on 403 with rate limit message", async () => {
@@ -181,7 +181,81 @@ describe("GitLabClient", () => {
 
       const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
 
-      expect(client.get("/projects")).rejects.toThrow("GitLab API Rate Limit Exceeded");
+      await expect(client.get("/projects")).rejects.toThrow("GitLab API Rate Limit Exceeded");
+    });
+
+    it("should include PAT scope guidance on non-rate-limit 403", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: false,
+          status: 403,
+          statusText: "Forbidden",
+          text: () => Promise.resolve('{"message":"403 Forbidden"}'),
+        } as Response),
+      );
+
+      const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
+
+      await expect(client.get("/projects/1/issues")).rejects.toThrow("insufficient token scopes");
+    });
+
+    it("should not include PAT scope guidance on non-403 errors", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: false,
+          status: 404,
+          statusText: "Not Found",
+          text: () => Promise.resolve("Project not found"),
+        } as Response),
+      );
+
+      const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
+
+      const error = await client.get("/projects/999").catch((e: Error) => e);
+      expect((error as Error).message).toContain("404");
+      expect((error as Error).message).not.toContain("insufficient token scopes");
+    });
+  });
+
+  describe("rawFetch", () => {
+    it("should include PAT scope guidance on 403", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: false,
+          status: 403,
+          statusText: "Forbidden",
+          text: () => Promise.resolve('{"message":"403 Forbidden"}'),
+        } as Response),
+      );
+
+      const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
+
+      await expect(client.rawFetch("/projects/1/repository/archive")).rejects.toThrow(
+        "insufficient token scopes",
+      );
+    });
+  });
+
+  describe("graphql", () => {
+    it("should include PAT scope guidance on 403", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: false,
+          status: 403,
+          statusText: "Forbidden",
+          text: () => Promise.resolve('{"message":"403 Forbidden"}'),
+        } as Response),
+      );
+
+      const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
+
+      await expect(client.graphql("{ currentUser { name } }")).rejects.toThrow(
+        "insufficient token scopes",
+      );
     });
   });
 

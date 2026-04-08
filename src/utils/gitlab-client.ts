@@ -10,6 +10,20 @@ interface FetchOptions {
   body?: string;
 }
 
+const SCOPE_GUIDANCE =
+  "This may indicate insufficient token scopes. " +
+  "Check your Personal Access Token scopes at GitLab > Settings > Access Tokens. " +
+  "Required scope for write operations: 'api'. Read operations need 'read_api'.";
+
+function throwIfForbidden(status: number, errorBody: string, prefix: string): void {
+  if (status !== 403) return;
+  if (errorBody.toLowerCase().includes("rate limit")) {
+    logger.error(`${prefix} Rate Limit Exceeded`, { error: errorBody });
+    throw new Error(`${prefix} Rate Limit Exceeded: ${errorBody}`);
+  }
+  throw new Error(`${prefix} permission denied (403): ${errorBody}\n\n${SCOPE_GUIDANCE}`);
+}
+
 export class GitLabClient {
   private apiUrl: string;
   private token: string;
@@ -59,10 +73,7 @@ export class GitLabClient {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      if (response.status === 403 && errorBody.includes("Rate limit")) {
-        logger.error("GitLab API Rate Limit Exceeded", { error: errorBody });
-        throw new Error(`GitLab API Rate Limit Exceeded: ${errorBody}`);
-      }
+      throwIfForbidden(response.status, errorBody, "GitLab API");
       throw new Error(`GitLab API error: ${response.status} ${response.statusText}\n${errorBody}`);
     }
 
@@ -118,6 +129,7 @@ export class GitLabClient {
 
     if (!response.ok) {
       const errorBody = await response.text();
+      throwIfForbidden(response.status, errorBody, "GitLab API");
       throw new Error(`GitLab API error: ${response.status} ${response.statusText}\n${errorBody}`);
     }
 
@@ -137,6 +149,7 @@ export class GitLabClient {
 
     if (!response.ok) {
       const errorBody = await response.text();
+      throwIfForbidden(response.status, errorBody, "GraphQL");
       throw new Error(`GraphQL request failed (${response.status}): ${errorBody}`);
     }
 

@@ -36,7 +36,8 @@ This fork builds on [zereight/gitlab-mcp](https://github.com/zereight/gitlab-mcp
 - **Typed Configuration** — A `ServerConfig` interface ensures all config values are validated at startup, with IDE autocompletion and compile-time safety.
 - **MCP Protocol Logging** — Structured logs sent to LLM clients for agent observability, not just developer console output.
 - **HTTP Transport Security** — DNS rebinding protection, configurable allowed hosts/origins.
-- **Comprehensive Test Suite** — 135+ tests covering registry, config, logger, MCP integration, and meta-tools.
+- **Read-Only Mode & PAT Safety** — Automatic PAT scope detection, explicit read-only mode, and actionable 403 error messages. Uses `readOnlyHint` annotations on all 146 tools to filter write operations.
+- **Comprehensive Test Suite** — 160+ tests covering registry, config, logger, MCP integration, read-only mode, and meta-tools.
 - **Strict Code Quality** — Zero `any` types, no non-null assertions, enforced cognitive complexity limits.
 - **Modern Tooling** — Bun for fast builds, Biome for linting, prek for pre-commit hooks.
 - **No Feature Flags Needed** — Upstream requires `USE_PIPELINE`, `USE_MILESTONE`, and `USE_GITLAB_WIKI` env vars to enable core tools. Progressive disclosure eliminates this — all 15 categories are registered but dormant until activated, so there's zero token cost and zero config overhead.
@@ -105,16 +106,24 @@ All GitLab operations organized by category:
 ### Prerequisites
 
 - Node.js 18+ (for `npx`) or [Bun](https://bun.sh/) 1.0+ (for `bunx`)
-- A GitLab personal access token with the following scopes:
-  - `api` — Full API access (required for most operations)
-  - `read_api` — Read-only API access (if you only need read operations)
-  - `read_repository` — Read repository files
-  - `write_repository` — Push to repositories
-- Or `CI_JOB_TOKEN` — automatically detected in GitLab CI pipelines (PAT takes priority if both are set)
+- A GitLab Personal Access Token — scope determines what the server can do:
+  - `api` — Full access (create issues, merge MRs, manage pipelines, etc.)
+  - `read_api` — Read-only (server auto-detects and hides write tools)
+- Or `CI_JOB_TOKEN` — automatically detected in GitLab CI pipelines
 
-### MCP Client Configuration
+### Full Access (recommended for most users)
 
-Add this to your MCP client configuration (e.g., `~/.config/claude/claude_desktop_config.json` for Claude Desktop, or your IDE's MCP settings):
+Use an `api` scope PAT to get all 146 tools across 15 categories:
+
+**Claude Code CLI:**
+
+```bash
+claude mcp add gitlab -- npx efficient-gitlab-mcp-server \
+  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
+  -e GITLAB_API_URL=https://gitlab.com
+```
+
+**MCP client config** (Claude Desktop, IDE extensions, etc.):
 
 ```json
 {
@@ -131,37 +140,28 @@ Add this to your MCP client configuration (e.g., `~/.config/claude/claude_deskto
 }
 ```
 
-Or with Bun:
+### Read-Only Mode (security-conscious setup)
 
-```json
-{
-  "mcpServers": {
-    "gitlab": {
-      "command": "bunx",
-      "args": ["efficient-gitlab-mcp-server"],
-      "env": {
-        "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx",
-        "GITLAB_API_URL": "https://gitlab.com"
-      }
-    }
-  }
-}
-```
+Use a `read_api` scope PAT — the server auto-detects the limited scope and only exposes read tools. No extra config needed:
 
-For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL.
-
-### Connect via CLI
+**Claude Code CLI:**
 
 ```bash
-# stdio transport (default)
-claude mcp add gitlab-agent -- npx efficient-gitlab-mcp-server
-# or with Bun:
-claude mcp add gitlab-agent -- bunx efficient-gitlab-mcp-server
-
-# HTTP transport (requires running from source)
-STREAMABLE_HTTP=true bun start
-claude mcp add --transport http gitlab-agent http://localhost:3002/mcp
+claude mcp add gitlab -- npx efficient-gitlab-mcp-server \
+  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-your-read-only-token \
+  -e GITLAB_API_URL=https://gitlab.com
 ```
+
+Or force read-only mode explicitly (regardless of token scopes):
+
+```bash
+claude mcp add gitlab -- npx efficient-gitlab-mcp-server \
+  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
+  -e GITLAB_API_URL=https://gitlab.com \
+  -e GITLAB_READ_ONLY_MODE=true
+```
+
+For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL. Replace `npx` with `bunx` if using Bun.
 
 ### Install from Source (Development)
 
@@ -176,6 +176,24 @@ bun start
 ---
 
 ## Features
+
+### Read-Only Mode & PAT Safety
+
+The server provides three layers of protection for users with limited-scope Personal Access Tokens:
+
+**1. Explicit read-only mode** — Set `GITLAB_READ_ONLY_MODE=true` to restrict the server to read-only tools. Write tools won't appear in `list_categories` counts or be activated by `activate_tools`. This is controlled by the `readOnlyHint` annotation on every tool.
+
+**2. Automatic PAT scope detection** — On startup, the server calls GitLab's `GET /personal_access_tokens/self` to inspect your token's scopes. If the token lacks the `api` scope (e.g., only has `read_api`), read-only mode is automatically enabled. No configuration needed — it just works.
+
+**3. Actionable 403 error messages** — If a tool call hits a 403 Forbidden error, the error message includes specific guidance about which PAT scopes are needed, so the LLM can inform the user rather than retrying blindly.
+
+```
+# Explicit read-only mode
+GITLAB_READ_ONLY_MODE=true
+
+# Or just use a read_api token — auto-detected!
+GITLAB_PERSONAL_ACCESS_TOKEN=glpat-your-read-only-token
+```
 
 ### MCP Protocol Logging
 
@@ -237,7 +255,7 @@ bun run build
 | `GITLAB_API_URL` | No | `https://gitlab.com` | GitLab instance URL |
 | `GITLAB_PROJECT_ID` | No | - | Default project ID when tools omit `project_id` |
 | `GITLAB_ALLOWED_PROJECT_IDS` | No | - | Restrict tools to these projects (comma-separated). With a single project, acts as default. With multiple, `project_id` is required per call |
-| `GITLAB_READ_ONLY_MODE` | No | `false` | Disable write operations |
+| `GITLAB_READ_ONLY_MODE` | No | `false` | Only expose read-only tools. Auto-detected from PAT scopes if not set |
 | `GITLAB_IS_OLD` | No | `false` | For older GitLab instances |
 
 \*PAT is recommended. `CI_JOB_TOKEN` is auto-detected in GitLab CI pipelines when no PAT is set. OAuth support is planned (see DET-44).
