@@ -1,3 +1,10 @@
+## [2.11.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.0...v2.11.1) (2026-04-08)
+
+
+### Bug Fixes
+
+* remove dead response.ok check for rawFetch path in releases ([#60](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/60)) ([5f57916](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/5f57916e453ee337b79b99d4cb6a4c9403f3ecac))
+
 # [2.11.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.10.0...v2.11.0) (2026-04-08)
 
 
