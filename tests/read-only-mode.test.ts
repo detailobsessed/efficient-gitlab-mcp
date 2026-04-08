@@ -12,6 +12,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerDisclosureTools, type ToolsByCategory } from "../src/registry/index.js";
+import { registerGraphqlTools } from "../src/tools/graphql.js";
 import { registerIssueTools } from "../src/tools/issues.js";
 import { registerRepositoryTools } from "../src/tools/repositories.js";
 import { registerSearchTools } from "../src/tools/search.js";
@@ -44,6 +45,7 @@ async function createTestSetup(readOnlyMode: boolean) {
   toolsByCategory.set("repositories", registerRepositoryTools(server, logger));
   toolsByCategory.set("search", registerSearchTools(server, logger));
   toolsByCategory.set("issues", registerIssueTools(server, logger));
+  toolsByCategory.set("graphql", registerGraphqlTools(server, logger));
   registerDisclosureTools(server, toolsByCategory, logger, readOnlyMode);
 
   const client = new Client({ name: "test-client", version: "1.0.0" }, { capabilities: {} });
@@ -148,7 +150,7 @@ describe("Read-Only Mode", () => {
       expect(toolNames).toContain("search_group_code");
     });
 
-    it("should show 'already active' on repeated activation in read-only mode", async () => {
+    it("should show 'already active' without skipped noise on repeated activation", async () => {
       await client.callTool({
         name: "activate_tools",
         arguments: { categories: ["repositories"] },
@@ -161,6 +163,20 @@ describe("Read-Only Mode", () => {
 
       const text = getTextContent(result);
       expect(text).toContain("already active");
+      // Should NOT repeat the skipped count on re-activation
+      expect(text).not.toContain("skipped");
+    });
+
+    it("should show 'no read-only tools' for categories with only write tools", async () => {
+      const result = await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["graphql"] },
+      });
+
+      const text = getTextContent(result);
+      expect(text.toLowerCase()).toContain("no read-only tools");
+      // Should NOT say "already active" — nothing was ever activated
+      expect(text).not.toContain("already active");
     });
 
     it("should not enable any issue write tools", async () => {

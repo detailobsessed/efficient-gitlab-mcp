@@ -24,9 +24,10 @@ function activateCategories(
   categoryNames: string[],
   toolsByCategory: ToolsByCategory,
   readOnlyMode: boolean,
-): { enabled: string[]; skipped: number; notFound: string[] } {
+): { enabled: string[]; skipped: number; eligible: number; notFound: string[] } {
   const enabled: string[] = [];
   let skipped = 0;
+  let eligible = 0;
   const notFound: string[] = [];
 
   for (const name of categoryNames) {
@@ -40,6 +41,7 @@ function activateCategories(
         skipped++;
         continue;
       }
+      eligible++;
       if (!tool.enabled) {
         tool.enable();
         enabled.push(toolName);
@@ -47,28 +49,31 @@ function activateCategories(
     }
   }
 
-  return { enabled, skipped, notFound };
+  return { enabled, skipped, eligible, notFound };
 }
 
 function formatActivationResult(
   enabled: string[],
   skipped: number,
+  eligible: number,
   notFound: string[],
   toolsByCategory: ToolsByCategory,
 ): string {
   const lines: string[] = [];
   if (enabled.length > 0) {
     lines.push(`Enabled ${enabled.length} tool(s): ${enabled.join(", ")}`);
-  }
-  if (skipped > 0) {
-    lines.push(`${skipped} write tool(s) skipped (read-only mode).`);
+    if (skipped > 0) {
+      lines.push(`${skipped} write tool(s) skipped (read-only mode).`);
+    }
   }
   if (notFound.length > 0) {
     const available = Array.from(toolsByCategory.keys()).join(", ");
     lines.push(`Unknown categories: ${notFound.join(", ")}. Available: ${available}`);
   }
   if (enabled.length === 0 && notFound.length === 0) {
-    if (skipped === 0) {
+    if (eligible === 0 && skipped > 0) {
+      lines.push("No read-only tools available in the requested categories.");
+    } else if (skipped === 0) {
       lines.push("All tools in the requested categories are already active.");
     } else {
       lines.push("All available read-only tools are already active.");
@@ -164,7 +169,7 @@ export function registerDisclosureTools(
     },
     async ({ categories: categoryNames }) => {
       const names = categoryNames as string[];
-      const { enabled, skipped, notFound } = activateCategories(
+      const { enabled, skipped, eligible, notFound } = activateCategories(
         names,
         toolsByCategory,
         readOnlyMode,
@@ -185,7 +190,7 @@ export function registerDisclosureTools(
         content: [
           {
             type: "text" as const,
-            text: formatActivationResult(enabled, skipped, notFound, toolsByCategory),
+            text: formatActivationResult(enabled, skipped, eligible, notFound, toolsByCategory),
           },
         ],
       };
