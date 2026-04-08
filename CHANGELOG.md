@@ -1,3 +1,10 @@
+## [2.11.3](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.2...v2.11.3) (2026-04-08)
+
+
+### Bug Fixes
+
+* fix critical errors in install instruction in README.md ([#62](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/62)) ([a6581c0](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/a6581c03d75fa6eca7b894efbc902442e5c25037))
+
 ## [2.11.2](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.1...v2.11.2) (2026-04-08)
 
 
