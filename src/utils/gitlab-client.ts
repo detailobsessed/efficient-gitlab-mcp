@@ -167,6 +167,15 @@ export class GitLabClient {
 
 export const defaultClient = new GitLabClient();
 
+/**
+ * Check if an error is a GitLab 404 "Not Found" response.
+ * Use this instead of bare catch blocks when you need to distinguish
+ * 404 from other errors (403, 500, network failures).
+ */
+export function isNotFoundError(error: unknown): boolean {
+  return error instanceof Error && /GitLab API error: 404\b/.test(error.message);
+}
+
 export function encodeProjectId(projectId: string): string {
   return encodeURIComponent(projectId);
 }

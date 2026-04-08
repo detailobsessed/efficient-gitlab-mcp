@@ -115,5 +115,42 @@ describe("Repository Tools Handlers", () => {
       expect(requestMethod).toBe("PUT");
       expect(callCount).toBe(2);
     });
+
+    it("should propagate 403 errors instead of treating as file-not-found", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string, options?: RequestInit) => {
+        // The GET file-existence check returns 403
+        if (options?.method === "GET" || !options?.method) {
+          return Promise.resolve({
+            ok: false,
+            status: 403,
+            statusText: "Forbidden",
+            text: () => Promise.resolve('{"message":"403 Forbidden"}'),
+          } as Response);
+        }
+
+        // POST/PUT should never be reached
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          text: () => Promise.resolve('{"file_path": "secret.txt", "branch": "main"}'),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "create_or_update_file",
+        arguments: {
+          project_id: "my-group/my-project",
+          file_path: "secret.txt",
+          branch: "main",
+          content: "should not be written",
+          commit_message: "Should fail",
+        },
+      });
+
+      const content = result.content as Array<{ type: string; text: string }>;
+      // The 403 should surface as an error, not silently fall through to POST
+      expect(content[0].text).toContain("permission denied");
+    });
   });
 });

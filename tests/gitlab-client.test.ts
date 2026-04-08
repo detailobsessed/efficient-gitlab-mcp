@@ -4,6 +4,7 @@ import {
   encodeProjectId,
   GitLabClient,
   getEffectiveProjectId,
+  isNotFoundError,
 } from "../src/utils/gitlab-client.js";
 
 describe("GitLab Client Utilities", () => {
@@ -112,6 +113,28 @@ describe("GitLab Client Utilities", () => {
       expect(result).toContain("labels%5B%5D=bug");
       expect(result).toContain("labels%5B%5D=feature");
     });
+  });
+});
+
+describe("isNotFoundError", () => {
+  it("should return true for a 404 GitLab API error", () => {
+    expect(isNotFoundError(new Error("GitLab API error: 404 Not Found\nProject not found"))).toBe(
+      true,
+    );
+  });
+
+  it("should return false for a 403 permission denied error", () => {
+    expect(isNotFoundError(new Error("GitLab API permission denied (403): Forbidden"))).toBe(false);
+  });
+
+  it("should return false for a generic error", () => {
+    expect(isNotFoundError(new Error("network failure"))).toBe(false);
+  });
+
+  it("should return false for non-Error values", () => {
+    expect(isNotFoundError("not an error")).toBe(false);
+    expect(isNotFoundError(null)).toBe(false);
+    expect(isNotFoundError(undefined)).toBe(false);
   });
 });
 
