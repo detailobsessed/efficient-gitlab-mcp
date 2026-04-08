@@ -1,6 +1,6 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
+import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 const GetUsersSchema = z.object({
@@ -48,7 +48,10 @@ const ListEventsSchema = z.object({
 });
 
 const GetProjectEventsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   action: z
     .string()
     .optional()
@@ -219,7 +222,10 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
       description:
         "List all visible events for a specified project. Note: before/after parameters accept date format YYYY-MM-DD only",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         action: z
           .string()
           .optional()
@@ -253,7 +259,7 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
     },
     async (params) => {
       const args = GetProjectEventsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
@@ -277,7 +283,7 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
     },
     async (params) => {
       const args = UploadMarkdownSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       // GitLab uploads API requires multipart/form-data
       const { readFile } = await import("fs/promises");
@@ -315,7 +321,7 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
     },
     async (params) => {
       const args = DownloadAttachmentSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const response = await defaultClient.rawFetch(
         `/projects/${projectId}/uploads/${encodeURIComponent(args.secret)}/${encodeURIComponent(args.filename)}`,

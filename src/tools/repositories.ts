@@ -1,6 +1,6 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
+import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 const SearchRepositoriesSchema = z.object({
@@ -10,7 +10,10 @@ const SearchRepositoriesSchema = z.object({
 });
 
 const GetFileContentsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   file_path: z.string().describe("Path to the file in the repository"),
   ref: z.string().optional().describe("Branch, tag, or commit SHA"),
 });
@@ -31,13 +34,19 @@ const ForkRepositorySchema = z.object({
 });
 
 const CreateBranchSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   branch: z.string().describe("Name of the new branch"),
   ref: z.string().describe("Source branch or commit SHA"),
 });
 
 const GetRepositoryTreeSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   path: z.string().optional().describe("Path inside repository"),
   ref: z.string().optional().describe("Branch, tag, or commit SHA"),
   recursive: z.boolean().optional().describe("Get tree recursively"),
@@ -46,7 +55,10 @@ const GetRepositoryTreeSchema = z.object({
 });
 
 const CreateOrUpdateFileSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   file_path: z.string().describe("Path to the file"),
   branch: z.string().describe("Target branch"),
   content: z.string().describe("File content"),
@@ -56,7 +68,10 @@ const CreateOrUpdateFileSchema = z.object({
 });
 
 const PushFilesSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   branch: z.string().describe("Target branch"),
   commit_message: z.string().describe("Commit message"),
   files: z
@@ -72,7 +87,10 @@ const PushFilesSchema = z.object({
 });
 
 const GetBranchDiffsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   from: z.string().describe("Source branch or commit"),
   to: z.string().describe("Target branch or commit"),
   straight: z.boolean().optional().describe("Use straight comparison"),
@@ -122,7 +140,10 @@ export function registerRepositoryTools(
       title: "Get File Contents",
       description: "Get the contents of a file or directory from a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         file_path: z.string().describe("Path to the file in the repository"),
         ref: z.string().optional().describe("Branch, tag, or commit SHA"),
       },
@@ -132,7 +153,7 @@ export function registerRepositoryTools(
     },
     async (params) => {
       const args = GetFileContentsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const filePath = encodeURIComponent(args.file_path);
       const query = args.ref ? `?ref=${encodeURIComponent(args.ref)}` : "";
 
@@ -194,7 +215,7 @@ export function registerRepositoryTools(
     },
     async (params) => {
       const args = ForkRepositorySchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...body } = args;
 
       const fork = await defaultClient.post(`/projects/${projectId}/fork`, body);
@@ -212,7 +233,10 @@ export function registerRepositoryTools(
       title: "Create Branch",
       description: "Create a new branch in a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         branch: z.string().describe("Name of the new branch"),
         ref: z.string().describe("Source branch or commit SHA"),
       },
@@ -222,7 +246,7 @@ export function registerRepositoryTools(
     },
     async (params) => {
       const args = CreateBranchSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const branch = await defaultClient.post(`/projects/${projectId}/repository/branches`, {
         branch: args.branch,
@@ -242,7 +266,10 @@ export function registerRepositoryTools(
       title: "Get Repository Tree",
       description: "Get the repository tree for a GitLab project (list files and directories)",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         path: z.string().optional().describe("Path inside repository"),
         ref: z.string().optional().describe("Branch, tag, or commit SHA"),
         recursive: z.boolean().optional().describe("Get tree recursively"),
@@ -255,7 +282,7 @@ export function registerRepositoryTools(
     },
     async (params) => {
       const args = GetRepositoryTreeSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
@@ -274,7 +301,10 @@ export function registerRepositoryTools(
       title: "Create or Update File",
       description: "Create or update a single file in a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         file_path: z.string().describe("Path to the file"),
         branch: z.string().describe("Target branch"),
         content: z.string().describe("File content"),
@@ -288,7 +318,7 @@ export function registerRepositoryTools(
     },
     async (params) => {
       const args = CreateOrUpdateFileSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const filePath = encodeURIComponent(args.file_path);
 
       const body = {
@@ -329,7 +359,10 @@ export function registerRepositoryTools(
       title: "Push Files",
       description: "Push multiple files to a GitLab project in a single commit",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         branch: z.string().describe("Target branch"),
         commit_message: z.string().describe("Commit message"),
         files: z
@@ -349,7 +382,7 @@ export function registerRepositoryTools(
     },
     async (params) => {
       const args = PushFilesSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const actions = args.files.map((file) => ({
         action: file.action ?? "create",
@@ -377,7 +410,10 @@ export function registerRepositoryTools(
       title: "Get Branch Diffs",
       description: "Get the changes/diffs between two branches or commits in a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         from: z.string().describe("Source branch or commit"),
         to: z.string().describe("Target branch or commit"),
         straight: z.boolean().optional().describe("Use straight comparison"),
@@ -388,7 +424,7 @@ export function registerRepositoryTools(
     },
     async (params) => {
       const args = GetBranchDiffsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const query = buildQueryString({
         from: args.from,
         to: args.to,

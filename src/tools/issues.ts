@@ -1,10 +1,13 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
+import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 const CreateIssueSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   title: z.string().describe("Issue title"),
   description: z.string().optional().describe("Issue description"),
   assignee_ids: z.array(z.number()).optional().describe("Assignee user IDs"),
@@ -15,7 +18,10 @@ const CreateIssueSchema = z.object({
 });
 
 const ListIssuesSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   state: z.enum(["opened", "closed", "all"]).optional().describe("Issue state filter"),
   scope: z.enum(["created_by_me", "assigned_to_me", "all"]).optional().describe("Scope filter"),
   labels: z.string().optional().describe("Comma-separated labels filter"),
@@ -33,12 +39,18 @@ const MyIssuesSchema = z.object({
 });
 
 const GetIssueSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   issue_iid: z.number().describe("Issue IID"),
 });
 
 const UpdateIssueSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   issue_iid: z.number().describe("Issue IID"),
   title: z.string().optional().describe("New title"),
   description: z.string().optional().describe("New description"),
@@ -51,17 +63,26 @@ const UpdateIssueSchema = z.object({
 });
 
 const DeleteIssueSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   issue_iid: z.number().describe("Issue IID"),
 });
 
 const ListIssueLinksSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   issue_iid: z.number().describe("Issue IID"),
 });
 
 const CreateIssueLinkSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   issue_iid: z.number().describe("Source issue IID"),
   target_project_id: z.string().describe("Target project ID"),
   target_issue_iid: z.number().describe("Target issue IID"),
@@ -69,20 +90,29 @@ const CreateIssueLinkSchema = z.object({
 });
 
 const DeleteIssueLinkSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   issue_iid: z.number().describe("Issue IID"),
   issue_link_id: z.number().describe("Issue link ID"),
 });
 
 const ListIssueDiscussionsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   issue_iid: z.number().describe("Issue IID"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
 
 const CreateIssueNoteSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   issue_iid: z.number().describe("Issue IID"),
   body: z.string().describe("Note body"),
   discussion_id: z
@@ -93,20 +123,29 @@ const CreateIssueNoteSchema = z.object({
 });
 
 const UpdateIssueNoteSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   issue_iid: z.number().describe("Issue IID"),
   note_id: z.number().describe("Note ID"),
   body: z.string().describe("New note body"),
 });
 
 const GetIssueLinkSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   issue_iid: z.number().describe("Issue IID"),
   issue_link_id: z.number().describe("ID of the issue relationship"),
 });
 
 const CreateNoteSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   notable_type: z
     .enum(["issue", "merge_request"])
     .describe("Type of notable (issue or merge_request)"),
@@ -124,7 +163,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "Create Issue",
       description: "Create a new issue in a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         title: z.string().describe("Issue title"),
         description: z.string().optional().describe("Issue description"),
         assignee_ids: z.array(z.number()).optional().describe("Assignee user IDs"),
@@ -137,7 +179,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     },
     async (params) => {
       const args = CreateIssueSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...body } = args;
 
       const issue = await defaultClient.post(`/projects/${projectId}/issues`, body);
@@ -153,7 +195,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "List Issues",
       description: "List issues in a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         state: z.enum(["opened", "closed", "all"]).optional().describe("Issue state filter"),
         scope: z.enum(["created_by_me", "assigned_to_me", "all"]).optional().describe("Scope"),
         labels: z.string().optional().describe("Comma-separated labels filter"),
@@ -166,7 +211,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     },
     async (params) => {
       const args = ListIssuesSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
@@ -207,14 +252,17 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "Get Issue",
       description: "Get details of a specific issue in a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = GetIssueSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const issue = await defaultClient.get(`/projects/${projectId}/issues/${args.issue_iid}`);
       return { content: [{ type: "text", text: JSON.stringify(issue, null, 2) }] };
@@ -229,7 +277,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "Update Issue",
       description: "Update an issue in a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
         title: z.string().optional().describe("New title"),
         description: z.string().optional().describe("New description"),
@@ -242,7 +293,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     },
     async (params) => {
       const args = UpdateIssueSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, issue_iid, ...body } = args;
 
       const issue = await defaultClient.put(`/projects/${projectId}/issues/${issue_iid}`, body);
@@ -258,14 +309,17 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "Delete Issue",
       description: "Delete an issue from a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
       },
       annotations: { destructiveHint: true },
     },
     async (params) => {
       const args = DeleteIssueSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       await defaultClient.delete(`/projects/${projectId}/issues/${args.issue_iid}`);
       return { content: [{ type: "text", text: "Issue deleted successfully" }] };
@@ -280,14 +334,17 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "List Issue Links",
       description: "List all issue links for a specific issue",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = ListIssueLinksSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const links = await defaultClient.get(
         `/projects/${projectId}/issues/${args.issue_iid}/links`,
@@ -304,7 +361,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "Create Issue Link",
       description: "Create an issue link between two issues",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Source issue IID"),
         target_project_id: z.string().describe("Target project ID"),
         target_issue_iid: z.number().describe("Target issue IID"),
@@ -317,7 +377,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     },
     async (params) => {
       const args = CreateIssueLinkSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const link = await defaultClient.post(
         `/projects/${projectId}/issues/${args.issue_iid}/links`,
@@ -339,7 +399,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "Delete Issue Link",
       description: "Delete an issue link",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
         issue_link_id: z.number().describe("Issue link ID"),
       },
@@ -347,7 +410,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     },
     async (params) => {
       const args = DeleteIssueLinkSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       await defaultClient.delete(
         `/projects/${projectId}/issues/${args.issue_iid}/links/${args.issue_link_id}`,
@@ -364,7 +427,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "List Issue Discussions",
       description: "List discussions for an issue in a GitLab project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
@@ -373,7 +439,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     },
     async (params) => {
       const args = ListIssueDiscussionsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const query = buildQueryString({ page: args.page, per_page: args.per_page });
 
       const discussions = await defaultClient.get(
@@ -391,7 +457,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "Create Issue Note",
       description: "Add a note to an issue, or reply to a discussion thread",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
         body: z.string().describe("Note body"),
         discussion_id: z
@@ -407,7 +476,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     },
     async (params) => {
       const args = CreateIssueNoteSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const endpoint = args.discussion_id
         ? `/projects/${projectId}/issues/${args.issue_iid}/discussions/${args.discussion_id}/notes`
@@ -429,7 +498,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "Update Issue Note",
       description: "Modify an existing issue note",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
         note_id: z.number().describe("Note ID"),
         body: z.string().describe("New note body"),
@@ -438,7 +510,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     },
     async (params) => {
       const args = UpdateIssueNoteSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const note = await defaultClient.put(
         `/projects/${projectId}/issues/${args.issue_iid}/notes/${args.note_id}`,
@@ -456,7 +528,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "Get Issue Link",
       description: "Get a single issue link/relationship by ID",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
         issue_link_id: z.number().describe("ID of the issue relationship"),
       },
@@ -464,7 +539,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     },
     async (params) => {
       const args = GetIssueLinkSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const link = await defaultClient.get(
         `/projects/${projectId}/issues/${args.issue_iid}/links/${args.issue_link_id}`,
       );
@@ -481,7 +556,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       description:
         "Create a note/comment on an issue or merge request. Use notable_type to specify which.",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         notable_type: z
           .enum(["issue", "merge_request"])
           .describe("Type of notable (issue or merge_request)"),
@@ -491,7 +569,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     },
     async (params) => {
       const args = CreateNoteSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const notablePlural = args.notable_type === "issue" ? "issues" : "merge_requests";
       const note = await defaultClient.post(
         `/projects/${projectId}/${notablePlural}/${args.notable_iid}/notes`,

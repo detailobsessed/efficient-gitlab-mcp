@@ -1,6 +1,6 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
+import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 const ListWebhooksSchema = z.object({
@@ -61,7 +61,7 @@ const GetWebhookEventSchema = z.object({
 
 function buildWebhookBasePath(args: { project_id?: string; group_id?: string }): string {
   if (args.project_id) {
-    return `/projects/${encodeProjectId(args.project_id)}/hooks`;
+    return `/projects/${resolveProjectId(args.project_id)}/hooks`;
   }
   if (args.group_id) {
     return `/groups/${encodeURIComponent(args.group_id)}/hooks`;

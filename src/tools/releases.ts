@@ -1,10 +1,13 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
+import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 const ListReleasesSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   order_by: z
     .enum(["released_at", "created_at"])
     .optional()
@@ -22,7 +25,10 @@ const ListReleasesSchema = z.object({
 });
 
 const GetReleaseSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   tag_name: z.string().describe("The Git tag the release is associated with"),
   include_html_description: z
     .boolean()
@@ -31,7 +37,10 @@ const GetReleaseSchema = z.object({
 });
 
 const CreateReleaseSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   tag_name: z.string().describe("The tag where the release is created from"),
   name: z.string().optional().describe("The release name"),
   tag_message: z.string().optional().describe("Message to use if creating a new annotated tag"),
@@ -81,7 +90,10 @@ const CreateReleaseSchema = z.object({
 });
 
 const UpdateReleaseSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   tag_name: z.string().describe("The Git tag the release is associated with"),
   name: z.string().optional().describe("The release name"),
   description: z
@@ -101,17 +113,26 @@ const UpdateReleaseSchema = z.object({
 });
 
 const DeleteReleaseSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   tag_name: z.string().describe("The Git tag the release is associated with"),
 });
 
 const CreateReleaseEvidenceSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   tag_name: z.string().describe("The Git tag the release is associated with"),
 });
 
 const DownloadReleaseAssetSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   tag_name: z.string().describe("The Git tag the release is associated with"),
   direct_asset_path: z
     .string()
@@ -131,7 +152,10 @@ export function registerReleaseTools(
       title: "List Releases",
       description: "List releases for a project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         order_by: z
           .enum(["released_at", "created_at"])
           .optional()
@@ -148,7 +172,7 @@ export function registerReleaseTools(
     },
     async (params) => {
       const args = ListReleasesSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
@@ -165,7 +189,10 @@ export function registerReleaseTools(
       title: "Get Release",
       description: "Get a specific release by tag name",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         tag_name: z.string().describe("The Git tag the release is associated with"),
         include_html_description: z
           .boolean()
@@ -176,7 +203,7 @@ export function registerReleaseTools(
     },
     async (params) => {
       const args = GetReleaseSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const tagName = encodeURIComponent(args.tag_name);
       const query = buildQueryString({
         include_html_description: args.include_html_description,
@@ -195,7 +222,10 @@ export function registerReleaseTools(
       title: "Create Release",
       description: "Create a new release for a project",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         tag_name: z.string().describe("The tag where the release is created from"),
         name: z.string().optional().describe("The release name"),
         tag_message: z
@@ -243,7 +273,7 @@ export function registerReleaseTools(
     },
     async (params) => {
       const args = CreateReleaseSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...body } = args;
 
       const release = await defaultClient.post(`/projects/${projectId}/releases`, body);
@@ -259,7 +289,10 @@ export function registerReleaseTools(
       title: "Update Release",
       description: "Update an existing release",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         tag_name: z.string().describe("The Git tag the release is associated with"),
         name: z.string().optional().describe("The release name"),
         description: z
@@ -278,7 +311,7 @@ export function registerReleaseTools(
     },
     async (params) => {
       const args = UpdateReleaseSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const tagName = encodeURIComponent(args.tag_name);
       const { project_id: _, tag_name: _t, ...body } = args;
 
@@ -295,14 +328,17 @@ export function registerReleaseTools(
       title: "Delete Release",
       description: "Delete a release",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         tag_name: z.string().describe("The Git tag the release is associated with"),
       },
       annotations: { destructiveHint: true },
     },
     async (params) => {
       const args = DeleteReleaseSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const tagName = encodeURIComponent(args.tag_name);
 
       const release = await defaultClient.delete(`/projects/${projectId}/releases/${tagName}`);
@@ -329,13 +365,16 @@ export function registerReleaseTools(
       title: "Create Release Evidence",
       description: "Create evidence for an existing release",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         tag_name: z.string().describe("The Git tag the release is associated with"),
       },
     },
     async (params) => {
       const args = CreateReleaseEvidenceSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const tagName = encodeURIComponent(args.tag_name);
 
       await defaultClient.post(`/projects/${projectId}/releases/${tagName}/evidence`);
@@ -362,7 +401,10 @@ export function registerReleaseTools(
       title: "Download Release Asset",
       description: "Download an asset from a release by its direct asset path",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         tag_name: z.string().describe("The Git tag the release is associated with"),
         direct_asset_path: z
           .string()
@@ -374,7 +416,7 @@ export function registerReleaseTools(
     },
     async (params) => {
       const args = DownloadReleaseAssetSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const tagName = encodeURIComponent(args.tag_name);
 
       // First get the release to find the asset link

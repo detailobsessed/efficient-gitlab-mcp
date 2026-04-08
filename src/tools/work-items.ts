@@ -1,6 +1,6 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
+import { defaultClient, encodeProjectId, getEffectiveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 // ---------------------------------------------------------------------------
@@ -41,14 +41,20 @@ const WORK_ITEM_TYPE_NAMES: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 const WorkItemParamsSchema = z.object({
-  project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+  project_id: z.coerce
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   iid: z.coerce.number().describe("The internal ID (IID) of the work item"),
 });
 
 const GetWorkItemSchema = WorkItemParamsSchema;
 
 const ListWorkItemsSchema = z.object({
-  project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+  project_id: z.coerce
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   types: z
     .array(workItemTypeEnum)
     .optional()
@@ -69,7 +75,10 @@ const ListWorkItemsSchema = z.object({
 });
 
 const CreateWorkItemSchema = z.object({
-  project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+  project_id: z.coerce
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   title: z.string().describe("Title of the work item"),
   type: workItemTypeEnum
     .optional()
@@ -225,13 +234,19 @@ const UpdateWorkItemSchema = WorkItemParamsSchema.extend({
 });
 
 const ConvertWorkItemTypeSchema = z.object({
-  project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+  project_id: z.coerce
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   iid: z.coerce.number().describe("The internal ID of the work item"),
   new_type: workItemTypeEnum.describe("The target work item type to convert to"),
 });
 
 const ListWorkItemStatusesSchema = z.object({
-  project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+  project_id: z.coerce
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   work_item_type: workItemTypeEnum
     .optional()
     .default("issue")
@@ -239,7 +254,10 @@ const ListWorkItemStatusesSchema = z.object({
 });
 
 const ListWorkItemNotesSchema = z.object({
-  project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+  project_id: z.coerce
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   iid: z.coerce.number().describe("The internal ID of the work item"),
   page_size: z.coerce
     .number()
@@ -255,7 +273,10 @@ const ListWorkItemNotesSchema = z.object({
 });
 
 const CreateWorkItemNoteSchema = z.object({
-  project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+  project_id: z.coerce
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   iid: z.coerce.number().describe("The internal ID of the work item"),
   body: z.string().describe("Note body (Markdown supported)"),
   internal: z.coerce
@@ -280,7 +301,10 @@ const MoveWorkItemSchema = z.object({
 });
 
 const ListCustomFieldDefinitionsSchema = z.object({
-  project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+  project_id: z.coerce
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   work_item_type: workItemTypeEnum
     .optional()
     .default("issue")
@@ -288,12 +312,18 @@ const ListCustomFieldDefinitionsSchema = z.object({
 });
 
 const GetTimelineEventsSchema = z.object({
-  project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+  project_id: z.coerce
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   incident_iid: z.coerce.number().describe("The internal ID (IID) of the incident"),
 });
 
 const CreateTimelineEventSchema = z.object({
-  project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+  project_id: z.coerce
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   incident_iid: z.coerce.number().describe("The internal ID (IID) of the incident"),
   note: z.string().describe("Description of the timeline event (Markdown supported)"),
   occurred_at: z
@@ -1733,13 +1763,16 @@ export function registerWorkItemTools(
       description:
         "Get a single work item with full details including status, hierarchy (parent/children), type, labels, assignees, and all widgets.",
       inputSchema: {
-        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         iid: z.coerce.number().describe("The internal ID (IID) of the work item"),
       },
     },
     async (params) => {
       const args = GetWorkItemSchema.parse(params);
-      return jsonResponse(await getWorkItem(args.project_id, args.iid));
+      return jsonResponse(await getWorkItem(getEffectiveProjectId(args.project_id), args.iid));
     },
   );
   t1.disable();
@@ -1753,7 +1786,10 @@ export function registerWorkItemTools(
       description:
         "List work items in a project with filters (type, state, search, assignees, labels). Returns items with status and hierarchy info.",
       inputSchema: {
-        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         types: z.array(workItemTypeEnum).optional().describe("Filter by work item types"),
         state: z.enum(["opened", "closed"]).optional().describe("Filter by state"),
         search: z.string().optional().describe("Search in title and description"),
@@ -1770,7 +1806,7 @@ export function registerWorkItemTools(
     async (params) => {
       const args = ListWorkItemsSchema.parse(params);
       const { project_id, ...opts } = args;
-      return jsonResponse(await listWorkItems(project_id, opts));
+      return jsonResponse(await listWorkItems(getEffectiveProjectId(project_id), opts));
     },
   );
   t2.disable();
@@ -1784,7 +1820,10 @@ export function registerWorkItemTools(
       description:
         "Create a new work item (issue, task, incident, test_case, epic, key_result, objective, requirement, ticket). Supports setting title, description, labels, assignees, weight, parent, health status, start/due dates, milestone, and confidentiality.",
       inputSchema: {
-        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         title: z.string().describe("Title of the work item"),
         type: workItemTypeEnum.optional().default("issue").describe("Type of work item"),
         description: z.string().optional().describe("Description (Markdown supported)"),
@@ -1806,7 +1845,7 @@ export function registerWorkItemTools(
     async (params) => {
       const args = CreateWorkItemSchema.parse(params);
       const { project_id, ...opts } = args;
-      return jsonResponse(await createWorkItem(project_id, opts));
+      return jsonResponse(await createWorkItem(getEffectiveProjectId(project_id), opts));
     },
   );
   t3.disable();
@@ -1820,7 +1859,10 @@ export function registerWorkItemTools(
       description:
         "Update a work item. Can modify title, description, labels, assignees, weight, state, status, parent hierarchy, children, health status, start/due dates, milestone, confidentiality, linked items, and custom fields.",
       inputSchema: {
-        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         iid: z.coerce.number().describe("The internal ID (IID) of the work item"),
         title: z.string().optional().describe("New title"),
         description: z.string().optional().describe("New description"),
@@ -1855,7 +1897,7 @@ export function registerWorkItemTools(
     async (params) => {
       const args = UpdateWorkItemSchema.parse(params);
       const { project_id, iid: wiIid, ...opts } = args;
-      return jsonResponse(await updateWorkItem(project_id, wiIid, opts));
+      return jsonResponse(await updateWorkItem(getEffectiveProjectId(project_id), wiIid, opts));
     },
   );
   t4.disable();
@@ -1869,14 +1911,19 @@ export function registerWorkItemTools(
       description:
         "Convert a work item to a different type (e.g. issue to task, task to incident).",
       inputSchema: {
-        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         iid: z.coerce.number().describe("The internal ID of the work item"),
         new_type: workItemTypeEnum.describe("The target work item type"),
       },
     },
     async (params) => {
       const args = ConvertWorkItemTypeSchema.parse(params);
-      return jsonResponse(await convertWorkItemType(args.project_id, args.iid, args.new_type));
+      return jsonResponse(
+        await convertWorkItemType(getEffectiveProjectId(args.project_id), args.iid, args.new_type),
+      );
     },
   );
   t5.disable();
@@ -1890,13 +1937,18 @@ export function registerWorkItemTools(
       description:
         "List available statuses for a work item type in a project. Requires GitLab Premium/Ultimate with configurable statuses.",
       inputSchema: {
-        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         work_item_type: workItemTypeEnum.optional().default("issue").describe("Work item type"),
       },
     },
     async (params) => {
       const args = ListWorkItemStatusesSchema.parse(params);
-      return jsonResponse(await listWorkItemStatuses(args.project_id, args.work_item_type));
+      return jsonResponse(
+        await listWorkItemStatuses(getEffectiveProjectId(args.project_id), args.work_item_type),
+      );
     },
   );
   t6.disable();
@@ -1910,13 +1962,21 @@ export function registerWorkItemTools(
       description:
         "List available custom field definitions for a work item type in a project. Returns field names, types, and IDs needed for setting custom fields via update_work_item.",
       inputSchema: {
-        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         work_item_type: workItemTypeEnum.optional().default("issue").describe("Work item type"),
       },
     },
     async (params) => {
       const args = ListCustomFieldDefinitionsSchema.parse(params);
-      return jsonResponse(await listCustomFieldDefinitions(args.project_id, args.work_item_type));
+      return jsonResponse(
+        await listCustomFieldDefinitions(
+          getEffectiveProjectId(args.project_id),
+          args.work_item_type,
+        ),
+      );
     },
   );
   t7.disable();
@@ -1937,7 +1997,13 @@ export function registerWorkItemTools(
     },
     async (params) => {
       const args = MoveWorkItemSchema.parse(params);
-      return jsonResponse(await moveWorkItem(args.project_id, args.iid, args.target_project_id));
+      return jsonResponse(
+        await moveWorkItem(
+          getEffectiveProjectId(args.project_id),
+          args.iid,
+          args.target_project_id,
+        ),
+      );
     },
   );
   t8.disable();
@@ -1951,7 +2017,10 @@ export function registerWorkItemTools(
       description:
         "List notes and discussions on a work item. Returns threaded discussions with author, body, timestamps, and system/internal flags.",
       inputSchema: {
-        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         iid: z.coerce.number().describe("The internal ID of the work item"),
         page_size: z.coerce
           .number()
@@ -1969,7 +2038,7 @@ export function registerWorkItemTools(
     async (params) => {
       const args = ListWorkItemNotesSchema.parse(params);
       return jsonResponse(
-        await listWorkItemNotes(args.project_id, args.iid, {
+        await listWorkItemNotes(getEffectiveProjectId(args.project_id), args.iid, {
           page_size: args.page_size,
           after: args.after,
           sort: args.sort,
@@ -1988,7 +2057,10 @@ export function registerWorkItemTools(
       description:
         "Add a note/comment to a work item. Supports Markdown, internal notes, and threaded replies.",
       inputSchema: {
-        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         iid: z.coerce.number().describe("The internal ID of the work item"),
         body: z.string().describe("Note body (Markdown supported)"),
         internal: z.coerce.boolean().optional().default(false).describe("Internal note"),
@@ -1998,7 +2070,7 @@ export function registerWorkItemTools(
     async (params) => {
       const args = CreateWorkItemNoteSchema.parse(params);
       return jsonResponse(
-        await createWorkItemNote(args.project_id, args.iid, args.body, {
+        await createWorkItemNote(getEffectiveProjectId(args.project_id), args.iid, args.body, {
           internal: args.internal,
           discussion_id: args.discussion_id,
         }),
@@ -2016,13 +2088,18 @@ export function registerWorkItemTools(
       description:
         "List timeline events for an incident. Returns chronological events with notes, timestamps, and tags.",
       inputSchema: {
-        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         incident_iid: z.coerce.number().describe("The internal ID of the incident"),
       },
     },
     async (params) => {
       const args = GetTimelineEventsSchema.parse(params);
-      return jsonResponse(await getTimelineEvents(args.project_id, args.incident_iid));
+      return jsonResponse(
+        await getTimelineEvents(getEffectiveProjectId(args.project_id), args.incident_iid),
+      );
     },
   );
   t11.disable();
@@ -2036,7 +2113,10 @@ export function registerWorkItemTools(
       description:
         "Create a timeline event on an incident. Supports tags: 'Start time', 'End time', 'Impact detected', 'Response initiated', 'Impact mitigated', 'Cause identified'.",
       inputSchema: {
-        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         incident_iid: z.coerce.number().describe("The internal ID of the incident"),
         note: z.string().describe("Description of the timeline event (Markdown supported)"),
         occurred_at: z.string().describe("When the event occurred (ISO 8601 format)"),
@@ -2059,7 +2139,7 @@ export function registerWorkItemTools(
       const args = CreateTimelineEventSchema.parse(params);
       return jsonResponse(
         await createTimelineEvent(
-          args.project_id,
+          getEffectiveProjectId(args.project_id),
           args.incident_iid,
           args.note,
           args.occurred_at,

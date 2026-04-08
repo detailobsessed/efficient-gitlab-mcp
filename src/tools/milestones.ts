@@ -1,10 +1,13 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { buildQueryString, defaultClient, encodeProjectId } from "../utils/gitlab-client.js";
+import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
 const ListMilestonesSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   iids: z.array(z.number()).optional().describe("Return only the milestones having the given iid"),
   state: z
     .enum(["active", "closed"])
@@ -32,12 +35,18 @@ const ListMilestonesSchema = z.object({
 });
 
 const GetMilestoneSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   milestone_id: z.string().describe("The ID of a project milestone"),
 });
 
 const CreateMilestoneSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   title: z.string().describe("The title of the milestone"),
   description: z.string().optional().describe("The description of the milestone"),
   due_date: z.string().optional().describe("The due date of the milestone (YYYY-MM-DD)"),
@@ -45,7 +54,10 @@ const CreateMilestoneSchema = z.object({
 });
 
 const EditMilestoneSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   milestone_id: z.string().describe("The ID of a project milestone"),
   title: z.string().optional().describe("The title of the milestone"),
   description: z.string().optional().describe("The description of the milestone"),
@@ -58,29 +70,44 @@ const EditMilestoneSchema = z.object({
 });
 
 const DeleteMilestoneSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   milestone_id: z.string().describe("The ID of a project milestone"),
 });
 
 const GetMilestoneIssuesSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   milestone_id: z.string().describe("The ID of a project milestone"),
 });
 
 const GetMilestoneMergeRequestsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   milestone_id: z.string().describe("The ID of a project milestone"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
 
 const PromoteMilestoneSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   milestone_id: z.string().describe("The ID of a project milestone"),
 });
 
 const GetMilestoneBurndownEventsSchema = z.object({
-  project_id: z.string().describe("Project ID or URL-encoded path"),
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   milestone_id: z.string().describe("The ID of a project milestone"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
@@ -99,7 +126,10 @@ export function registerMilestoneTools(
       title: "List Milestones",
       description: "List project milestones with filtering options",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         iids: z
           .array(z.number())
           .optional()
@@ -134,7 +164,7 @@ export function registerMilestoneTools(
     },
     async (params) => {
       const args = ListMilestonesSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
@@ -151,14 +181,17 @@ export function registerMilestoneTools(
       title: "Get Milestone",
       description: "Get a single project milestone",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         milestone_id: z.string().describe("The ID of a project milestone"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = GetMilestoneSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const milestone = await defaultClient.get(
         `/projects/${projectId}/milestones/${args.milestone_id}`,
@@ -175,7 +208,10 @@ export function registerMilestoneTools(
       title: "Create Milestone",
       description: "Create a new project milestone",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         title: z.string().describe("The title of the milestone"),
         description: z.string().optional().describe("The description of the milestone"),
         due_date: z.string().optional().describe("The due date of the milestone (YYYY-MM-DD)"),
@@ -184,7 +220,7 @@ export function registerMilestoneTools(
     },
     async (params) => {
       const args = CreateMilestoneSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, ...body } = args;
 
       const milestone = await defaultClient.post(`/projects/${projectId}/milestones`, body);
@@ -200,7 +236,10 @@ export function registerMilestoneTools(
       title: "Edit Milestone",
       description: "Edit an existing project milestone",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         milestone_id: z.string().describe("The ID of a project milestone"),
         title: z.string().optional().describe("The title of the milestone"),
         description: z.string().optional().describe("The description of the milestone"),
@@ -214,7 +253,7 @@ export function registerMilestoneTools(
     },
     async (params) => {
       const args = EditMilestoneSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const { project_id: _, milestone_id, ...body } = args;
 
       const milestone = await defaultClient.put(
@@ -233,14 +272,17 @@ export function registerMilestoneTools(
       title: "Delete Milestone",
       description: "Delete a project milestone",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         milestone_id: z.string().describe("The ID of a project milestone"),
       },
       annotations: { destructiveHint: true },
     },
     async (params) => {
       const args = DeleteMilestoneSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       await defaultClient.delete(`/projects/${projectId}/milestones/${args.milestone_id}`);
       return {
@@ -266,14 +308,17 @@ export function registerMilestoneTools(
       title: "Get Milestone Issues",
       description: "Get issues assigned to a project milestone",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         milestone_id: z.string().describe("The ID of a project milestone"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = GetMilestoneIssuesSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const issues = await defaultClient.get(
         `/projects/${projectId}/milestones/${args.milestone_id}/issues`,
@@ -290,7 +335,10 @@ export function registerMilestoneTools(
       title: "Get Milestone Merge Requests",
       description: "Get merge requests assigned to a project milestone",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         milestone_id: z.string().describe("The ID of a project milestone"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
@@ -299,7 +347,7 @@ export function registerMilestoneTools(
     },
     async (params) => {
       const args = GetMilestoneMergeRequestsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const query = buildQueryString({ page: args.page, per_page: args.per_page });
 
       const mergeRequests = await defaultClient.get(
@@ -317,13 +365,16 @@ export function registerMilestoneTools(
       title: "Promote Milestone",
       description: "Promote a project milestone to a group milestone",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         milestone_id: z.string().describe("The ID of a project milestone"),
       },
     },
     async (params) => {
       const args = PromoteMilestoneSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
 
       const milestone = await defaultClient.post(
         `/projects/${projectId}/milestones/${args.milestone_id}/promote`,
@@ -340,7 +391,10 @@ export function registerMilestoneTools(
       title: "Get Milestone Burndown Events",
       description: "Get burndown chart events for a project milestone",
       inputSchema: {
-        project_id: z.string().describe("Project ID or URL-encoded path"),
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         milestone_id: z.string().describe("The ID of a project milestone"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
@@ -349,7 +403,7 @@ export function registerMilestoneTools(
     },
     async (params) => {
       const args = GetMilestoneBurndownEventsSchema.parse(params);
-      const projectId = encodeProjectId(args.project_id);
+      const projectId = resolveProjectId(args.project_id);
       const query = buildQueryString({ page: args.page, per_page: args.per_page });
 
       const events = await defaultClient.get(
