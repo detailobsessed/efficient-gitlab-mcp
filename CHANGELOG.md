@@ -1,3 +1,10 @@
+## [2.11.6](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.5...v2.11.6) (2026-04-09)
+
+
+### Bug Fixes
+
+* resolve dotenv path from project root in bundled output ([#65](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/65)) ([365169c](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/365169c46bb6dc3de4d18a945f6c3dd06221e9cf))
+
 ## [2.11.5](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.4...v2.11.5) (2026-04-09)
 
 
