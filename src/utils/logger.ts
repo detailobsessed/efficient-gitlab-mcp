@@ -99,28 +99,28 @@ export class Logger {
 
   debug(message: string, context?: LogContext): void {
     if (this.shouldLog("debug")) {
-      console.debug(this.formatMessage("debug", message, context));
+      process.stderr.write(`${this.formatMessage("debug", message, context)}\n`);
       this.sendToMcpClient("debug", message, context);
     }
   }
 
   info(message: string, context?: LogContext): void {
     if (this.shouldLog("info")) {
-      console.info(this.formatMessage("info", message, context));
+      process.stderr.write(`${this.formatMessage("info", message, context)}\n`);
       this.sendToMcpClient("info", message, context);
     }
   }
 
   warn(message: string, context?: LogContext): void {
     if (this.shouldLog("warn")) {
-      console.warn(this.formatMessage("warn", message, context));
+      process.stderr.write(`${this.formatMessage("warn", message, context)}\n`);
       this.sendToMcpClient("warn", message, context);
     }
   }
 
   error(message: string, context?: LogContext): void {
     if (this.shouldLog("error")) {
-      console.error(this.formatMessage("error", message, context));
+      process.stderr.write(`${this.formatMessage("error", message, context)}\n`);
       this.sendToMcpClient("error", message, context);
     }
   }
