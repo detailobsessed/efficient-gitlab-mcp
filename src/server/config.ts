@@ -2,6 +2,7 @@
  * Server configuration
  */
 
+import { readFileSync } from "node:fs";
 import { config as dotenvConfig } from "dotenv";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
@@ -9,6 +10,23 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenvConfig({ path: join(__dirname, "../../.env") });
+
+/** Read version from our own package.json, walking up from __dirname. */
+function readPackageVersion(): string {
+  let dir = __dirname;
+  for (let i = 0; i < 5; i++) {
+    try {
+      const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf-8"));
+      if (pkg.name === "efficient-gitlab-mcp-server") return pkg.version;
+    } catch {
+      // not found at this level, keep walking
+    }
+    dir = dirname(dir);
+  }
+  return "0.0.0";
+}
+
+const PKG_VERSION = readPackageVersion();
 
 type TransportMode = "stdio" | "sse" | "streamable-http";
 type LogLevel = "debug" | "info" | "warn" | "error";
@@ -85,7 +103,7 @@ export function loadConfig(): ServerConfig {
   return {
     // Server identity
     serverName: "efficient-gitlab-mcp-server",
-    serverVersion: process.env.npm_package_version || "3.0.0",
+    serverVersion: PKG_VERSION,
 
     // Transport
     transportMode: determineTransportMode(),
