@@ -1,8 +1,9 @@
 /**
  * SDK-Native Progressive Disclosure
  *
- * Registers 2 meta-tools that leverage the MCP SDK's native enable()/disable()
- * and notifications/tools/list_changed to progressively expose GitLab tools.
+ * Registers 2 meta-tools that progressively expose GitLab tools.
+ * Activation sets tool.enabled directly and sends one batched
+ * notifications/tools/list_changed (avoids per-tool notification storm).
  *
  * On startup, all GitLab tools are registered but disabled. The LLM sees only:
  *   - list_categories: discover available tool categories
@@ -18,6 +19,15 @@ export type ToolsByCategory = Map<string, Map<string, RegisteredTool>>;
 
 function isToolReadOnly(tool: RegisteredTool): boolean {
   return tool.annotations?.readOnlyHint === true;
+}
+
+function rollbackActivation(enabled: string[], toolsByCategory: ToolsByCategory): void {
+  for (const toolName of enabled) {
+    for (const tools of toolsByCategory.values()) {
+      const tool = tools.get(toolName);
+      if (tool) tool.enabled = false;
+    }
+  }
 }
 
 function activateCategories(
@@ -43,7 +53,10 @@ function activateCategories(
       }
       eligible++;
       if (!tool.enabled) {
-        tool.enable();
+        // Set directly instead of tool.enable() to avoid per-tool
+        // sendToolListChanged() notifications — we send one batch
+        // notification after all tools are enabled.
+        tool.enabled = true;
         enabled.push(toolName);
       }
     }
@@ -176,7 +189,23 @@ export function registerDisclosureTools(
       );
 
       if (enabled.length > 0) {
-        server.sendToolListChanged();
+        try {
+          server.sendToolListChanged();
+        } catch (err) {
+          rollbackActivation(enabled, toolsByCategory);
+          logger.error("Failed to notify client, rolled back activation", {
+            error: err instanceof Error ? err.message : String(err),
+            rolledBack: enabled,
+          });
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: "Activation failed — could not notify client. Please retry.",
+              },
+            ],
+          };
+        }
       }
 
       logger.info("Activated tools", {
