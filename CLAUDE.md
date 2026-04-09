@@ -34,7 +34,7 @@ src/
 
 ### Progressive Disclosure
 
-Tools start **disabled**. The LLM discovers them via meta-tools (`list_categories`, `activate_tools`), then enables categories on demand. Uses the MCP SDK's native `tool.enable()`/`tool.disable()` API.
+Tools start **disabled** (via `toolRef.disable()`). The LLM discovers them via meta-tools (`list_categories`, `activate_tools`), then enables categories on demand. Activation sets `tool.enabled` directly and sends a single batched `notifications/tools/list_changed`.
 
 ### Adding a New Tool
 

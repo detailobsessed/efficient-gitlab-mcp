@@ -1,8 +1,9 @@
 /**
  * SDK-Native Progressive Disclosure
  *
- * Registers 2 meta-tools that leverage the MCP SDK's native enable()/disable()
- * and notifications/tools/list_changed to progressively expose GitLab tools.
+ * Registers 2 meta-tools that progressively expose GitLab tools.
+ * Activation sets tool.enabled directly and sends one batched
+ * notifications/tools/list_changed (avoids per-tool notification storm).
  *
  * On startup, all GitLab tools are registered but disabled. The LLM sees only:
  *   - list_categories: discover available tool categories
