@@ -1,3 +1,10 @@
+## [2.11.4](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.3...v2.11.4) (2026-04-09)
+
+
+### Bug Fixes
+
+* batch tool-list-changed notifications to prevent disconnect ([#63](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/63)) ([cedeecb](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/cedeecb4c5929fe924f6870b06b26523078bee1f))
+
 ## [2.11.3](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.2...v2.11.3) (2026-04-08)
 
 
