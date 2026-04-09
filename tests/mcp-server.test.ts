@@ -150,6 +150,39 @@ describe("MCP Server Integration", () => {
       expect(text).toContain("nonexistent");
     });
 
+    it("should handle sequential activations without disconnect", async () => {
+      // Mirrors DET-58 reproduction: activate categories one at a time
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+
+      const tools1 = await client.listTools();
+      expect(tools1.tools.map((t) => t.name)).toContain("search_repositories");
+
+      // Second activation while first category is already active
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["search"] },
+      });
+
+      const tools2 = await client.listTools();
+      const names2 = tools2.tools.map((t) => t.name);
+      expect(names2).toContain("search_repositories");
+      expect(names2).toContain("global_search");
+
+      // Re-activate already-active category (idempotent, no notification sent)
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+
+      const tools3 = await client.listTools();
+      const names3 = tools3.tools.map((t) => t.name);
+      expect(names3).toContain("search_repositories");
+      expect(names3).toContain("global_search");
+    });
+
     it("should show enabled count in categories after activation", async () => {
       await client.callTool({
         name: "activate_tools",

@@ -43,7 +43,10 @@ function activateCategories(
       }
       eligible++;
       if (!tool.enabled) {
-        tool.enable();
+        // Set directly instead of tool.enable() to avoid per-tool
+        // sendToolListChanged() notifications — we send one batch
+        // notification after all tools are enabled.
+        tool.enabled = true;
         enabled.push(toolName);
       }
     }
@@ -176,7 +179,13 @@ export function registerDisclosureTools(
       );
 
       if (enabled.length > 0) {
-        server.sendToolListChanged();
+        try {
+          server.sendToolListChanged();
+        } catch (err) {
+          logger.error("Failed to send tool list changed notification", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
       }
 
       logger.info("Activated tools", {
