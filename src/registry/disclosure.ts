@@ -197,7 +197,14 @@ export function registerDisclosureTools(
             error: err instanceof Error ? err.message : String(err),
             rolledBack: enabled,
           });
-          enabled.length = 0;
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: "Activation failed — could not notify client. Please retry.",
+              },
+            ],
+          };
         }
       }
 
