@@ -9,24 +9,24 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-dotenvConfig({ path: join(__dirname, "../../.env") });
 
-/** Read version from our own package.json, walking up from __dirname. */
-function readPackageVersion(): string {
+/** Find project root by walking up from __dirname to locate our package.json. */
+function findProjectRoot(): { root: string; version: string } {
   let dir = __dirname;
   for (let i = 0; i < 5; i++) {
     try {
       const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf-8"));
-      if (pkg.name === "efficient-gitlab-mcp-server") return pkg.version;
+      if (pkg.name === "efficient-gitlab-mcp-server") return { root: dir, version: pkg.version };
     } catch {
       // not found at this level, keep walking
     }
     dir = dirname(dir);
   }
-  return "0.0.0";
+  return { root: process.cwd(), version: "0.0.0" };
 }
 
-const PKG_VERSION = readPackageVersion();
+const { root: PROJECT_ROOT, version: PKG_VERSION } = findProjectRoot();
+dotenvConfig({ path: join(PROJECT_ROOT, ".env") });
 
 type TransportMode = "stdio" | "sse" | "streamable-http";
 type LogLevel = "debug" | "info" | "warn" | "error";
