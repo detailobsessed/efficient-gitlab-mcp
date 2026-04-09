@@ -1,3 +1,10 @@
+## [2.11.5](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.4...v2.11.5) (2026-04-09)
+
+
+### Bug Fixes
+
+* fixes project versioning ([#64](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/64)) ([2e0d037](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/2e0d037718da0691d9ebd21599f8f46d032436a8))
+
 ## [2.11.4](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.3...v2.11.4) (2026-04-09)
 
 
