@@ -1,3 +1,10 @@
+## [2.11.7](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.6...v2.11.7) (2026-04-09)
+
+
+### Bug Fixes
+
+* route all logger output to stderr for MCP stdio compatibility ([#66](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/66)) ([c211f8d](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/c211f8d76623198ce05ed4a4520e021ed572a8bb))
+
 ## [2.11.6](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.5...v2.11.6) (2026-04-09)
 
 
