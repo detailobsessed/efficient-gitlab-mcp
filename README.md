@@ -119,16 +119,16 @@ Use an `api` scope PAT to get all 146 tools across 15 categories:
 
 ```bash
 # With npx (Node.js)
-claude mcp add gitlab \
+claude mcp add -s user gitlab \
   -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
   -e GITLAB_API_URL=https://gitlab.com \
-  -- npx efficient-gitlab-mcp-server
+  -- npx efficient-gitlab-mcp-server@latest
 
 # With bunx (Bun)
-claude mcp add gitlab \
+claude mcp add -s user gitlab \
   -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
   -e GITLAB_API_URL=https://gitlab.com \
-  -- bunx efficient-gitlab-mcp-server
+  -- bunx efficient-gitlab-mcp-server@latest
 ```
 
 **MCP client config** (Claude Desktop, IDE extensions, etc.):
@@ -138,7 +138,7 @@ claude mcp add gitlab \
   "mcpServers": {
     "gitlab": {
       "command": "npx",
-      "args": ["efficient-gitlab-mcp-server"],
+      "args": ["efficient-gitlab-mcp-server@latest"],
       "env": {
         "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx",
         "GITLAB_API_URL": "https://gitlab.com"
@@ -156,34 +156,34 @@ Use a `read_api` scope PAT — the server auto-detects the limited scope and onl
 
 ```bash
 # With npx (Node.js)
-claude mcp add gitlab \
+claude mcp add -s user gitlab \
   -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-your-read-only-token \
   -e GITLAB_API_URL=https://gitlab.com \
-  -- npx efficient-gitlab-mcp-server
+  -- npx efficient-gitlab-mcp-server@latest
 
 # With bunx (Bun)
-claude mcp add gitlab \
+claude mcp add -s user gitlab \
   -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-your-read-only-token \
   -e GITLAB_API_URL=https://gitlab.com \
-  -- bunx efficient-gitlab-mcp-server
+  -- bunx efficient-gitlab-mcp-server@latest
 ```
 
 Or force read-only mode explicitly (regardless of token scopes):
 
 ```bash
 # With npx (Node.js)
-claude mcp add gitlab \
+claude mcp add -s user gitlab \
   -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
   -e GITLAB_API_URL=https://gitlab.com \
   -e GITLAB_READ_ONLY_MODE=true \
-  -- npx efficient-gitlab-mcp-server
+  -- npx efficient-gitlab-mcp-server@latest
 
 # With bunx (Bun)
-claude mcp add gitlab \
+claude mcp add -s user gitlab \
   -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
   -e GITLAB_API_URL=https://gitlab.com \
   -e GITLAB_READ_ONLY_MODE=true \
-  -- bunx efficient-gitlab-mcp-server
+  -- bunx efficient-gitlab-mcp-server@latest
 ```
 
 For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL.

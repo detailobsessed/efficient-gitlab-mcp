@@ -26,7 +26,7 @@ function findProjectRoot(): { root: string; version: string } {
 }
 
 const { root: PROJECT_ROOT, version: PKG_VERSION } = findProjectRoot();
-dotenvConfig({ path: join(PROJECT_ROOT, ".env") });
+dotenvConfig({ path: join(PROJECT_ROOT, ".env"), quiet: true });
 
 type TransportMode = "stdio" | "sse" | "streamable-http";
 type LogLevel = "debug" | "info" | "warn" | "error";
