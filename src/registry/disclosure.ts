@@ -21,6 +21,15 @@ function isToolReadOnly(tool: RegisteredTool): boolean {
   return tool.annotations?.readOnlyHint === true;
 }
 
+function rollbackActivation(enabled: string[], toolsByCategory: ToolsByCategory): void {
+  for (const toolName of enabled) {
+    for (const tools of toolsByCategory.values()) {
+      const tool = tools.get(toolName);
+      if (tool) tool.enabled = false;
+    }
+  }
+}
+
 function activateCategories(
   categoryNames: string[],
   toolsByCategory: ToolsByCategory,
@@ -183,9 +192,12 @@ export function registerDisclosureTools(
         try {
           server.sendToolListChanged();
         } catch (err) {
-          logger.error("Failed to send tool list changed notification", {
+          rollbackActivation(enabled, toolsByCategory);
+          logger.error("Failed to notify client, rolled back activation", {
             error: err instanceof Error ? err.message : String(err),
+            rolledBack: enabled,
           });
+          enabled.length = 0;
         }
       }
 
