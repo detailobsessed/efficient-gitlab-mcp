@@ -8,18 +8,18 @@ const GetProjectSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  license: z.boolean().optional().describe("Include license info"),
-  statistics: z.boolean().optional().describe("Include project statistics"),
-  with_custom_attributes: z.boolean().optional().describe("Include custom attributes"),
+  license: z.coerce.boolean().optional().describe("Include license info"),
+  statistics: z.coerce.boolean().optional().describe("Include project statistics"),
+  with_custom_attributes: z.coerce.boolean().optional().describe("Include custom attributes"),
 });
 
 const ListProjectsSchema = z.object({
   search: z.string().optional().describe("Search query"),
   visibility: z.enum(["public", "internal", "private"]).optional().describe("Visibility filter"),
-  owned: z.boolean().optional().describe("Only owned projects"),
-  membership: z.boolean().optional().describe("Only member projects"),
-  starred: z.boolean().optional().describe("Only starred projects"),
-  archived: z.boolean().optional().describe("Include archived projects"),
+  owned: z.coerce.boolean().optional().describe("Only owned projects"),
+  membership: z.coerce.boolean().optional().describe("Only member projects"),
+  starred: z.coerce.boolean().optional().describe("Only starred projects"),
+  archived: z.coerce.boolean().optional().describe("Include archived projects"),
   order_by: z
     .enum(["id", "name", "path", "created_at", "updated_at", "last_activity_at"])
     .optional(),
@@ -125,7 +125,7 @@ const ListGroupProjectsSchema = z.object({
   group_id: z.string().describe("Group ID or URL-encoded path"),
   search: z.string().optional().describe("Search query"),
   visibility: z.enum(["public", "internal", "private"]).optional().describe("Visibility filter"),
-  archived: z.boolean().optional().describe("Include archived projects"),
+  archived: z.coerce.boolean().optional().describe("Include archived projects"),
   order_by: z
     .enum(["id", "name", "path", "created_at", "updated_at", "last_activity_at"])
     .optional(),
@@ -151,9 +151,9 @@ export function registerProjectTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        license: z.boolean().optional().describe("Include license info"),
-        statistics: z.boolean().optional().describe("Include project statistics"),
-        with_custom_attributes: z.boolean().optional().describe("Include custom attributes"),
+        license: z.coerce.boolean().optional().describe("Include license info"),
+        statistics: z.coerce.boolean().optional().describe("Include project statistics"),
+        with_custom_attributes: z.coerce.boolean().optional().describe("Include custom attributes"),
       },
       annotations: { readOnlyHint: true },
     },
@@ -181,10 +181,10 @@ export function registerProjectTools(
       inputSchema: {
         search: z.string().optional().describe("Search query"),
         visibility: z.enum(["public", "internal", "private"]).optional().describe("Visibility"),
-        owned: z.boolean().optional().describe("Only owned projects"),
-        membership: z.boolean().optional().describe("Only member projects"),
-        starred: z.boolean().optional().describe("Only starred projects"),
-        archived: z.boolean().optional().describe("Include archived projects"),
+        owned: z.coerce.boolean().optional().describe("Only owned projects"),
+        membership: z.coerce.boolean().optional().describe("Only member projects"),
+        starred: z.coerce.boolean().optional().describe("Only starred projects"),
+        archived: z.coerce.boolean().optional().describe("Include archived projects"),
         order_by: z
           .enum(["id", "name", "path", "created_at", "updated_at", "last_activity_at"])
           .optional(),
@@ -390,7 +390,7 @@ export function registerProjectTools(
         group_id: z.string().describe("Group ID or URL-encoded path"),
         search: z.string().optional().describe("Search query"),
         visibility: z.enum(["public", "internal", "private"]).optional().describe("Visibility"),
-        archived: z.boolean().optional().describe("Include archived projects"),
+        archived: z.coerce.boolean().optional().describe("Include archived projects"),
         order_by: z
           .enum(["id", "name", "path", "created_at", "updated_at", "last_activity_at"])
           .optional(),

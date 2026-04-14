@@ -350,4 +350,188 @@ describe("Work Item Tools Handlers", () => {
       expect(tools.has("create_timeline_event")).toBe(true);
     });
   });
+
+  describe("update_work_item with children_to_add missing project_id", () => {
+    it("should default child project_id to parent's projectId", async () => {
+      const { mockFn, calls } = createMockFetch([
+        // 1. REST resolve parent project path
+        { data: { path_with_namespace: "my-group/my-project" } },
+        // 2. GraphQL resolve parent work item GID
+        {
+          data: {
+            namespace: { workItem: { id: "gid://gitlab/WorkItem/1" } },
+          },
+        },
+        // 3. GraphQL main update mutation (title change)
+        {
+          data: {
+            workItemUpdate: {
+              workItem: {
+                id: "gid://gitlab/WorkItem/1",
+                iid: "1",
+                title: "Updated",
+                state: "OPEN",
+                webUrl: "https://gitlab.com/issues/1",
+                workItemType: { name: "Epic" },
+                widgets: [],
+              },
+              errors: [],
+            },
+          },
+        },
+        // 4. REST resolve child project path (uses parent's project_id as fallback)
+        { data: { path_with_namespace: "my-group/my-project" } },
+        // 5. GraphQL resolve child work item GID
+        {
+          data: {
+            namespace: { workItem: { id: "gid://gitlab/WorkItem/50" } },
+          },
+        },
+        // 6. GraphQL add children mutation
+        {
+          data: {
+            workItemUpdate: { errors: [] },
+          },
+        },
+      ]);
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mockFn;
+
+      const result = await client.callTool({
+        name: "update_work_item",
+        arguments: {
+          project_id: "my-group/my-project",
+          iid: 1,
+          title: "Updated",
+          children_to_add: [{ iid: 50 }], // no project_id — should fallback to parent's
+        },
+      });
+
+      expect(result.isError).toBeFalsy();
+      // The child resolution (call 4) should use the parent's project
+      expect(calls[3].url).toContain("my-group%2Fmy-project");
+    });
+  });
+
+  describe("create_work_item incident weight skip", () => {
+    it("should not include weightWidget when type is incident", async () => {
+      const { mockFn, calls } = createMockFetch([
+        // REST resolve project path
+        { data: { path_with_namespace: "my-group/my-project" } },
+        // GraphQL resolve work item type GID
+        {
+          data: {
+            namespace: {
+              workItemTypes: {
+                nodes: [{ id: "gid://gitlab/WorkItemType/3", name: "Incident" }],
+              },
+            },
+          },
+        },
+        // GraphQL create work item mutation
+        {
+          data: {
+            workItemCreate: {
+              workItem: {
+                id: "gid://gitlab/WorkItem/101",
+                iid: "101",
+                title: "Server down",
+                webUrl: "https://gitlab.com/issues/101",
+                workItemType: { name: "Incident" },
+              },
+              errors: [],
+            },
+          },
+        },
+      ]);
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mockFn;
+
+      const result = await client.callTool({
+        name: "create_work_item",
+        arguments: {
+          project_id: "my-group/my-project",
+          title: "Server down",
+          type: "incident",
+          weight: 5, // should be ignored for incidents
+        },
+      });
+
+      expect(result.isError).toBeFalsy();
+      // The create mutation (call index 2) should NOT contain weightWidget
+      const createCall = calls[2];
+      expect(createCall.body).not.toContain("weightWidget");
+      expect(createCall.body).not.toContain("$weight");
+    });
+  });
+
+  describe("LLM parameter coercion", () => {
+    it("should accept JSON-stringified labels array in create_work_item", async () => {
+      const { mockFn, calls } = createMockFetch([
+        // REST resolve project path
+        { data: { path_with_namespace: "my-group/my-project" } },
+        // GraphQL resolve work item type GID
+        {
+          data: {
+            namespace: {
+              workItemTypes: {
+                nodes: [{ id: "gid://gitlab/WorkItemType/1", name: "Issue" }],
+              },
+            },
+          },
+        },
+        // GraphQL resolve label IDs
+        {
+          data: {
+            project: {
+              labels: {
+                nodes: [
+                  { id: "gid://gitlab/Label/1", title: "bug" },
+                  { id: "gid://gitlab/Label/2", title: "urgent" },
+                ],
+              },
+            },
+          },
+        },
+        // GraphQL create work item mutation
+        {
+          data: {
+            workItemCreate: {
+              workItem: {
+                id: "gid://gitlab/WorkItem/100",
+                iid: "100",
+                title: "Coerced labels",
+                webUrl: "https://gitlab.com/issues/100",
+                workItemType: { name: "Issue" },
+              },
+              errors: [],
+            },
+          },
+        },
+      ]);
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mockFn;
+
+      const result = await client.callTool({
+        name: "create_work_item",
+        arguments: {
+          project_id: "my-group/my-project",
+          title: "Coerced labels",
+          labels: '["bug", "urgent"]', // JSON string instead of array
+        },
+      });
+
+      expect(result.isError).toBeFalsy();
+      const content = result.content as Array<{ type: string; text: string }>;
+      const parsed = JSON.parse(content[0].text);
+      expect(parsed.title).toBe("Coerced labels");
+
+      // Verify the GraphQL mutation included labelIds (call index 3 = create mutation)
+      const createCall = calls[3];
+      expect(createCall.body).toContain("labelIds");
+    });
+  });
 });

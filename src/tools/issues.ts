@@ -14,7 +14,7 @@ const CreateIssueSchema = z.object({
   labels: z.string().optional().describe("Comma-separated labels"),
   milestone_id: z.number().optional().describe("Milestone ID"),
   due_date: z.string().optional().describe("Due date (YYYY-MM-DD)"),
-  confidential: z.boolean().optional().describe("Mark as confidential"),
+  confidential: z.coerce.boolean().optional().describe("Mark as confidential"),
 });
 
 const ListIssuesSchema = z.object({
@@ -59,7 +59,7 @@ const UpdateIssueSchema = z.object({
   milestone_id: z.number().optional().describe("Milestone ID"),
   state_event: z.enum(["close", "reopen"]).optional().describe("State change"),
   due_date: z.string().optional().describe("Due date (YYYY-MM-DD)"),
-  confidential: z.boolean().optional().describe("Mark as confidential"),
+  confidential: z.coerce.boolean().optional().describe("Mark as confidential"),
 });
 
 const DeleteIssueSchema = z.object({
@@ -173,7 +173,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         labels: z.string().optional().describe("Comma-separated labels"),
         milestone_id: z.number().optional().describe("Milestone ID"),
         due_date: z.string().optional().describe("Due date (YYYY-MM-DD)"),
-        confidential: z.boolean().optional().describe("Mark as confidential"),
+        confidential: z.coerce.boolean().optional().describe("Mark as confidential"),
       },
       annotations: { destructiveHint: false },
     },
@@ -288,6 +288,8 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         labels: z.string().optional().describe("Comma-separated labels"),
         state_event: z.enum(["close", "reopen"]).optional().describe("State change"),
         due_date: z.string().optional().describe("Due date (YYYY-MM-DD)"),
+        confidential: z.coerce.boolean().optional().describe("Mark as confidential"),
+        milestone_id: z.number().optional().describe("Milestone ID"),
       },
       annotations: { destructiveHint: true },
     },

@@ -5,7 +5,7 @@ import type { Logger } from "../utils/logger.js";
 
 const ListNamespacesSchema = z.object({
   search: z.string().optional().describe("Search query"),
-  owned: z.boolean().optional().describe("Only owned namespaces"),
+  owned: z.coerce.boolean().optional().describe("Only owned namespaces"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
@@ -32,7 +32,7 @@ export function registerNamespaceTools(
       description: "List all namespaces available to the current user",
       inputSchema: {
         search: z.string().optional().describe("Search query"),
-        owned: z.boolean().optional().describe("Only owned namespaces"),
+        owned: z.coerce.boolean().optional().describe("Only owned namespaces"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },

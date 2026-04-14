@@ -2,6 +2,7 @@ import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server
 import { z } from "zod";
 import { defaultClient, encodeProjectId, getEffectiveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
+import { coerceStringArray } from "../utils/schema-helpers.js";
 
 // ---------------------------------------------------------------------------
 // Shared types & constants
@@ -85,8 +86,8 @@ const CreateWorkItemSchema = z.object({
     .default("issue")
     .describe("Type of work item to create. Defaults to 'issue'."),
   description: z.string().optional().describe("Description of the work item (Markdown supported)"),
-  labels: z.array(z.string()).optional().describe("Array of label names to assign"),
-  assignee_usernames: z.array(z.string()).optional().describe("Array of usernames to assign"),
+  labels: coerceStringArray("Array of label names to assign").optional(),
+  assignee_usernames: coerceStringArray("Array of usernames to assign").optional(),
   parent_iid: z.coerce.number().optional().describe("IID of the parent work item to set hierarchy"),
   weight: z.coerce.number().optional().describe("Weight of the work item"),
   health_status: z
@@ -113,12 +114,9 @@ const CreateWorkItemSchema = z.object({
 const UpdateWorkItemSchema = WorkItemParamsSchema.extend({
   title: z.string().optional().describe("New title"),
   description: z.string().optional().describe("New description (Markdown supported)"),
-  add_labels: z.array(z.string()).optional().describe("Label names to add"),
-  remove_labels: z.array(z.string()).optional().describe("Label names to remove"),
-  assignee_usernames: z
-    .array(z.string())
-    .optional()
-    .describe("Set assignees by username (replaces existing)"),
+  add_labels: coerceStringArray("Label names to add").optional(),
+  remove_labels: coerceStringArray("Label names to remove").optional(),
+  assignee_usernames: coerceStringArray("Set assignees by username (replaces existing)").optional(),
   state_event: z.enum(["close", "reopen"]).optional().describe("Close or reopen the work item"),
   weight: z.coerce.number().optional().describe("Set weight (issues, tasks, epics only)"),
   status: z
@@ -144,7 +142,10 @@ const UpdateWorkItemSchema = WorkItemParamsSchema.extend({
   children_to_add: z
     .array(
       z.object({
-        project_id: z.coerce.string().describe("Project ID or path of the child work item"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or path of the child work item (defaults to parent's project)"),
         iid: z.coerce.number().describe("IID of the child work item"),
       }),
     )
@@ -153,7 +154,10 @@ const UpdateWorkItemSchema = WorkItemParamsSchema.extend({
   children_to_remove: z
     .array(
       z.object({
-        project_id: z.coerce.string().describe("Project ID or path of the child work item"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or path of the child work item (defaults to parent's project)"),
         iid: z.coerce.number().describe("IID of the child work item"),
       }),
     )
@@ -181,7 +185,10 @@ const UpdateWorkItemSchema = WorkItemParamsSchema.extend({
   linked_items_to_add: z
     .array(
       z.object({
-        project_id: z.coerce.string().describe("Project ID or path of the work item to link"),
+        project_id: z.coerce
+          .string()
+          .optional()
+          .describe("Project ID or path of the work item to link (defaults to same project)"),
         iid: z.coerce.number().describe("IID of the work item to link"),
         link_type: z
           .enum(["RELATED", "BLOCKED_BY", "BLOCKS"])
@@ -197,7 +204,10 @@ const UpdateWorkItemSchema = WorkItemParamsSchema.extend({
       z.object({
         project_id: z.coerce
           .string()
-          .describe("Project ID or path of the linked work item to remove"),
+          .optional()
+          .describe(
+            "Project ID or path of the linked work item to remove (defaults to same project)",
+          ),
         iid: z.coerce.number().describe("IID of the linked work item to remove"),
       }),
     )
@@ -985,7 +995,9 @@ async function createWorkItem(
     builder.variables.assigneeIds = userIds;
   }
 
-  addCommonWidgetFields(builder, options);
+  // Incidents don't support the weight widget
+  const commonOptions = typeName === "incident" ? { ...options, weight: undefined } : options;
+  addCommonWidgetFields(builder, commonOptions);
 
   const mutation = `mutation(${builder.varDefs.join(", ")}) {
     workItemCreate(input: { ${builder.inputParts.join(", ")} }) {
@@ -1160,16 +1172,20 @@ async function addUpdateHierarchy(
 
 async function handleChildrenToAdd(
   workItemGID: string,
+  projectId: string,
   options: Record<string, unknown>,
 ): Promise<void> {
   const childrenToAdd = options.children_to_add as
-    | Array<{ project_id: string; iid: number }>
+    | Array<{ project_id?: string; iid: number }>
     | undefined;
   if (!childrenToAdd?.length) return;
 
   const childGIDs: string[] = [];
   for (const child of childrenToAdd) {
-    const { workItemGID: childGID } = await resolveWorkItemGID(child.project_id, child.iid);
+    const { workItemGID: childGID } = await resolveWorkItemGID(
+      child.project_id || projectId,
+      child.iid,
+    );
     childGIDs.push(childGID);
   }
   const addData = await defaultClient.graphql<{
@@ -1185,23 +1201,27 @@ async function handleChildrenToAdd(
   }
 }
 
-async function handleChildrenToRemove(options: Record<string, unknown>): Promise<void> {
+async function handleChildrenToRemove(
+  projectId: string,
+  options: Record<string, unknown>,
+): Promise<void> {
   const childrenToRemove = options.children_to_remove as
-    | Array<{ project_id: string; iid: number }>
+    | Array<{ project_id?: string; iid: number }>
     | undefined;
   if (!childrenToRemove?.length) return;
 
   for (const child of childrenToRemove) {
-    await removeIssueParent(child.project_id, child.iid);
+    await removeIssueParent(child.project_id || projectId, child.iid);
   }
 }
 
 async function handleLinkedItemsToAdd(
   workItemGID: string,
+  projectId: string,
   options: Record<string, unknown>,
 ): Promise<void> {
   const linkedToAdd = options.linked_items_to_add as
-    | Array<{ project_id: string; iid: number; link_type?: string }>
+    | Array<{ project_id?: string; iid: number; link_type?: string }>
     | undefined;
   if (!linkedToAdd?.length) return;
 
@@ -1209,7 +1229,10 @@ async function handleLinkedItemsToAdd(
   for (const item of linkedToAdd) {
     const linkType = item.link_type || "RELATED";
     if (!groupedByType[linkType]) groupedByType[linkType] = [];
-    const { workItemGID: targetGID } = await resolveWorkItemGID(item.project_id, item.iid);
+    const { workItemGID: targetGID } = await resolveWorkItemGID(
+      item.project_id || projectId,
+      item.iid,
+    );
     groupedByType[linkType].push(targetGID);
   }
   for (const [linkType, targetGIDs] of Object.entries(groupedByType)) {
@@ -1231,16 +1254,20 @@ async function handleLinkedItemsToAdd(
 
 async function handleLinkedItemsToRemove(
   workItemGID: string,
+  projectId: string,
   options: Record<string, unknown>,
 ): Promise<void> {
   const linkedToRemove = options.linked_items_to_remove as
-    | Array<{ project_id: string; iid: number }>
+    | Array<{ project_id?: string; iid: number }>
     | undefined;
   if (!linkedToRemove?.length) return;
 
   const targetGIDs: string[] = [];
   for (const item of linkedToRemove) {
-    const { workItemGID: targetGID } = await resolveWorkItemGID(item.project_id, item.iid);
+    const { workItemGID: targetGID } = await resolveWorkItemGID(
+      item.project_id || projectId,
+      item.iid,
+    );
     targetGIDs.push(targetGID);
   }
   const removeLinkedData = await defaultClient.graphql<{
@@ -1260,14 +1287,15 @@ async function handleLinkedItemsToRemove(
 
 async function handleUpdateSideEffects(
   workItemGID: string,
+  projectId: string,
   projectPath: string,
   iid: number,
   options: Record<string, unknown>,
 ): Promise<void> {
-  await handleChildrenToAdd(workItemGID, options);
-  await handleChildrenToRemove(options);
-  await handleLinkedItemsToAdd(workItemGID, options);
-  await handleLinkedItemsToRemove(workItemGID, options);
+  await handleChildrenToAdd(workItemGID, projectId, options);
+  await handleChildrenToRemove(projectId, options);
+  await handleLinkedItemsToAdd(workItemGID, projectId, options);
+  await handleLinkedItemsToRemove(workItemGID, projectId, options);
 
   if (options.severity !== undefined) {
     await updateIncidentSeverity(projectPath, iid, options.severity as string);
@@ -1356,7 +1384,7 @@ async function updateWorkItem(
     throw new Error(`Failed to update work item: ${data.workItemUpdate.errors.join(", ")}`);
   }
 
-  await handleUpdateSideEffects(workItemGID, projectPath, iid, options);
+  await handleUpdateSideEffects(workItemGID, projectId, projectPath, iid, options);
 
   return {
     ...flattenUpdateWidgets(data.workItemUpdate.workItem),
@@ -1830,8 +1858,8 @@ export function registerWorkItemTools(
         title: z.string().describe("Title of the work item"),
         type: workItemTypeEnum.optional().default("issue").describe("Type of work item"),
         description: z.string().optional().describe("Description (Markdown supported)"),
-        labels: z.array(z.string()).optional().describe("Label names to assign"),
-        assignee_usernames: z.array(z.string()).optional().describe("Usernames to assign"),
+        labels: coerceStringArray("Label names to assign").optional(),
+        assignee_usernames: coerceStringArray("Usernames to assign").optional(),
         parent_iid: z.coerce.number().optional().describe("IID of parent work item"),
         weight: z.coerce.number().optional().describe("Weight"),
         health_status: z
@@ -1870,9 +1898,9 @@ export function registerWorkItemTools(
         iid: z.coerce.number().describe("The internal ID (IID) of the work item"),
         title: z.string().optional().describe("New title"),
         description: z.string().optional().describe("New description"),
-        add_labels: z.array(z.string()).optional().describe("Label names to add"),
-        remove_labels: z.array(z.string()).optional().describe("Label names to remove"),
-        assignee_usernames: z.array(z.string()).optional().describe("Set assignees by username"),
+        add_labels: coerceStringArray("Label names to add").optional(),
+        remove_labels: coerceStringArray("Label names to remove").optional(),
+        assignee_usernames: coerceStringArray("Set assignees by username").optional(),
         state_event: z.enum(["close", "reopen"]).optional().describe("Close or reopen"),
         weight: z.coerce.number().optional().describe("Set weight"),
         status: z.string().optional().describe("Set status by ID"),
@@ -1896,6 +1924,58 @@ export function registerWorkItemTools(
           .enum(["TRIGGERED", "ACKNOWLEDGED", "RESOLVED", "IGNORED"])
           .optional()
           .describe("Incident escalation status"),
+        children_to_add: z
+          .array(
+            z.object({
+              project_id: z.coerce
+                .string()
+                .optional()
+                .describe("Project ID (defaults to parent's)"),
+              iid: z.coerce.number().describe("Child work item IID"),
+            }),
+          )
+          .optional()
+          .describe("Children to add to hierarchy"),
+        children_to_remove: z
+          .array(
+            z.object({
+              project_id: z.coerce
+                .string()
+                .optional()
+                .describe("Project ID (defaults to parent's)"),
+              iid: z.coerce.number().describe("Child work item IID"),
+            }),
+          )
+          .optional()
+          .describe("Children to remove from hierarchy"),
+        linked_items_to_add: z
+          .array(
+            z.object({
+              project_id: z.coerce
+                .string()
+                .optional()
+                .describe("Project ID (defaults to same project)"),
+              iid: z.coerce.number().describe("Work item IID to link"),
+              link_type: z
+                .enum(["RELATED", "BLOCKED_BY", "BLOCKS"])
+                .optional()
+                .describe("Link type"),
+            }),
+          )
+          .optional()
+          .describe("Work items to link"),
+        linked_items_to_remove: z
+          .array(
+            z.object({
+              project_id: z.coerce
+                .string()
+                .optional()
+                .describe("Project ID (defaults to same project)"),
+              iid: z.coerce.number().describe("Work item IID to unlink"),
+            }),
+          )
+          .optional()
+          .describe("Linked work items to remove"),
       },
     },
     async (params) => {

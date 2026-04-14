@@ -8,7 +8,7 @@ const ListWikiPagesSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  with_content: z.boolean().optional().describe("Include content of the wiki pages"),
+  with_content: z.coerce.boolean().optional().describe("Include content of the wiki pages"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
@@ -52,7 +52,7 @@ const DeleteWikiPageSchema = z.object({
 
 const ListGroupWikiPagesSchema = z.object({
   group_id: z.string().describe("Group ID or URL-encoded path"),
-  with_content: z.boolean().optional().describe("Include content of the wiki pages"),
+  with_content: z.coerce.boolean().optional().describe("Include content of the wiki pages"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
@@ -96,7 +96,7 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        with_content: z.boolean().optional().describe("Include content of the wiki pages"),
+        with_content: z.coerce.boolean().optional().describe("Include content of the wiki pages"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
@@ -243,7 +243,7 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
       description: "List wiki pages for a group",
       inputSchema: {
         group_id: z.string().describe("Group ID or URL-encoded path"),
-        with_content: z.boolean().optional().describe("Include content of the wiki pages"),
+        with_content: z.coerce.boolean().optional().describe("Include content of the wiki pages"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
