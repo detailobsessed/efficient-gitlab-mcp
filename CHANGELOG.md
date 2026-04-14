@@ -1,3 +1,10 @@
+## [2.11.8](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.7...v2.11.8) (2026-04-14)
+
+
+### Bug Fixes
+
+* port upstream LLM parameter coercion fixes ([#68](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/68)) ([48be705](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/48be7052e84d74c7a8ab4727f799c7cff4e7473a))
+
 ## [2.11.7](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.6...v2.11.7) (2026-04-09)
 
 
