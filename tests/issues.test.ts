@@ -249,4 +249,43 @@ describe("Issue Tools Handlers", () => {
       expect(capturedHeaders?.["Content-Type"]).toBe("application/json");
     });
   });
+
+  describe("update_issue", () => {
+    it("should coerce string boolean 'true' to boolean true for confidential", async () => {
+      let capturedBody: string | undefined;
+
+      const mockIssue = {
+        id: 1,
+        iid: 10,
+        title: "Updated issue",
+        state: "opened",
+        confidential: true,
+      };
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string, options?: RequestInit) => {
+        capturedBody = options?.body as string;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify(mockIssue)),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "update_issue",
+        arguments: {
+          project_id: "my-group/my-project",
+          issue_iid: 10,
+          confidential: "true", // LLMs send booleans as strings
+        },
+      });
+
+      // Should succeed, not error
+      expect(result.isError).toBeFalsy();
+
+      const body = JSON.parse(capturedBody ?? "{}");
+      expect(body.confidential).toBe(true);
+    });
+  });
 });

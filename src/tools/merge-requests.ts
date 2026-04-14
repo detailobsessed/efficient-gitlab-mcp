@@ -88,9 +88,9 @@ const CreateMergeRequestSchema = z.object({
   reviewer_ids: z.array(z.number()).optional().describe("Reviewer user IDs"),
   labels: z.string().optional().describe("Comma-separated labels"),
   milestone_id: z.number().optional().describe("Milestone ID"),
-  remove_source_branch: z.boolean().optional().describe("Remove source branch after merge"),
-  squash: z.boolean().optional().describe("Squash commits on merge"),
-  draft: z.boolean().optional().describe("Create as draft MR"),
+  remove_source_branch: z.coerce.boolean().optional().describe("Remove source branch after merge"),
+  squash: z.coerce.boolean().optional().describe("Squash commits on merge"),
+  draft: z.coerce.boolean().optional().describe("Create as draft MR"),
 });
 
 const UpdateMergeRequestSchema = z.object({
@@ -107,8 +107,8 @@ const UpdateMergeRequestSchema = z.object({
   labels: z.string().optional().describe("Comma-separated labels"),
   milestone_id: z.number().optional().describe("Milestone ID"),
   target_branch: z.string().optional().describe("Target branch"),
-  remove_source_branch: z.boolean().optional().describe("Remove source branch after merge"),
-  squash: z.boolean().optional().describe("Squash commits on merge"),
+  remove_source_branch: z.coerce.boolean().optional().describe("Remove source branch after merge"),
+  squash: z.coerce.boolean().optional().describe("Squash commits on merge"),
 });
 
 const MergeMergeRequestSchema = z.object({
@@ -119,9 +119,12 @@ const MergeMergeRequestSchema = z.object({
   merge_request_iid: z.number().describe("Merge request IID"),
   merge_commit_message: z.string().optional().describe("Custom merge commit message"),
   squash_commit_message: z.string().optional().describe("Custom squash commit message"),
-  squash: z.boolean().optional().describe("Squash commits"),
-  should_remove_source_branch: z.boolean().optional().describe("Remove source branch"),
-  merge_when_pipeline_succeeds: z.boolean().optional().describe("Merge when pipeline succeeds"),
+  squash: z.coerce.boolean().optional().describe("Squash commits"),
+  should_remove_source_branch: z.coerce.boolean().optional().describe("Remove source branch"),
+  merge_when_pipeline_succeeds: z.coerce
+    .boolean()
+    .optional()
+    .describe("Merge when pipeline succeeds"),
   sha: z.string().optional().describe("Expected HEAD SHA"),
 });
 
@@ -178,7 +181,7 @@ const ResolveMergeRequestThreadSchema = z.object({
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   merge_request_iid: z.number().describe("Merge request IID"),
   discussion_id: z.string().describe("Discussion ID"),
-  resolved: z.boolean().describe("Resolve or unresolve"),
+  resolved: z.coerce.boolean().describe("Resolve or unresolve"),
 });
 
 const CreateMergeRequestNoteSchema = z.object({
@@ -360,7 +363,7 @@ const UpdateMergeRequestDiscussionNoteSchema = z.object({
   discussion_id: z.string().describe("The ID of a thread"),
   note_id: z.number().describe("The ID of a thread note"),
   body: z.string().optional().describe("The content of the note or reply"),
-  resolved: z.boolean().optional().describe("Resolve or unresolve the note"),
+  resolved: z.coerce.boolean().optional().describe("Resolve or unresolve the note"),
 });
 
 const CreateMergeRequestDiscussionNoteSchema = z.object({
@@ -582,9 +585,12 @@ export function registerMergeRequestTools(
         assignee_id: z.number().optional().describe("Assignee user ID"),
         reviewer_ids: z.array(z.number()).optional().describe("Reviewer user IDs"),
         labels: z.string().optional().describe("Comma-separated labels"),
-        remove_source_branch: z.boolean().optional().describe("Remove source branch after merge"),
-        squash: z.boolean().optional().describe("Squash commits on merge"),
-        draft: z.boolean().optional().describe("Create as draft MR"),
+        remove_source_branch: z.coerce
+          .boolean()
+          .optional()
+          .describe("Remove source branch after merge"),
+        squash: z.coerce.boolean().optional().describe("Squash commits on merge"),
+        draft: z.coerce.boolean().optional().describe("Create as draft MR"),
       },
       annotations: { destructiveHint: false },
     },
@@ -617,8 +623,11 @@ export function registerMergeRequestTools(
         assignee_id: z.number().optional().describe("Assignee user ID"),
         labels: z.string().optional().describe("Comma-separated labels"),
         target_branch: z.string().optional().describe("Target branch"),
-        remove_source_branch: z.boolean().optional().describe("Remove source branch after merge"),
-        squash: z.boolean().optional().describe("Squash commits on merge"),
+        remove_source_branch: z.coerce
+          .boolean()
+          .optional()
+          .describe("Remove source branch after merge"),
+        squash: z.coerce.boolean().optional().describe("Squash commits on merge"),
       },
       annotations: { destructiveHint: true },
     },
@@ -650,8 +659,8 @@ export function registerMergeRequestTools(
         merge_request_iid: z.number().describe("Merge request IID"),
         merge_commit_message: z.string().optional().describe("Custom merge commit message"),
         squash_commit_message: z.string().optional().describe("Custom squash commit message"),
-        squash: z.boolean().optional().describe("Squash commits"),
-        should_remove_source_branch: z.boolean().optional().describe("Remove source branch"),
+        squash: z.coerce.boolean().optional().describe("Squash commits"),
+        should_remove_source_branch: z.coerce.boolean().optional().describe("Remove source branch"),
         merge_when_pipeline_succeeds: z
           .boolean()
           .optional()
@@ -800,7 +809,7 @@ export function registerMergeRequestTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         merge_request_iid: z.number().describe("Merge request IID"),
         discussion_id: z.string().describe("Discussion ID"),
-        resolved: z.boolean().describe("Resolve or unresolve"),
+        resolved: z.coerce.boolean().describe("Resolve or unresolve"),
       },
       annotations: { destructiveHint: false },
     },
@@ -1367,7 +1376,7 @@ export function registerMergeRequestTools(
         discussion_id: z.string().describe("The ID of a thread"),
         note_id: z.number().describe("The ID of a thread note"),
         body: z.string().optional().describe("The content of the note or reply"),
-        resolved: z.boolean().optional().describe("Resolve or unresolve the note"),
+        resolved: z.coerce.boolean().optional().describe("Resolve or unresolve the note"),
       },
       annotations: { destructiveHint: true },
     },

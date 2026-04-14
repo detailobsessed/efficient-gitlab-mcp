@@ -153,4 +153,31 @@ describe("Repository Tools Handlers", () => {
       expect(content[0].text).toContain("permission denied");
     });
   });
+
+  describe("search_repositories", () => {
+    it("should accept 'query' as an alias for 'search'", async () => {
+      let capturedUrl: string | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string, _options?: RequestInit) => {
+        capturedUrl = _url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () =>
+            Promise.resolve(JSON.stringify([{ id: 1, name: "test-repo", path: "test-repo" }])),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "search_repositories",
+        arguments: {
+          query: "test-repo", // 'query' instead of 'search'
+        },
+      });
+
+      expect(result.isError).toBeFalsy();
+      expect(capturedUrl).toContain("search=test-repo");
+    });
+  });
 });

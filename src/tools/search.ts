@@ -30,7 +30,7 @@ const GlobalSearchSchema = z.object({
     .enum(["opened", "closed", "merged", "all"])
     .optional()
     .describe("Filter by state (issues and merge_requests only)"),
-  confidential: z.boolean().optional().describe("Filter by confidentiality (issues only)"),
+  confidential: z.coerce.boolean().optional().describe("Filter by confidentiality (issues only)"),
   order_by: z.literal("created_at").optional().describe("Order by created_at"),
   sort: z.enum(["asc", "desc"]).optional().describe("Sort direction"),
   page: z.number().optional().describe("Page number"),
@@ -51,7 +51,7 @@ const ProjectSearchSchema = z.object({
     .enum(["opened", "closed", "merged", "all"])
     .optional()
     .describe("Filter by state (issues and merge_requests only)"),
-  confidential: z.boolean().optional().describe("Filter by confidentiality (issues only)"),
+  confidential: z.coerce.boolean().optional().describe("Filter by confidentiality (issues only)"),
   order_by: z.literal("created_at").optional().describe("Order by created_at"),
   sort: z.enum(["asc", "desc"]).optional().describe("Sort direction"),
   page: z.number().optional().describe("Page number"),
@@ -131,7 +131,7 @@ const GroupSearchSchema = z.object({
     .enum(["opened", "closed", "merged", "all"])
     .optional()
     .describe("Filter by state (issues and merge_requests only)"),
-  confidential: z.boolean().optional().describe("Filter by confidentiality (issues only)"),
+  confidential: z.coerce.boolean().optional().describe("Filter by confidentiality (issues only)"),
   order_by: z.literal("created_at").optional().describe("Order by created_at"),
   sort: z.enum(["asc", "desc"]).optional().describe("Sort direction"),
   page: z.number().optional().describe("Page number"),
@@ -160,7 +160,10 @@ export function registerSearchTools(
           .enum(["opened", "closed", "merged", "all"])
           .optional()
           .describe("Filter by state (issues and merge_requests only)"),
-        confidential: z.boolean().optional().describe("Filter by confidentiality (issues only)"),
+        confidential: z.coerce
+          .boolean()
+          .optional()
+          .describe("Filter by confidentiality (issues only)"),
         order_by: z.literal("created_at").optional().describe("Order by created_at"),
         sort: z.enum(["asc", "desc"]).optional().describe("Sort direction"),
         page: z.number().optional().describe("Page number"),
@@ -203,7 +206,10 @@ export function registerSearchTools(
           .enum(["opened", "closed", "merged", "all"])
           .optional()
           .describe("Filter by state (issues and merge_requests only)"),
-        confidential: z.boolean().optional().describe("Filter by confidentiality (issues only)"),
+        confidential: z.coerce
+          .boolean()
+          .optional()
+          .describe("Filter by confidentiality (issues only)"),
         order_by: z.literal("created_at").optional().describe("Order by created_at"),
         sort: z.enum(["asc", "desc"]).optional().describe("Sort direction"),
         page: z.number().optional().describe("Page number"),
@@ -244,7 +250,10 @@ export function registerSearchTools(
           .enum(["opened", "closed", "merged", "all"])
           .optional()
           .describe("Filter by state (issues and merge_requests only)"),
-        confidential: z.boolean().optional().describe("Filter by confidentiality (issues only)"),
+        confidential: z.coerce
+          .boolean()
+          .optional()
+          .describe("Filter by confidentiality (issues only)"),
         order_by: z.literal("created_at").optional().describe("Order by created_at"),
         sort: z.enum(["asc", "desc"]).optional().describe("Sort direction"),
         page: z.number().optional().describe("Page number"),

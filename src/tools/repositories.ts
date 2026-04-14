@@ -9,7 +9,8 @@ import {
 import type { Logger } from "../utils/logger.js";
 
 const SearchRepositoriesSchema = z.object({
-  search: z.string().describe("Search query"),
+  search: z.string().optional().describe("Search query"),
+  query: z.string().optional().describe("Search query (alias for search)"),
   page: z.number().optional().describe("Page number for pagination"),
   per_page: z.number().optional().describe("Number of results per page"),
 });
@@ -27,7 +28,7 @@ const CreateRepositorySchema = z.object({
   name: z.string().describe("Name of the new project"),
   description: z.string().optional().describe("Project description"),
   visibility: z.enum(["private", "internal", "public"]).optional().describe("Project visibility"),
-  initialize_with_readme: z.boolean().optional().describe("Initialize with README"),
+  initialize_with_readme: z.coerce.boolean().optional().describe("Initialize with README"),
   namespace_id: z.number().optional().describe("Namespace ID for the project"),
 });
 
@@ -54,7 +55,7 @@ const GetRepositoryTreeSchema = z.object({
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   path: z.string().optional().describe("Path inside repository"),
   ref: z.string().optional().describe("Branch, tag, or commit SHA"),
-  recursive: z.boolean().optional().describe("Get tree recursively"),
+  recursive: z.coerce.boolean().optional().describe("Get tree recursively"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
@@ -98,7 +99,7 @@ const GetBranchDiffsSchema = z.object({
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   from: z.string().describe("Source branch or commit"),
   to: z.string().describe("Target branch or commit"),
-  straight: z.boolean().optional().describe("Use straight comparison"),
+  straight: z.coerce.boolean().optional().describe("Use straight comparison"),
 });
 
 export function registerRepositoryTools(
@@ -114,7 +115,8 @@ export function registerRepositoryTools(
       title: "Search Repositories",
       description: "Search for GitLab projects",
       inputSchema: {
-        search: z.string().describe("Search query"),
+        search: z.string().optional().describe("Search query"),
+        query: z.string().optional().describe("Search query (alias for search)"),
         page: z.number().optional().describe("Page number for pagination"),
         per_page: z.number().optional().describe("Number of results per page"),
       },
@@ -124,8 +126,9 @@ export function registerRepositoryTools(
     },
     async (params) => {
       const args = SearchRepositoriesSchema.parse(params);
+      const searchTerm = args.search || args.query || "";
       const query = buildQueryString({
-        search: args.search,
+        search: searchTerm,
         page: args.page,
         per_page: args.per_page,
       });
@@ -185,7 +188,7 @@ export function registerRepositoryTools(
           .enum(["private", "internal", "public"])
           .optional()
           .describe("Project visibility"),
-        initialize_with_readme: z.boolean().optional().describe("Initialize with README"),
+        initialize_with_readme: z.coerce.boolean().optional().describe("Initialize with README"),
         namespace_id: z.number().optional().describe("Namespace ID for the project"),
       },
       annotations: {
@@ -277,7 +280,7 @@ export function registerRepositoryTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         path: z.string().optional().describe("Path inside repository"),
         ref: z.string().optional().describe("Branch, tag, or commit SHA"),
-        recursive: z.boolean().optional().describe("Get tree recursively"),
+        recursive: z.coerce.boolean().optional().describe("Get tree recursively"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
@@ -424,7 +427,7 @@ export function registerRepositoryTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         from: z.string().describe("Source branch or commit"),
         to: z.string().describe("Target branch or commit"),
-        straight: z.boolean().optional().describe("Use straight comparison"),
+        straight: z.coerce.boolean().optional().describe("Use straight comparison"),
       },
       annotations: {
         readOnlyHint: true,

@@ -26,7 +26,7 @@ const ListPipelinesSchema = z.object({
     .optional(),
   ref: z.string().optional().describe("Branch or tag name"),
   sha: z.string().optional().describe("Commit SHA"),
-  yaml_errors: z.boolean().optional().describe("Filter by YAML errors"),
+  yaml_errors: z.coerce.boolean().optional().describe("Filter by YAML errors"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
@@ -226,7 +226,7 @@ const ListJobArtifactsSchema = z.object({
     .string()
     .optional()
     .describe("Directory path within the artifacts archive (defaults to root)"),
-  recursive: z.boolean().optional().describe("Whether to list artifacts recursively"),
+  recursive: z.coerce.boolean().optional().describe("Whether to list artifacts recursively"),
 });
 
 const DownloadJobArtifactsSchema = z.object({
@@ -803,7 +803,7 @@ export function registerPipelineTools(
           .string()
           .optional()
           .describe("Directory path within the artifacts archive (defaults to root)"),
-        recursive: z.boolean().optional().describe("Whether to list artifacts recursively"),
+        recursive: z.coerce.boolean().optional().describe("Whether to list artifacts recursively"),
       },
       annotations: { readOnlyHint: true },
     },

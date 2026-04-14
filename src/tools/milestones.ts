@@ -21,7 +21,7 @@ const ListMilestonesSchema = z.object({
     .string()
     .optional()
     .describe("Return only milestones with a title or description matching the provided string"),
-  include_ancestors: z.boolean().optional().describe("Include ancestor groups"),
+  include_ancestors: z.coerce.boolean().optional().describe("Include ancestor groups"),
   updated_before: z
     .string()
     .optional()
@@ -148,7 +148,7 @@ export function registerMilestoneTools(
           .describe(
             "Return only milestones with a title or description matching the provided string",
           ),
-        include_ancestors: z.boolean().optional().describe("Include ancestor groups"),
+        include_ancestors: z.coerce.boolean().optional().describe("Include ancestor groups"),
         updated_before: z
           .string()
           .optional()
