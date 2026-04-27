@@ -140,7 +140,8 @@ describe("Tool Registration", () => {
       const server = createTestServer();
       const tools = registerUserTools(server, logger);
 
-      expect(tools.size).toBe(7);
+      expect(tools.size).toBe(8);
+      expect(tools.has("get_current_user")).toBe(true);
     });
   });
 
@@ -173,7 +174,7 @@ describe("Tool Registration", () => {
       total += registerWorkItemTools(server, logger).size;
       total += registerGraphqlTools(server, logger).size;
 
-      expect(total).toBe(129);
+      expect(total).toBe(130);
     });
 
     it("should register all tools with pipelines enabled", () => {
@@ -196,7 +197,7 @@ describe("Tool Registration", () => {
       total += registerWorkItemTools(server, logger).size;
       total += registerGraphqlTools(server, logger).size;
 
-      expect(total).toBe(148);
+      expect(total).toBe(149);
     });
 
     it("should all start disabled", () => {
