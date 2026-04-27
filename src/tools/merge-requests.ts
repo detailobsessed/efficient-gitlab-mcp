@@ -2,6 +2,7 @@ import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server
 import { z } from "zod";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
+import { coerceStringArray } from "../utils/schema-helpers.js";
 
 const MAX_PATTERN_LENGTH = 200;
 const NESTED_QUANTIFIER_RE = /(\+|\*|\{)\s*(\+|\*|\{)/;
@@ -86,7 +87,7 @@ const CreateMergeRequestSchema = z.object({
   description: z.string().optional().describe("MR description"),
   assignee_id: z.number().optional().describe("Assignee user ID"),
   reviewer_ids: z.array(z.number()).optional().describe("Reviewer user IDs"),
-  labels: z.string().optional().describe("Comma-separated labels"),
+  labels: coerceStringArray("Label names").optional(),
   milestone_id: z.number().optional().describe("Milestone ID"),
   remove_source_branch: z.coerce.boolean().optional().describe("Remove source branch after merge"),
   squash: z.coerce.boolean().optional().describe("Squash commits on merge"),
@@ -104,7 +105,7 @@ const UpdateMergeRequestSchema = z.object({
   state_event: z.enum(["close", "reopen"]).optional().describe("State change"),
   assignee_id: z.number().optional().describe("Assignee user ID"),
   reviewer_ids: z.array(z.number()).optional().describe("Reviewer user IDs"),
-  labels: z.string().optional().describe("Comma-separated labels"),
+  labels: coerceStringArray("Label names").optional(),
   milestone_id: z.number().optional().describe("Milestone ID"),
   target_branch: z.string().optional().describe("Target branch"),
   remove_source_branch: z.coerce.boolean().optional().describe("Remove source branch after merge"),
@@ -590,7 +591,7 @@ export function registerMergeRequestTools(
         description: z.string().optional().describe("MR description"),
         assignee_id: z.number().optional().describe("Assignee user ID"),
         reviewer_ids: z.array(z.number()).optional().describe("Reviewer user IDs"),
-        labels: z.string().optional().describe("Comma-separated labels"),
+        labels: coerceStringArray("Label names").optional(),
         remove_source_branch: z.coerce
           .boolean()
           .optional()
@@ -632,7 +633,7 @@ export function registerMergeRequestTools(
         description: z.string().optional().describe("New description"),
         state_event: z.enum(["close", "reopen"]).optional().describe("State change"),
         assignee_id: z.number().optional().describe("Assignee user ID"),
-        labels: z.string().optional().describe("Comma-separated labels"),
+        labels: coerceStringArray("Label names").optional(),
         target_branch: z.string().optional().describe("Target branch"),
         remove_source_branch: z.coerce
           .boolean()

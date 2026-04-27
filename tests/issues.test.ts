@@ -73,7 +73,7 @@ describe("Issue Tools Handlers", () => {
           project_id: "my-group/my-project",
           title: "Bug report",
           description: "Something is broken",
-          labels: "bug",
+          labels: ["bug"],
         },
       });
 
@@ -83,7 +83,7 @@ describe("Issue Tools Handlers", () => {
       const body = JSON.parse(capturedBody ?? "");
       expect(body.title).toBe("Bug report");
       expect(body.description).toBe("Something is broken");
-      expect(body.labels).toBe("bug");
+      expect(body.labels).toEqual(["bug"]);
       // project_id should not be in the POST body
       expect(body.project_id).toBeUndefined();
 
@@ -120,7 +120,7 @@ describe("Issue Tools Handlers", () => {
         arguments: {
           project_id: "my-group/my-project",
           state: "opened",
-          labels: "bug,critical",
+          labels: ["bug", "critical"],
           page: 2,
           per_page: 25,
         },
@@ -128,7 +128,9 @@ describe("Issue Tools Handlers", () => {
 
       expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/issues");
       expect(capturedUrl).toContain("state=opened");
-      expect(capturedUrl).toContain("labels=bug%2Ccritical");
+      // Arrays go into query strings as labels[]=bug&labels[]=critical
+      expect(capturedUrl).toContain("labels%5B%5D=bug");
+      expect(capturedUrl).toContain("labels%5B%5D=critical");
       expect(capturedUrl).toContain("page=2");
       expect(capturedUrl).toContain("per_page=25");
       expect(capturedMethod).toBe("GET");
@@ -137,6 +139,34 @@ describe("Issue Tools Handlers", () => {
       const responseData = JSON.parse(content[0].text);
       expect(responseData).toHaveLength(2);
       expect(responseData[0].title).toBe("First issue");
+    });
+
+    it("accepts a JSON-stringified array of labels (coerceStringArray)", async () => {
+      // Regression for upstream 350d84a: LLMs sometimes serialize arrays as
+      // JSON strings when filling MCP tool parameters. coerceStringArray
+      // accepts either form and normalises to an array.
+      let capturedUrl: string | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string) => {
+        capturedUrl = _url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_issues",
+        arguments: {
+          project_id: "my-group/my-project",
+          labels: '["bug","critical"]',
+        },
+      });
+
+      expect(capturedUrl).toContain("labels%5B%5D=bug");
+      expect(capturedUrl).toContain("labels%5B%5D=critical");
     });
   });
 
