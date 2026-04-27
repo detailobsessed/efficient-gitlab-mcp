@@ -192,7 +192,10 @@ export function registerProjectTools(
           .optional()
           .describe("Include sensitive fields like runners_token (default: false)"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetProjectSchema.parse(params);
@@ -234,7 +237,10 @@ export function registerProjectTools(
           .optional()
           .describe("Include sensitive fields like runners_token (default: false)"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListProjectsSchema.parse(params);
@@ -263,7 +269,10 @@ export function registerProjectTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListProjectMembersSchema.parse(params);
@@ -299,7 +308,10 @@ export function registerProjectTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListLabelsSchema.parse(params);
@@ -330,7 +342,10 @@ export function registerProjectTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         label_id: z.union([z.string(), z.number()]).describe("Label ID or name"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetLabelSchema.parse(params);
@@ -359,7 +374,12 @@ export function registerProjectTools(
         description: z.string().optional().describe("Label description"),
         priority: z.number().optional().describe("Label priority"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = CreateLabelSchema.parse(params);
@@ -389,7 +409,12 @@ export function registerProjectTools(
         description: z.string().optional().describe("New description"),
         priority: z.number().optional().describe("New priority"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = UpdateLabelSchema.parse(params);
@@ -416,7 +441,12 @@ export function registerProjectTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         label_id: z.union([z.string(), z.number()]).describe("Label ID or name"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DeleteLabelSchema.parse(params);
@@ -451,7 +481,10 @@ export function registerProjectTools(
           .optional()
           .describe("Include sensitive fields like runners_token (default: false)"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListGroupProjectsSchema.parse(params);
@@ -505,7 +538,10 @@ export function registerProjectTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListGroupIterationsSchema.parse(params);

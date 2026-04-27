@@ -1790,7 +1790,10 @@ export function registerWorkItemTools(
       title: "Get Work Item",
       description:
         "Get a single work item with full details including status, hierarchy (parent/children), type, labels, assignees, and all widgets.",
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z.coerce
           .string()
@@ -1814,7 +1817,10 @@ export function registerWorkItemTools(
       title: "List Work Items",
       description:
         "List work items in a project with filters (type, state, search, assignees, labels). Returns items with status and hierarchy info.",
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z.coerce
           .string()
@@ -1849,7 +1855,12 @@ export function registerWorkItemTools(
       title: "Create Work Item",
       description:
         "Create a new work item (issue, task, incident, test_case, epic, key_result, objective, requirement, ticket). Supports setting title, description, labels, assignees, weight, parent, health status, start/due dates, milestone, and confidentiality.",
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z.coerce
           .string()
@@ -1889,7 +1900,12 @@ export function registerWorkItemTools(
       title: "Update Work Item",
       description:
         "Update a work item. Can modify title, description, labels, assignees, weight, state, status, parent hierarchy, children, health status, start/due dates, milestone, confidentiality, linked items, and custom fields.",
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z.coerce
           .string()
@@ -1994,7 +2010,12 @@ export function registerWorkItemTools(
       title: "Convert Work Item Type",
       description:
         "Convert a work item to a different type (e.g. issue to task, task to incident).",
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z.coerce
           .string()
@@ -2021,7 +2042,10 @@ export function registerWorkItemTools(
       title: "List Work Item Statuses",
       description:
         "List available statuses for a work item type in a project. Requires GitLab Premium/Ultimate with configurable statuses.",
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z.coerce
           .string()
@@ -2047,7 +2071,10 @@ export function registerWorkItemTools(
       title: "List Custom Field Definitions",
       description:
         "List available custom field definitions for a work item type in a project. Returns field names, types, and IDs needed for setting custom fields via update_work_item.",
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z.coerce
           .string()
@@ -2076,7 +2103,12 @@ export function registerWorkItemTools(
       title: "Move Work Item",
       description:
         "Move a work item (issue, task, etc.) to a different project. Uses GitLab GraphQL issueMove mutation.",
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z.coerce.string().describe("Source project ID or path"),
         iid: z.coerce.number().describe("The internal ID of the work item"),
@@ -2104,7 +2136,10 @@ export function registerWorkItemTools(
       title: "List Work Item Notes",
       description:
         "List notes and discussions on a work item. Returns threaded discussions with author, body, timestamps, and system/internal flags.",
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z.coerce
           .string()
@@ -2145,7 +2180,12 @@ export function registerWorkItemTools(
       title: "Create Work Item Note",
       description:
         "Add a note/comment to a work item. Supports Markdown, internal notes, and threaded replies.",
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z.coerce
           .string()
@@ -2177,7 +2217,10 @@ export function registerWorkItemTools(
       title: "Get Timeline Events",
       description:
         "List timeline events for an incident. Returns chronological events with notes, timestamps, and tags.",
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z.coerce
           .string()
@@ -2203,7 +2246,12 @@ export function registerWorkItemTools(
       title: "Create Timeline Event",
       description:
         "Create a timeline event on an incident. Supports tags: 'Start time', 'End time', 'Impact detected', 'Response initiated', 'Impact mitigated', 'Cause identified'.",
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z.coerce
           .string()

@@ -175,7 +175,12 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         due_date: z.string().optional().describe("Due date (YYYY-MM-DD)"),
         confidential: z.coerce.boolean().optional().describe("Mark as confidential"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = CreateIssueSchema.parse(params);
@@ -207,7 +212,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListIssuesSchema.parse(params);
@@ -233,7 +241,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = MyIssuesSchema.parse(params);
@@ -258,7 +269,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetIssueSchema.parse(params);
@@ -291,7 +305,12 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         confidential: z.coerce.boolean().optional().describe("Mark as confidential"),
         milestone_id: z.number().optional().describe("Milestone ID"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = UpdateIssueSchema.parse(params);
@@ -317,7 +336,12 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DeleteIssueSchema.parse(params);
@@ -342,7 +366,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListIssueLinksSchema.parse(params);
@@ -375,7 +402,12 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
           .optional()
           .describe("Link type"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = CreateIssueLinkSchema.parse(params);
@@ -408,7 +440,12 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         issue_iid: z.number().describe("Issue IID"),
         issue_link_id: z.number().describe("Issue link ID"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DeleteIssueLinkSchema.parse(params);
@@ -437,7 +474,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListIssueDiscussionsSchema.parse(params);
@@ -474,7 +514,12 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
           .optional()
           .describe("ISO 8601 creation date (admin/project owner only)"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = CreateIssueNoteSchema.parse(params);
@@ -508,7 +553,12 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         note_id: z.number().describe("Note ID"),
         body: z.string().describe("New note body"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = UpdateIssueNoteSchema.parse(params);
@@ -537,7 +587,10 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         issue_iid: z.number().describe("Issue IID"),
         issue_link_id: z.number().describe("ID of the issue relationship"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetIssueLinkSchema.parse(params);
@@ -557,7 +610,12 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       title: "Create Note",
       description:
         "Create a note/comment on an issue or merge request. Use notable_type to specify which.",
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z
           .string()

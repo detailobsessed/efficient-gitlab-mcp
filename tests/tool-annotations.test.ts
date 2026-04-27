@@ -132,4 +132,37 @@ describe("Tool Annotation Completeness", () => {
 
     expect(conflicts).toEqual([]);
   });
+
+  // Stack 3A: every write tool must declare idempotentHint so the LLM can
+  // decide whether to retry safely. Conservative default is `false`; updates,
+  // deletes, and idempotent approvers should set `true`.
+  it("every write tool should declare idempotentHint", () => {
+    const allTools = getAllTools();
+    const missing: string[] = [];
+
+    for (const [name, tool] of allTools) {
+      const a = tool.annotations;
+      if (a?.readOnlyHint === false && a.idempotentHint === undefined) {
+        missing.push(name);
+      }
+    }
+
+    expect(missing).toEqual([]);
+  });
+
+  // Stack 3A: every tool that hits GitLab should declare openWorldHint so the
+  // LLM knows it touches an external system. All our tools do.
+  it("every tool should declare openWorldHint", () => {
+    const allTools = getAllTools();
+    const missing: string[] = [];
+
+    for (const [name, tool] of allTools) {
+      const a = tool.annotations;
+      if (a?.openWorldHint === undefined) {
+        missing.push(name);
+      }
+    }
+
+    expect(missing).toEqual([]);
+  });
 });

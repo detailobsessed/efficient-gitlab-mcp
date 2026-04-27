@@ -97,7 +97,10 @@ export function registerWebhookTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListWebhooksSchema.parse(params);
@@ -141,7 +144,10 @@ export function registerWebhookTools(
         page: z.number().optional().describe("Page number for pagination"),
         per_page: z.number().max(20).optional().describe("Number of events per page (max: 20)"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListWebhookEventsSchema.parse(params);
@@ -198,7 +204,10 @@ export function registerWebhookTools(
           .optional()
           .describe("If known, the page where the event is located. Skips auto-pagination."),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetWebhookEventSchema.parse(params);

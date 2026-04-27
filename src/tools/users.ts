@@ -103,7 +103,10 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
       inputSchema: {
         usernames: z.array(z.string()).describe("List of usernames to look up"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetUsersSchema.parse(params);
@@ -132,7 +135,10 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
       inputSchema: {
         user_id: z.number().describe("User ID"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetUserSchema.parse(params);
@@ -153,7 +159,10 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = SearchUsersSchema.parse(params);
@@ -203,7 +212,10 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListEventsSchema.parse(params);
@@ -256,7 +268,10 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetProjectEventsSchema.parse(params);
@@ -280,7 +295,12 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
         project_id: z.string().describe("Project ID or URL-encoded path of the project"),
         file_path: z.string().describe("Path to the file to upload"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = UploadMarkdownSchema.parse(params);
@@ -318,7 +338,10 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
         secret: z.string().describe("The 32-character secret of the upload"),
         filename: z.string().describe("The filename of the upload"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DownloadAttachmentSchema.parse(params);
@@ -342,7 +365,10 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
       description:
         "Get details of the authenticated user (whoami). Returns the user identified by the configured PAT / OAuth token.",
       inputSchema: {},
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async () => {
       const user = await defaultClient.get(`/user`);
