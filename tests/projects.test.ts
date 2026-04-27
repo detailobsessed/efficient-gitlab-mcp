@@ -180,6 +180,76 @@ describe("Project Tools Handlers", () => {
     });
   });
 
+  describe("list_projects forwards topic filter", () => {
+    it("passes topic=foo through to GitLab when set", async () => {
+      let capturedUrl: string | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string, _options?: RequestInit) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_projects",
+        arguments: { topic: "mkdocs" },
+      });
+
+      expect(capturedUrl).toContain("topic=mkdocs");
+    });
+
+    it("omits topic from the outgoing query when not set", async () => {
+      let capturedUrl: string | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string, _options?: RequestInit) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_projects",
+        arguments: {},
+      });
+
+      expect(capturedUrl).not.toContain("topic=");
+    });
+  });
+
+  describe("list_group_projects forwards topic filter", () => {
+    it("passes topic=foo through to GitLab when set", async () => {
+      let capturedUrl: string | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string, _options?: RequestInit) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_group_projects",
+        arguments: { group_id: "my-group", topic: "terraform-module" },
+      });
+
+      expect(capturedUrl).toContain("topic=terraform-module");
+    });
+  });
+
   describe("list_group_projects redacts runners_token", () => {
     it("strips runners_token from group projects by default", async () => {
       mockJsonResponse([
