@@ -48,6 +48,28 @@ const CreateBranchSchema = z.object({
   ref: z.string().describe("Source branch or commit SHA"),
 });
 
+const ListBranchesSchema = z.object({
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+  search: z
+    .string()
+    .optional()
+    .describe("Filter branches by name. Use '^prefix' for starts-with, 'suffix$' for ends-with"),
+  regex: z.string().optional().describe("Filter branches by regex (premium / ultimate only)"),
+  page: z.number().optional().describe("Page number"),
+  per_page: z.number().optional().describe("Results per page"),
+});
+
+const GetBranchSchema = z.object({
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+  branch: z.string().describe("Branch name"),
+});
+
 const GetRepositoryTreeSchema = z.object({
   project_id: z
     .string()
@@ -519,6 +541,79 @@ export function registerRepositoryTools(
   );
   toolRef9.disable();
   tools.set("get_branch_diffs", toolRef9);
+
+  const toolRef10 = server.registerTool(
+    "list_branches",
+    {
+      title: "List Branches",
+      description: "List branches of a GitLab project repository",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        search: z
+          .string()
+          .optional()
+          .describe(
+            "Filter branches by name. Prefix with ^ for starts-with, append $ for ends-with",
+          ),
+        regex: z.string().optional().describe("Filter branches by regex (premium / ultimate only)"),
+        page: z.number().optional().describe("Page number"),
+        per_page: z.number().optional().describe("Results per page"),
+      },
+      annotations: {
+        readOnlyHint: true,
+      },
+    },
+    async (params) => {
+      const args = ListBranchesSchema.parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const { project_id: _, ...queryParams } = args;
+      const query = buildQueryString(queryParams);
+
+      const branches = await defaultClient.get(
+        `/projects/${projectId}/repository/branches${query}`,
+      );
+      return {
+        content: [{ type: "text", text: JSON.stringify(branches, null, 2) }],
+      };
+    },
+  );
+  toolRef10.disable();
+  tools.set("list_branches", toolRef10);
+
+  const toolRef11 = server.registerTool(
+    "get_branch",
+    {
+      title: "Get Branch",
+      description: "Get details of a single branch (commit SHA, default flag, protection state)",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        branch: z.string().describe("Branch name"),
+      },
+      annotations: {
+        readOnlyHint: true,
+      },
+    },
+    async (params) => {
+      const args = GetBranchSchema.parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const branchName = encodeURIComponent(args.branch);
+
+      const branch = await defaultClient.get(
+        `/projects/${projectId}/repository/branches/${branchName}`,
+      );
+      return {
+        content: [{ type: "text", text: JSON.stringify(branch, null, 2) }],
+      };
+    },
+  );
+  toolRef11.disable();
+  tools.set("get_branch", toolRef11);
 
   logger.debug("Repository tools registered", { count: tools.size });
   return tools;

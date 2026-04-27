@@ -117,10 +117,11 @@ describe("Read-Only Mode", () => {
       expect(text).toContain("search");
 
       // Repositories has a mix — count should be less than full (9)
-      // Only 4 read-only tools: search_repositories, get_file_contents, get_repository_tree, get_branch_diffs
+      // 6 read-only repository tools: search_repositories, get_file_contents,
+      // get_repository_tree, get_branch_diffs, list_branches, get_branch
       const repoLine = text.split("\n").find((l: string) => l.includes("repositories"));
       expect(repoLine).toBeDefined();
-      expect(repoLine).toContain("4 tools");
+      expect(repoLine).toContain("6 tools");
     });
 
     it("should show read-only mode preamble in list_categories", async () => {
@@ -239,7 +240,7 @@ describe("Read-Only Mode", () => {
 
       const repoLine = text.split("\n").find((l: string) => l.includes("repositories"));
       expect(repoLine).toBeDefined();
-      expect(repoLine).toContain("9 tools");
+      expect(repoLine).toContain("11 tools");
     });
 
     it("should not show read-only preamble", async () => {

@@ -261,6 +261,80 @@ describe("Repository Tools Handlers", () => {
     });
   });
 
+  describe("list_branches", () => {
+    it("calls /repository/branches with project ID", async () => {
+      let capturedUrl: string | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve('[{"name": "main", "default": true},{"name": "develop"}]'),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "list_branches",
+        arguments: { project_id: "1" },
+      });
+      const text = (result.content as { type: "text"; text: string }[])[0].text;
+
+      expect(capturedUrl).toContain("/projects/1/repository/branches");
+      expect(text).toContain("main");
+      expect(text).toContain("develop");
+    });
+
+    it("forwards search and pagination params", async () => {
+      let capturedUrl: string | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_branches",
+        arguments: { project_id: "1", search: "feature/", per_page: 50 },
+      });
+
+      expect(capturedUrl).toContain("search=feature%2F");
+      expect(capturedUrl).toContain("per_page=50");
+    });
+  });
+
+  describe("get_branch", () => {
+    it("URL-encodes the branch name", async () => {
+      let capturedUrl: string | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve('{"name": "feature/v2", "commit": {"id": "abc"}}'),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "get_branch",
+        arguments: { project_id: "1", branch: "feature/v2" },
+      });
+
+      expect(capturedUrl).toContain("/repository/branches/feature%2Fv2");
+    });
+  });
+
   describe("get_repository_tree", () => {
     it("returns {items, pagination_note} envelope on offset pagination", async () => {
       // @ts-expect-error - mock doesn't need full fetch signature
