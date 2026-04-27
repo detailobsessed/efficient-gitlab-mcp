@@ -6,11 +6,12 @@
  * - After activation: category tools appear via tools/list_changed
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerDisclosureTools, type ToolsByCategory } from "../src/registry/index.js";
+import { SERVER_CAPABILITIES } from "../src/server/index.js";
 import { registerRepositoryTools } from "../src/tools/repositories.js";
 import { registerSearchTools } from "../src/tools/search.js";
 import { Logger } from "../src/utils/logger.js";
@@ -66,6 +67,16 @@ describe("MCP Server Integration", () => {
     it("should report tools.listChanged capability", async () => {
       const capabilities = client.getServerCapabilities();
       expect(capabilities?.tools?.listChanged).toBe(true);
+    });
+
+    // Regression guard: assert the constant the production createMcpServer
+    // uses, not just the test's own server setup. If someone removes
+    // listChanged from src/server/index.ts SERVER_CAPABILITIES, our spike
+    // testing showed Claude Code (and any spec-compliant MCP client) will
+    // silently drop tools/list_changed notifications and progressive
+    // disclosure becomes unreachable from the LLM side.
+    it("production SERVER_CAPABILITIES declares tools.listChanged", () => {
+      expect(SERVER_CAPABILITIES.tools?.listChanged).toBe(true);
     });
   });
 
@@ -196,6 +207,62 @@ describe("MCP Server Integration", () => {
 
       const text = getTextContent(result);
       expect(text).toContain("active");
+    });
+  });
+
+  describe("tools/list_changed Notifications (regression)", () => {
+    // The disclosure layer must call sendToolListChanged() exactly once per
+    // activation that enables ≥1 new tool, and not at all when no new tools
+    // are enabled. Both halves matter: missing it → clients never see the
+    // new tools (the upstream bug); over-firing it → notification storms /
+    // unnecessary client refreshes (we previously fixed DET-58 around this).
+    //
+    // We spy on the McpServer instance the test already creates. Since the
+    // spy replaces the method, we also need to ensure the disclosure code
+    // reaches sendToolListChanged via the exact same instance, which it
+    // does (registerDisclosureTools captures the McpServer reference at
+    // registration time and calls sendToolListChanged on it).
+
+    it("calls sendToolListChanged exactly once per single-category activation", async () => {
+      const spy = spyOn(server, "sendToolListChanged");
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it("batches one sendToolListChanged across multi-category activation", async () => {
+      const spy = spyOn(server, "sendToolListChanged");
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories", "search"] },
+      });
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not call sendToolListChanged when re-activating an already-active category", async () => {
+      // First activation enables tools and fires the notification once.
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+      // Spy AFTER the first activation so we only count the idempotent call.
+      const spy = spyOn(server, "sendToolListChanged");
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("does not call sendToolListChanged when only unknown categories are passed", async () => {
+      const spy = spyOn(server, "sendToolListChanged");
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["nonexistent"] },
+      });
+      expect(spy).not.toHaveBeenCalled();
     });
   });
 
