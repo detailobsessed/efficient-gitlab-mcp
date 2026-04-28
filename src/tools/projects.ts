@@ -2,6 +2,29 @@ import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server
 import { z } from "zod";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
+import { projectFields } from "../utils/projection.js";
+import { fieldsParam } from "../utils/schema-helpers.js";
+
+// Compact set of project fields useful to an LLM by default. Identifies the
+// project, its location, who owns it, what state it's in, and how to reach it
+// — without dragging along the 100+ fields a full GitLab response carries.
+// Callers can request the raw payload with `fields: "all"` or override with
+// their own list.
+const LIST_PROJECTS_DEFAULT_FIELDS = [
+  "id",
+  "name",
+  "name_with_namespace",
+  "path_with_namespace",
+  "description",
+  "default_branch",
+  "visibility",
+  "web_url",
+  "ssh_url_to_repo",
+  "http_url_to_repo",
+  "last_activity_at",
+  "archived",
+  "topics",
+] as const;
 
 // GitLab project responses include `runners_token` for projects the caller
 // can administer. That field is a CI-runner registration secret — leaking it
@@ -52,6 +75,7 @@ const ListProjectsSchema = z.object({
     .boolean()
     .optional()
     .describe("Include sensitive fields like runners_token (default: false)"),
+  fields: fieldsParam("project").optional(),
 });
 
 const ListProjectMembersSchema = z.object({
@@ -220,7 +244,8 @@ export function registerProjectTools(
     "list_projects",
     {
       title: "List Projects",
-      description: "List projects accessible by the current user",
+      description:
+        "List projects accessible by the current user. Returns a compact set of fields per project by default; pass `fields: 'all'` for the raw GitLab response or `fields: ['id', 'name', ...]` to pick your own.",
       inputSchema: {
         search: z.string().optional().describe("Search query"),
         visibility: z.enum(["public", "internal", "private"]).optional().describe("Visibility"),
@@ -242,6 +267,7 @@ export function registerProjectTools(
           .boolean()
           .optional()
           .describe("Include sensitive fields like runners_token (default: false)"),
+        fields: fieldsParam("project").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -250,12 +276,20 @@ export function registerProjectTools(
     },
     async (params) => {
       const args = ListProjectsSchema.parse(params);
-      const { include_secrets, ...queryArgs } = args;
+      const { include_secrets, fields, ...queryArgs } = args;
       const query = buildQueryString(queryArgs);
 
-      const projects = await defaultClient.get(`/projects${query}`);
-      const redacted = redactProjectSecrets(projects, include_secrets ?? false);
-      return { content: [{ type: "text", text: JSON.stringify(redacted, null, 2) }] };
+      const projects = (await defaultClient.get(`/projects${query}`)) as Record<string, unknown>[];
+      const redacted = redactProjectSecrets(projects, include_secrets ?? false) as Record<
+        string,
+        unknown
+      >[];
+      // include_secrets implies the caller wants the full payload (otherwise
+      // the secret they explicitly opted into would be silently stripped by
+      // projection's default field set). Explicit `fields` always wins.
+      const effectiveFields = fields ?? (include_secrets ? "all" : undefined);
+      const projected = projectFields(redacted, LIST_PROJECTS_DEFAULT_FIELDS, effectiveFields);
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef2.disable();
