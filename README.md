@@ -16,8 +16,111 @@
 
 If your agent's first turn against an MCP server costs ~20K tokens of tool definitions before you've asked anything, this fork is for you.
 
+---
+
+## Quick Start
+
+### Prerequisites
+
+- A GitLab Personal Access Token with `api` scope (or `read_api` for read-only). [Create one →](https://gitlab.com/-/user_settings/personal_access_tokens)
+- Node.js 18+ (for `npx`) or [Bun](https://bun.sh/) 1.0+ (for `bunx`)
+
+### MCP client config (recommended for most users)
+
+Add this to your MCP client config — Claude Desktop, Cursor, Claude Code, IDE extensions, etc.:
+
+```json
+{
+  "mcpServers": {
+    "gitlab": {
+      "command": "npx",
+      "args": ["efficient-gitlab-mcp-server@latest"],
+      "env": {
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx",
+        "GITLAB_API_URL": "https://gitlab.com"
+      }
+    }
+  }
+}
+```
+
+Restart your client. The server is live with 3 meta-tools (`list_categories`, `activate_tools`, `deactivate_tools`). Your agent discovers GitLab tools by activating categories on demand — see [How It Works](#how-it-works) for a worked example.
+
+> Prefer `bun`? Replace `"command": "npx"` with `"command": "bunx"`.
+
+### Variants
+
+**Self-hosted GitLab** — point at your instance's base URL (the server appends `/api/v4` itself):
+
+```json
+"env": {
+  "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx",
+  "GITLAB_API_URL": "https://gitlab.your-company.com"
+}
+```
+
+**Pinned to a single project** — agents don't need to repeat `project_id`; it's used as a default:
+
+```json
+"env": {
+  "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx",
+  "GITLAB_API_URL": "https://gitlab.com",
+  "GITLAB_PROJECT_ID": "12345"
+}
+```
+
+**Restricted to multiple projects** — every call must specify a `project_id` from the allow-list:
+
+```json
+"env": {
+  "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx",
+  "GITLAB_API_URL": "https://gitlab.com",
+  "GITLAB_ALLOWED_PROJECT_IDS": "12345,67890,123"
+}
+```
+
+**Read-only (auto-detected)** — use a PAT with only `read_api` scope; the server detects the limited scope at startup and only exposes the 93 read tools. No extra config needed.
+
+**Read-only (forced)** — keep your `api`-scope PAT but force read-only mode at the server level:
+
+```json
+"env": {
+  "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx",
+  "GITLAB_API_URL": "https://gitlab.com",
+  "GITLAB_READ_ONLY_MODE": "true"
+}
+```
+
+### Other entry points
+
+**Claude Code CLI** (one-liner add):
+
+```bash
+claude mcp add -s user gitlab \
+  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
+  -e GITLAB_API_URL=https://gitlab.com \
+  -- npx efficient-gitlab-mcp-server@latest
+```
+
+**GitLab CI runner** — `CI_JOB_TOKEN` is auto-detected if no PAT is set. Use `GITLAB_PROJECT_ID: $CI_PROJECT_ID` to scope to the running project. No extra setup.
+
+**From source** (development):
+
+```bash
+git clone https://github.com/detailobsessed/efficient-gitlab-mcp.git
+cd efficient-gitlab-mcp
+bun install
+bun run build
+bun start
+```
+
+Hit a snag? See [Troubleshooting](#troubleshooting). Need to tune more env vars? See [full Configuration reference](#configuration).
+
+---
+
 ## Table of Contents
 
+- [Quick Start](#quick-start)
 - [Why this fork?](#why-this-fork)
 - [Token Efficiency](#token-efficiency)
   - [Progressive Disclosure](#progressive-disclosure)
@@ -26,7 +129,6 @@ If your agent's first turn against an MCP server costs ~20K tokens of tool defin
   - [Keyset Pagination](#keyset-pagination)
 - [What's Different From Upstream?](#whats-different-from-upstream)
 - [Available Categories](#available-categories)
-- [Quick Start](#quick-start)
 - [How It Works](#how-it-works)
 - [Configuration](#configuration)
 - [Features](#features)
@@ -35,6 +137,7 @@ If your agent's first turn against an MCP server costs ~20K tokens of tool defin
   - [Tool Annotations](#tool-annotations)
   - [MCP Protocol Logging](#mcp-protocol-logging)
   - [HTTP Transport Security](#http-transport-security)
+- [Troubleshooting](#troubleshooting)
 - [Development](#development)
 - [Upstream Tracking](#upstream-tracking)
 - [Security](#security)
@@ -176,111 +279,65 @@ All GitLab operations are organized into **16 categories** totaling **167 tools*
 
 ---
 
-## Quick Start
+## How It Works
 
-### Prerequisites
+A typical agent session uses three phases — **discover**, **activate**, **work** — and optionally cleans up with **deactivate** once a category is no longer needed.
 
-- Node.js 18+ (for `npx`) or [Bun](https://bun.sh/) 1.0+ (for `bunx`)
-- A GitLab Personal Access Token — scope determines what the server can do:
-  - `api` — Full access (create issues, merge MRs, manage pipelines, etc.)
-  - `read_api` — Read-only (server auto-detects and hides write tools)
-- Or `CI_JOB_TOKEN` — automatically detected in GitLab CI pipelines
+### 1. Discover (~1.5K tokens)
 
-### Full Access (recommended for most users)
+When the MCP client connects, the server only exposes 3 meta-tools. The agent calls `list_categories` to see what's available:
 
-Use an `api` scope PAT to get all 167 tools across 16 categories.
+```jsonc
+> list_categories()
 
-**Claude Code CLI:**
-
-```bash
-# With npx (Node.js)
-claude mcp add -s user gitlab \
-  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
-  -e GITLAB_API_URL=https://gitlab.com \
-  -- npx efficient-gitlab-mcp-server@latest
-
-# With bunx (Bun)
-claude mcp add -s user gitlab \
-  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
-  -e GITLAB_API_URL=https://gitlab.com \
-  -- bunx efficient-gitlab-mcp-server@latest
-```
-
-**MCP client config** (Claude Desktop, IDE extensions, etc.):
-
-```json
 {
-  "mcpServers": {
-    "gitlab": {
-      "command": "npx",
-      "args": ["efficient-gitlab-mcp-server@latest"],
-      "env": {
-        "GITLAB_PERSONAL_ACCESS_TOKEN": "glpat-xxxxxxxxxxxxxxxxxxxx",
-        "GITLAB_API_URL": "https://gitlab.com"
-      }
-    }
-  }
+  "categories": [
+    { "name": "repositories",    "tools": 11, "active": false, "description": "Search, create, fork repos. Get/push files, manage branches, list tree" },
+    { "name": "merge-requests",  "tools": 33, "active": false, "description": "Create, update, merge MRs. Discussions, threads, diffs" },
+    { "name": "issues",          "tools": 14, "active": false, "description": "Create, update, delete issues. Links, discussions" },
+    // ... 13 more, 167 tools total
+  ]
 }
 ```
 
-### Read-Only Mode (security-conscious setup)
+### 2. Activate
 
-Use a `read_api` scope PAT — the server auto-detects the limited scope and only exposes the 93 read tools. No extra config needed:
+The agent decides what it needs and activates a category:
 
-```bash
-claude mcp add -s user gitlab \
-  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-your-read-only-token \
-  -e GITLAB_API_URL=https://gitlab.com \
-  -- npx efficient-gitlab-mcp-server@latest
+```jsonc
+> activate_tools({ categories: ["merge-requests"] })
+
+"Activated 33 tools in category 'merge-requests'."
 ```
 
-Or force read-only mode explicitly (regardless of token scopes):
-
-```bash
-claude mcp add -s user gitlab \
-  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
-  -e GITLAB_API_URL=https://gitlab.com \
-  -e GITLAB_READ_ONLY_MODE=true \
-  -- npx efficient-gitlab-mcp-server@latest
-```
-
-For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL.
-
-### Install from Source (Development)
-
-```bash
-git clone https://github.com/detailobsessed/efficient-gitlab-mcp.git
-cd efficient-gitlab-mcp
-bun install
-bun run build
-bun start
-```
-
----
-
-## How It Works
-
-A typical agent session uses three phases — discover, activate, work — and optionally cleans up with `deactivate_tools` once a category is no longer needed.
-
-```
-1. LLM calls list_categories()
-   → sees 16 categories with descriptions and tool counts (all dormant)
-
-2. LLM calls activate_tools({ categories: ["merge-requests"] })
-   → 33 MR tools appear in the tool list (tools/list_changed fires)
-
-3. LLM calls create_merge_request({
-     project_id: "123",
-     title: "Fix bug",
-     source_branch: "fix",
-     target_branch: "main"
-   })
-
-4. LLM calls deactivate_tools({ categories: ["merge-requests"] })
-   → 33 MR tools disappear, freeing the tokens back
-```
+The server fires a `tools/list_changed` notification so the client picks up the 33 new tool definitions live.
 
 > **Claude Code latency note**: tools activated mid-turn become callable starting from the *next* turn (Claude Code rebuilds its deferred-tool index between turns). Other clients can be eager.
+
+### 3. Work
+
+```jsonc
+> create_merge_request({
+    project_id: "123",
+    title: "Fix bug",
+    source_branch: "fix",
+    target_branch: "main"
+  })
+
+{ "id": 7891, "iid": 42, "title": "Fix bug", "state": "opened", ... }
+```
+
+### 4. Deactivate (optional)
+
+When the agent is done with this category, it can free the tokens back:
+
+```jsonc
+> deactivate_tools({ categories: ["merge-requests"] })
+
+"Deactivated 33 tools in category 'merge-requests'."
+```
+
+This is especially useful in long agent sessions where context is at a premium — pull only what you need, drop it when you're done, then pull a different category.
 
 ---
 
@@ -396,6 +453,40 @@ HTTP_ALLOWED_ORIGINS=https://app.example.com \
 STREAMABLE_HTTP=true \
 bun start
 ```
+
+---
+
+## Troubleshooting
+
+### My agent activated a category but can't see the new tools
+
+Your MCP client needs to support the [`tools/list_changed` notification](https://modelcontextprotocol.io/specification/draft/server/tools/#tool-list-update-notifications) for runtime activations to be picked up. Most modern clients do.
+
+In **Claude Code** specifically, activated tools become callable starting from the **next** turn — the client rebuilds its deferred-tool index between turns, not synchronously inside one. So calling `activate_tools(["issues"])` and then `list_issues()` in the same turn won't work; the next turn will. Other clients (Claude Desktop, Cursor) tend to be eager.
+
+### "403 Forbidden" on a tool I expected to work
+
+The server returns actionable 403s — the error message tells you which PAT scopes are missing. Common cause: your PAT only has `read_api` scope (read-only) but the tool you called requires `api`. Either regenerate a PAT with `api` scope, or stay in read-only mode and use the read tools.
+
+### `project_id` keeps getting rejected
+
+If `GITLAB_ALLOWED_PROJECT_IDS` is set with **multiple** comma-separated IDs, every tool call needs an explicit `project_id` matching one of them — there's no default. With a **single** ID, that ID is used as the default if no `project_id` is passed. Empty/unset means no restriction (any project ID is allowed).
+
+### Self-hosted GitLab not connecting
+
+`GITLAB_API_URL` should be your instance's **base URL** (`https://gitlab.your-company.com`), not the API path. The server appends `/api/v4` itself. If you use the base path with `/api/v4` already in it, calls will hit `/api/v4/api/v4/...` and 404.
+
+### CI tools don't work in GitLab CI
+
+If `GITLAB_PERSONAL_ACCESS_TOKEN` isn't set, the server falls back to `CI_JOB_TOKEN` automatically (auto-detected from the GitLab CI environment). Set `GITLAB_PROJECT_ID: $CI_PROJECT_ID` in your `.gitlab-ci.yml` so the running pipeline's project is used as the default scope.
+
+### `runners_token` is missing from project responses
+
+It's [redacted by default](#secret-redaction) for safety. To get it back, pass `include_secrets: true` on the call.
+
+### List endpoint returns fewer results than expected
+
+For `list_issues`, `list_merge_requests`, etc.: GitLab's global endpoints (when no `project_id` is supplied) historically defaulted to `scope: created_by_me`. To see everything, pass `scope: "all"` explicitly. If you supply `project_id`, the call routes to the project-scoped endpoint and this default doesn't apply.
 
 ---
 
