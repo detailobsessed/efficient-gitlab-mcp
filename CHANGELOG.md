@@ -1,3 +1,10 @@
+# [2.19.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.18.0...v2.19.0) (2026-04-28)
+
+
+### Features
+
+* **utils:** add field-projection helper for compact list responses ([#85](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/85)) ([29372a2](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/29372a2925b2b8e1a25434d4450c1b7abc5030c5))
+
 # [2.18.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.17.1...v2.18.0) (2026-04-28)
 
 
