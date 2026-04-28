@@ -24,6 +24,7 @@ import {
   registerNamespaceTools,
   registerPipelineTools,
   registerProjectTools,
+  registerReactionTools,
   registerReleaseTools,
   registerRepositoryTools,
   registerSearchTools,
@@ -90,6 +91,7 @@ function createMcpServer(
   toolsByCategory.set("wiki", registerWikiTools(mcpServer, logger));
   toolsByCategory.set("milestones", registerMilestoneTools(mcpServer, logger));
   toolsByCategory.set("pipelines", registerPipelineTools(mcpServer, logger));
+  toolsByCategory.set("emoji-reactions", registerReactionTools(mcpServer, logger));
 
   const totalTools = Array.from(toolsByCategory.values()).reduce((sum, m) => sum + m.size, 0);
   logger.info(

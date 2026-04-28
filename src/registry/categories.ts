@@ -76,4 +76,9 @@ export const CATEGORIES: CategoryDef[] = [
     name: "graphql",
     description: "Execute arbitrary GraphQL queries against the GitLab API.",
   },
+  {
+    name: "emoji-reactions",
+    description:
+      "Add, remove, and list emoji reactions on merge requests, issues, work items, and their notes. REST for MRs / issues, GraphQL for work items.",
+  },
 ];
