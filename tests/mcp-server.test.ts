@@ -86,7 +86,8 @@ describe("MCP Server Integration", () => {
       const toolNames = result.tools.map((t) => t.name);
       expect(toolNames).toContain("list_categories");
       expect(toolNames).toContain("activate_tools");
-      expect(toolNames.length).toBe(2);
+      expect(toolNames).toContain("deactivate_tools");
+      expect(toolNames.length).toBe(3);
     });
 
     it("should list categories with tool counts", async () => {
@@ -207,6 +208,92 @@ describe("MCP Server Integration", () => {
 
       const text = getTextContent(result);
       expect(text).toContain("active");
+    });
+  });
+
+  describe("deactivate_tools", () => {
+    it("removes tools from the active set after activation", async () => {
+      // Activate first so there's something to deactivate.
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+      const beforeNames = (await client.listTools()).tools.map((t) => t.name);
+      expect(beforeNames).toContain("search_repositories");
+
+      const result = await client.callTool({
+        name: "deactivate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+      const text = getTextContent(result);
+      expect(text).toContain("search_repositories");
+
+      const afterNames = (await client.listTools()).tools.map((t) => t.name);
+      expect(afterNames).not.toContain("search_repositories");
+      // Meta-tools always remain
+      expect(afterNames).toContain("list_categories");
+      expect(afterNames).toContain("activate_tools");
+      expect(afterNames).toContain("deactivate_tools");
+    });
+
+    it("supports multi-category deactivation in a single call", async () => {
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories", "search"] },
+      });
+      await client.callTool({
+        name: "deactivate_tools",
+        arguments: { categories: ["repositories", "search"] },
+      });
+
+      const names = (await client.listTools()).tools.map((t) => t.name);
+      expect(names).not.toContain("search_repositories");
+      expect(names).not.toContain("global_search");
+    });
+
+    it("reports gracefully when nothing is active in the requested categories", async () => {
+      const result = await client.callTool({
+        name: "deactivate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+
+      const text = getTextContent(result);
+      // Whether the message says "no tools were active" verbatim or just
+      // doesn't list any disabled, the call must not error.
+      expect(text).not.toContain("Error");
+    });
+
+    it("handles unknown categories with a clear hint", async () => {
+      const result = await client.callTool({
+        name: "deactivate_tools",
+        arguments: { categories: ["nonexistent"] },
+      });
+      const text = getTextContent(result);
+      expect(text).toContain("Unknown categories");
+      expect(text).toContain("nonexistent");
+    });
+
+    it("fires sendToolListChanged exactly once per deactivation that disabled ≥1 tool", async () => {
+      await client.callTool({
+        name: "activate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+      const spy = spyOn(server, "sendToolListChanged");
+      await client.callTool({
+        name: "deactivate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not fire sendToolListChanged when nothing was disabled", async () => {
+      const spy = spyOn(server, "sendToolListChanged");
+      // Categories that aren't active — nothing to disable
+      await client.callTool({
+        name: "deactivate_tools",
+        arguments: { categories: ["repositories"] },
+      });
+      expect(spy).not.toHaveBeenCalled();
     });
   });
 

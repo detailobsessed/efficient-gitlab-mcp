@@ -65,6 +65,61 @@ function activateCategories(
   return { enabled, skipped, eligible, notFound };
 }
 
+function deactivateCategories(
+  categoryNames: string[],
+  toolsByCategory: ToolsByCategory,
+): { disabled: string[]; notFound: string[] } {
+  const disabled: string[] = [];
+  const notFound: string[] = [];
+
+  for (const name of categoryNames) {
+    const tools = toolsByCategory.get(name);
+    if (!tools) {
+      notFound.push(name);
+      continue;
+    }
+    for (const [toolName, tool] of tools) {
+      if (tool.enabled) {
+        // Set directly — same rationale as activateCategories: avoid
+        // per-tool sendToolListChanged() and instead batch one notification
+        // after the whole batch is applied.
+        tool.enabled = false;
+        disabled.push(toolName);
+      }
+    }
+  }
+
+  return { disabled, notFound };
+}
+
+function rollbackDeactivation(disabled: string[], toolsByCategory: ToolsByCategory): void {
+  for (const toolName of disabled) {
+    for (const tools of toolsByCategory.values()) {
+      const tool = tools.get(toolName);
+      if (tool) tool.enabled = true;
+    }
+  }
+}
+
+function formatDeactivationResult(
+  disabled: string[],
+  notFound: string[],
+  toolsByCategory: ToolsByCategory,
+): string {
+  const lines: string[] = [];
+  if (disabled.length > 0) {
+    lines.push(`Disabled ${disabled.length} tool(s): ${disabled.join(", ")}`);
+  }
+  if (notFound.length > 0) {
+    const available = Array.from(toolsByCategory.keys()).join(", ");
+    lines.push(`Unknown categories: ${notFound.join(", ")}. Available: ${available}`);
+  }
+  if (disabled.length === 0 && notFound.length === 0) {
+    lines.push("No active tools in the requested categories.");
+  }
+  return lines.join("\n");
+}
+
 function formatActivationResult(
   enabled: string[],
   skipped: number,
@@ -226,5 +281,67 @@ export function registerDisclosureTools(
     },
   );
 
-  logger.info("Registered disclosure meta-tools (list_categories, activate_tools)");
+  server.registerTool(
+    "deactivate_tools",
+    {
+      title: "Deactivate Tool Category",
+      description:
+        "Disable all tools in one or more categories. After deactivation, those tools are removed from the active set and stop appearing in tools/list. Useful for reclaiming context-window budget on long sessions when a category is no longer needed.",
+      inputSchema: {
+        categories: z
+          .array(z.string())
+          .describe("Category names to deactivate (e.g., ['issues', 'merge-requests'])"),
+      },
+      annotations: {
+        title: "Deactivate Tool Category",
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ categories: categoryNames }) => {
+      const names = categoryNames as string[];
+      const { disabled, notFound } = deactivateCategories(names, toolsByCategory);
+
+      if (disabled.length > 0) {
+        try {
+          server.sendToolListChanged();
+        } catch (err) {
+          rollbackDeactivation(disabled, toolsByCategory);
+          logger.error("Failed to notify client, rolled back deactivation", {
+            error: err instanceof Error ? err.message : String(err),
+            rolledBack: disabled,
+          });
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: "Deactivation failed — could not notify client. Please retry.",
+              },
+            ],
+          };
+        }
+      }
+
+      logger.info("Deactivated tools", {
+        categories: names,
+        disabledCount: disabled.length,
+        notFound,
+      });
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: formatDeactivationResult(disabled, notFound, toolsByCategory),
+          },
+        ],
+      };
+    },
+  );
+
+  logger.info(
+    "Registered disclosure meta-tools (list_categories, activate_tools, deactivate_tools)",
+  );
 }
