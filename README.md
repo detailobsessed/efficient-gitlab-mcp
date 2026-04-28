@@ -1,7 +1,10 @@
 # Efficient GitLab MCP
 
 [![npm version](https://img.shields.io/npm/v/efficient-gitlab-mcp-server.svg)](https://www.npmjs.com/package/efficient-gitlab-mcp-server)
+[![npm downloads](https://img.shields.io/npm/dw/efficient-gitlab-mcp-server?logo=npm&color=cb3837)](https://www.npmjs.com/package/efficient-gitlab-mcp-server)
 [![CI](https://github.com/detailobsessed/efficient-gitlab-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/detailobsessed/efficient-gitlab-mcp/actions/workflows/ci.yml)
+[![Tools](https://img.shields.io/badge/tools-167-2563EB)](#available-categories)
+[![Categories](https://img.shields.io/badge/categories-16-10B981)](#available-categories)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Bun](https://img.shields.io/badge/Bun-1.0+-f9f1e1?logo=bun&logoColor=f9f1e1)](https://bun.sh/)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-8B5CF6?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwIDEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAyem0wIDE4Yy00LjQxIDAtOC0zLjU5LTgtOHMzLjU5LTggOC04IDggMy41OSA4IDgtMy41OSA4LTggOHoiLz48L3N2Zz4=)](https://modelcontextprotocol.io/)
@@ -9,95 +12,167 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Biome](https://img.shields.io/badge/Biome-Strict-60A5FA?logo=biome&logoColor=white)](https://biomejs.dev/)
 
-**Token-Efficient GitLab Server Management** — An enhanced fork of [zereight/gitlab-mcp](https://github.com/zereight/gitlab-mcp) with progressive disclosure pattern for dramatic token savings.
+**Token-efficient GitLab MCP server.** A fork of [zereight/gitlab-mcp](https://github.com/zereight/gitlab-mcp) re-architected for agent context budgets: **167 tools delivered through 3 meta-tools**, with field projection on every list endpoint, server-side file trimming, and keyset pagination on large directories.
 
-## What's Different From Upstream?
+If your agent's first turn against an MCP server costs ~20K tokens of tool definitions before you've asked anything, this fork is for you.
 
-This fork builds on [zereight/gitlab-mcp](https://github.com/zereight/gitlab-mcp) with a redesigned architecture focused on token efficiency and maintainability. We regularly review upstream commits and port new features and bugfixes while keeping our own structure.
+## Table of Contents
 
-### Architecture at a Glance
-
-| Area | Upstream | This Fork |
-|------|----------|-----------|
-| **Architecture** | Single `index.ts` (~10K lines) | Modular `src/` with 15 tool modules |
-| **Tool Discovery** | All 140+ tools exposed at once | SDK-native progressive disclosure (2 meta-tools) |
-| **Configuration** | Flat individual exports | Typed `ServerConfig` interface with `loadConfig()` |
-| **Logging** | `console.log` | Structured MCP protocol logger for agent observability |
-| **Runtime** | Node.js + npm | Bun (faster builds, native TypeScript) |
-| **Linting** | ESLint + Prettier | Strict Biome rules (`noExplicitAny`, `noNonNullAssertion`, cognitive complexity) |
-| **CI/CD** | Basic | GitHub Actions (lint, build, test, semantic-release) |
-| **Pre-commit** | None | prek hooks (typos, formatting, build verification) |
-| **Feature Flags** | `USE_PIPELINE`, `USE_MILESTONE`, `USE_GITLAB_WIKI` required | None — all categories available via progressive disclosure |
-
-### Key Improvements
-
-- **Progressive Disclosure** — 2 meta-tools instead of 140+ individual tools (~90% token reduction). Uses the MCP SDK's native `enable()`/`disable()` API so tools are registered but hidden until the LLM activates a category.
-- **Modular Tool Organization** — Each GitLab domain (issues, merge requests, pipelines, etc.) lives in its own file under `src/tools/`, making it easy to find, test, and extend individual tools without navigating a monolithic file.
-- **Typed Configuration** — A `ServerConfig` interface ensures all config values are validated at startup, with IDE autocompletion and compile-time safety.
-- **MCP Protocol Logging** — Structured logs sent to LLM clients for agent observability, not just developer console output.
-- **HTTP Transport Security** — DNS rebinding protection, configurable allowed hosts/origins.
-- **Read-Only Mode & PAT Safety** — Automatic PAT scope detection, explicit read-only mode, and actionable 403 error messages. Uses `readOnlyHint` annotations on all 146 tools to filter write operations.
-- **Comprehensive Test Suite** — 160+ tests covering registry, config, logger, MCP integration, read-only mode, and meta-tools.
-- **Strict Code Quality** — Zero `any` types, no non-null assertions, enforced cognitive complexity limits.
-- **Modern Tooling** — Bun for fast builds, Biome for linting, prek for pre-commit hooks.
-- **No Feature Flags Needed** — Upstream requires `USE_PIPELINE`, `USE_MILESTONE`, and `USE_GITLAB_WIKI` env vars to enable core tools. Progressive disclosure eliminates this — all 15 categories are registered but dormant until activated, so there's zero token cost and zero config overhead.
-- **Automated Releases** — Semantic versioning with conventional commits.
-
-### Upstream Tracking
-
-We maintain `main` as a read-only mirror of upstream. New features and bugfixes from upstream are reviewed and ported into our architecture as needed — we don't blindly rebase, since the codebases have structurally diverged. If you're looking for a specific upstream feature, check our [releases](https://github.com/detailobsessed/efficient-gitlab-mcp/releases) or open an issue.
+- [Why this fork?](#why-this-fork)
+- [Token Efficiency](#token-efficiency)
+  - [Progressive Disclosure](#progressive-disclosure)
+  - [Field Projection](#field-projection)
+  - [Server-Side File Trimming](#server-side-file-trimming)
+  - [Keyset Pagination](#keyset-pagination)
+- [What's Different From Upstream?](#whats-different-from-upstream)
+- [Available Categories](#available-categories)
+- [Quick Start](#quick-start)
+- [How It Works](#how-it-works)
+- [Configuration](#configuration)
+- [Features](#features)
+  - [Read-Only Mode & PAT Safety](#read-only-mode--pat-safety)
+  - [Secret Redaction](#secret-redaction)
+  - [Tool Annotations](#tool-annotations)
+  - [MCP Protocol Logging](#mcp-protocol-logging)
+  - [HTTP Transport Security](#http-transport-security)
+- [Development](#development)
+- [Upstream Tracking](#upstream-tracking)
+- [Security](#security)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
 
 ---
 
-## How It Works
+## Why this fork?
 
-Instead of exposing 140+ individual tools, this server exposes **2 meta-tools**:
+GitLab's API surface is huge, and the upstream MCP server reflects that — every tool is exposed at startup, all the time. For an agent on a context budget, that's wasteful in three places:
+
+1. **Tool definitions at startup.** Hundreds of tool schemas are forced into the prompt before the first user turn.
+2. **List-endpoint responses.** GitLab list endpoints return objects with 100+ fields per row by default; relevant signal is usually <10 fields.
+3. **File contents and large directories.** Reading a single file can pull in thousands of irrelevant lines; listing a large repository tree returns everything at once.
+
+This fork addresses all three: progressive disclosure for tool definitions, field projection for list responses, and trimming + keyset pagination for content.
+
+---
+
+## Token Efficiency
+
+### Progressive Disclosure
+
+Instead of exposing 167 individual tools, the server exposes **3 meta-tools**:
 
 | Meta-Tool | Purpose |
 |-----------|---------|
 | `list_categories` | Discover available tool categories and their activation status |
 | `activate_tools` | Enable all tools in one or more categories |
-
-### Token Savings
+| `deactivate_tools` | Disable a category once you're done — frees the tokens back |
 
 | Approach | Tools Exposed | Approximate Token Cost |
 |----------|---------------|------------------------|
-| Traditional | 140+ tools | ~20,000+ tokens |
-| Progressive Disclosure | 2 meta-tools | ~1,500 tokens |
+| Traditional | 167 tools | ~20,000+ tokens |
+| Progressive Disclosure | 3 meta-tools | ~1,500 tokens |
 
-**~90% reduction in tool definition tokens!**
+**~90% reduction in tool-definition tokens at startup.** Tools are registered with the MCP SDK but kept disabled (`tool.disable()`) until the LLM activates a category — activation triggers a `tools/list_changed` notification so the client picks them up live.
 
-### Example Workflow
+### Field Projection
 
+List endpoints return a curated, allow-listed default set of fields per resource. Callers can opt into the full payload with `fields: "all"` or pick their own list with `fields: ["id", "name"]`.
+
+Currently applied to:
+
+- `list_projects`, `list_group_projects`
+- `list_issues`, `my_issues`
+- `list_merge_requests`
+- `list_pipelines`
+- `list_releases`
+- `list_commits`
+
+A spike measurement against `list_projects` with 5 owned projects went from **~32 KB → ~3 KB** by switching to the compact default. Because it's allow-list based, the compact output stays compact when GitLab adds new fields upstream.
+
+### Server-Side File Trimming
+
+`get_file_contents` accepts trim parameters so agents don't have to pull whole files into context just to read a function:
+
+| Parameter | Purpose |
+|-----------|---------|
+| `head: N` | Return only the first N lines |
+| `tail: N` | Return only the last N lines |
+| `range: "start-end"` | Return a specific line range |
+| `max_bytes: N` | Hard byte cap (composes with line-based trims) |
+
+Truncated responses include a note like `Showing lines 100-200 of 5234`, so a follow-up call can target a different range without re-fetching to count lines first.
+
+### Keyset Pagination
+
+`get_repository_tree` supports keyset pagination (`pagination=keyset`) and returns an envelope:
+
+```json
+{
+  "items": [...],
+  "pagination_note": "Next page available — call again with pagination=keyset&page_token=..."
+}
 ```
-1. LLM calls list_categories() → sees "merge-requests" category (20 tools, 0 active)
-2. LLM calls activate_tools(categories: ["merge-requests"]) → 20 tools now appear in tool list
-3. LLM calls create_merge_request({project_id: "123", title: "Fix bug", source_branch: "fix", target_branch: "main"})
-```
+
+Large monorepos no longer dump 10K entries into a single response. The server reads the cursor from `X-Next-Page-Token` (or falls back to `X-Next-Page` on older GitLab instances) and surfaces it inline.
 
 ---
 
-## Available Operations
+## What's Different From Upstream?
 
-All GitLab operations organized by category:
+This fork builds on [zereight/gitlab-mcp](https://github.com/zereight/gitlab-mcp) with a redesigned architecture focused on token efficiency and maintainability. We regularly review upstream commits and selectively port new features and bugfixes — we don't blindly rebase, since the codebases have structurally diverged.
 
-| Category | Description |
-|----------|-------------|
-| repositories | Search, create, fork repos. Get files, push files, manage branches |
-| merge-requests | Create, update, merge MRs. Discussions, threads, diffs |
-| issues | Create, update, delete issues. Links, discussions |
-| pipelines | List, create, retry, cancel pipelines. Job output |
-| projects | Project details, members, labels |
-| commits | List commits, get diffs |
-| namespaces | List, get, verify namespaces |
-| users | User details, search users, audit/project events, file uploads |
-| search | Global, project, and group search across code, issues, MRs, commits |
-| wiki | Wiki page management for projects and groups |
-| milestones | Create, edit, delete milestones. Burndown events |
-| releases | List, create, update, delete releases. Download assets |
-| webhooks | List project webhooks and recent events |
-| work-items | GraphQL work items: create, update, hierarchy, notes, incidents |
-| graphql | Execute arbitrary GraphQL queries |
+### Architecture at a Glance
+
+| Area | Upstream | This Fork |
+|------|----------|-----------|
+| **Architecture** | Single `index.ts` (~10K lines) | Modular `src/` with 16 tool modules |
+| **Tool Discovery** | All 140+ tools exposed at once | SDK-native progressive disclosure (3 meta-tools) |
+| **List Responses** | Full GitLab payload (100+ fields/row) | Field projection: compact default + opt-in `fields` |
+| **File Contents** | Whole-file fetch | Server-side `head` / `tail` / `range` / `max_bytes` trimming |
+| **Tree Listing** | Offset pagination only | Offset + keyset (`pagination=keyset`) with cursor envelope |
+| **Tool Annotations** | Partial | Complete: `readOnlyHint` / `destructiveHint` / `idempotentHint` / `openWorldHint` on every tool |
+| **Configuration** | Flat individual exports | Typed `ServerConfig` interface with `loadConfig()` |
+| **Logging** | `console.log` | Structured MCP protocol logger for agent observability |
+| **Runtime** | Node.js + npm | Bun (faster builds, native TypeScript) |
+| **Linting** | ESLint + Prettier | Strict Biome rules (`noExplicitAny`, `noNonNullAssertion`, cognitive complexity cap) |
+| **CI/CD** | Basic | GitHub Actions (lint, build, test, semantic-release) |
+| **Pre-commit** | None | prek hooks (typos, formatting, build verification) |
+| **Feature Flags** | `USE_PIPELINE`, `USE_MILESTONE`, `USE_GITLAB_WIKI` required | None — all categories registered, dormant until activated |
+
+### Other Improvements
+
+- **Read-Only Mode & PAT Safety** — Automatic PAT scope detection, explicit read-only mode, and actionable 403 error messages.
+- **Secret redaction** — `runners_token` is redacted from project responses by default; opt back in with `include_secrets: true`.
+- **Robust schema coercion** — Booleans, numeric IDs, and stringified arrays are all coerced defensively (LLMs serialize inconsistently).
+- **HTTP transport security** — DNS rebinding protection, configurable allowed hosts/origins.
+- **Comprehensive test suite** — 280+ tests covering registry, config, logger, MCP integration, read-only mode, projection, and meta-tools.
+- **Strict code quality** — Zero `any` types, no non-null assertions, enforced cognitive complexity limits.
+- **Automated releases** — Semantic versioning with conventional commits.
+
+---
+
+## Available Categories
+
+All GitLab operations are organized into **16 categories** totaling **167 tools**. All categories are registered at startup but dormant — activate the ones you need.
+
+| Category | Tools | Description |
+|----------|------:|-------------|
+| `repositories` | 11 | Search, create, fork repos. Get/push files, manage branches, list tree |
+| `merge-requests` | 33 | Create, update, merge MRs. Discussions, threads, diffs |
+| `issues` | 14 | Create, update, delete issues. Links, discussions |
+| `pipelines` | 19 | List, create, retry, cancel pipelines. Job output |
+| `projects` | 10 | Project details, list, members, labels |
+| `commits` | 3 | List commits, get commits, get diffs |
+| `namespaces` | 3 | List, get, verify namespaces |
+| `users` | 8 | User details, search, audit/project events, file uploads, current user (whoami) |
+| `search` | 6 | Global, project, and group search across code, issues, MRs, commits |
+| `wiki` | 10 | Wiki page management for projects and groups |
+| `milestones` | 9 | Create, edit, delete milestones. Burndown events |
+| `releases` | 7 | List, create, update, delete releases. Download assets |
+| `webhooks` | 3 | List project webhooks and recent events |
+| `work-items` | 12 | GraphQL work items: create, update, hierarchy, notes, incidents |
+| `graphql` | 1 | Execute arbitrary GraphQL queries |
+| `emoji-reactions` | 18 | Add, remove, and list emoji reactions on MRs / issues / work items / notes (REST + GraphQL) |
 
 ---
 
@@ -113,7 +188,7 @@ All GitLab operations organized by category:
 
 ### Full Access (recommended for most users)
 
-Use an `api` scope PAT to get all 146 tools across 15 categories:
+Use an `api` scope PAT to get all 167 tools across 16 categories.
 
 **Claude Code CLI:**
 
@@ -150,40 +225,23 @@ claude mcp add -s user gitlab \
 
 ### Read-Only Mode (security-conscious setup)
 
-Use a `read_api` scope PAT — the server auto-detects the limited scope and only exposes read tools. No extra config needed:
-
-**Claude Code CLI:**
+Use a `read_api` scope PAT — the server auto-detects the limited scope and only exposes the 93 read tools. No extra config needed:
 
 ```bash
-# With npx (Node.js)
 claude mcp add -s user gitlab \
   -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-your-read-only-token \
   -e GITLAB_API_URL=https://gitlab.com \
   -- npx efficient-gitlab-mcp-server@latest
-
-# With bunx (Bun)
-claude mcp add -s user gitlab \
-  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-your-read-only-token \
-  -e GITLAB_API_URL=https://gitlab.com \
-  -- bunx efficient-gitlab-mcp-server@latest
 ```
 
 Or force read-only mode explicitly (regardless of token scopes):
 
 ```bash
-# With npx (Node.js)
 claude mcp add -s user gitlab \
   -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
   -e GITLAB_API_URL=https://gitlab.com \
   -e GITLAB_READ_ONLY_MODE=true \
   -- npx efficient-gitlab-mcp-server@latest
-
-# With bunx (Bun)
-claude mcp add -s user gitlab \
-  -e GITLAB_PERSONAL_ACCESS_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx \
-  -e GITLAB_API_URL=https://gitlab.com \
-  -e GITLAB_READ_ONLY_MODE=true \
-  -- bunx efficient-gitlab-mcp-server@latest
 ```
 
 For **self-hosted GitLab**, update `GITLAB_API_URL` to your instance URL.
@@ -200,13 +258,86 @@ bun start
 
 ---
 
+## How It Works
+
+A typical agent session uses three phases — discover, activate, work — and optionally cleans up with `deactivate_tools` once a category is no longer needed.
+
+```
+1. LLM calls list_categories()
+   → sees 16 categories with descriptions and tool counts (all dormant)
+
+2. LLM calls activate_tools({ categories: ["merge-requests"] })
+   → 33 MR tools appear in the tool list (tools/list_changed fires)
+
+3. LLM calls create_merge_request({
+     project_id: "123",
+     title: "Fix bug",
+     source_branch: "fix",
+     target_branch: "main"
+   })
+
+4. LLM calls deactivate_tools({ categories: ["merge-requests"] })
+   → 33 MR tools disappear, freeing the tokens back
+```
+
+> **Claude Code latency note**: tools activated mid-turn become callable starting from the *next* turn (Claude Code rebuilds its deferred-tool index between turns). Other clients can be eager.
+
+---
+
+## Configuration
+
+### Core Settings
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `GITLAB_PERSONAL_ACCESS_TOKEN` | Yes\* | - | GitLab personal access token (takes priority over CI_JOB_TOKEN) |
+| `CI_JOB_TOKEN` | No | - | GitLab CI job token (auto-detected in CI pipelines) |
+| `GITLAB_API_URL` | No | `https://gitlab.com` | GitLab instance URL |
+| `GITLAB_PROJECT_ID` | No | - | Default project ID when tools omit `project_id` |
+| `GITLAB_ALLOWED_PROJECT_IDS` | No | - | Restrict tools to these projects (comma-separated). With a single project, acts as default. With multiple, `project_id` is required per call |
+| `GITLAB_READ_ONLY_MODE` | No | `false` | Only expose read-only tools. Auto-detected from PAT scopes if not set |
+| `GITLAB_IS_OLD` | No | `false` | For older GitLab instances |
+
+\*PAT is recommended. `CI_JOB_TOKEN` is auto-detected in GitLab CI pipelines when no PAT is set. OAuth support is planned (see [OAuth Setup Guide](./docs/oauth-setup.md)).
+
+### Transport Settings
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `STREAMABLE_HTTP` | No | `false` | Enable HTTP transport |
+| `SSE` | No | `false` | Enable SSE transport |
+| `PORT` | No | `3002` | HTTP server port |
+| `HOST` | No | `127.0.0.1` | HTTP server host |
+
+### Logging & Security
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, `error` |
+| `LOG_FORMAT` | No | `pretty` | `json`, `pretty` |
+| `HTTP_ALLOWED_HOSTS` | No | `localhost,127.0.0.1` | Allowed Host headers |
+| `HTTP_ALLOWED_ORIGINS` | No | (any) | Allowed Origin headers |
+| `HTTP_ENABLE_DNS_REBINDING_PROTECTION` | No | `true` | Enable DNS rebinding attack protection |
+
+### Remote Authorization (Multi-tenant)
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `REMOTE_AUTHORIZATION` | No | `false` | Enable remote auth |
+| `ENABLE_DYNAMIC_API_URL` | No | `false` | Allow dynamic GitLab URLs |
+| `SESSION_TIMEOUT_SECONDS` | No | `3600` | Session timeout |
+| `MAX_SESSIONS` | No | `1000` | Maximum concurrent sessions |
+| `MAX_REQUESTS_PER_MINUTE` | No | `60` | Rate limit per session |
+
+---
+
 ## Features
 
 ### Read-Only Mode & PAT Safety
 
 The server provides three layers of protection for users with limited-scope Personal Access Tokens:
 
-**1. Explicit read-only mode** — Set `GITLAB_READ_ONLY_MODE=true` to restrict the server to read-only tools. Write tools won't appear in `list_categories` counts or be activated by `activate_tools`. This is controlled by the `readOnlyHint` annotation on every tool.
+**1. Explicit read-only mode** — Set `GITLAB_READ_ONLY_MODE=true` to restrict the server to read-only tools. Write tools won't appear in `list_categories` counts and can't be activated. This is driven by the `readOnlyHint` annotation on every tool.
 
 **2. Automatic PAT scope detection** — On startup, the server calls GitLab's `GET /personal_access_tokens/self` to inspect your token's scopes. If the token lacks the `api` scope (e.g., only has `read_api`), read-only mode is automatically enabled. No configuration needed — it just works.
 
@@ -220,6 +351,23 @@ GITLAB_READ_ONLY_MODE=true
 GITLAB_PERSONAL_ACCESS_TOKEN=glpat-your-read-only-token
 ```
 
+### Secret Redaction
+
+GitLab project responses include a `runners_token` field by default — anyone with that token can register CI runners against the project. The server **redacts `runners_token` by default** on `get_project` and `list_projects` responses. To opt back in (e.g. when an agent specifically needs to manage runner registration), pass `include_secrets: true`.
+
+### Tool Annotations
+
+Every tool declares a complete set of [MCP tool annotations](https://modelcontextprotocol.io/specification/draft/server/tools/#tool-annotations) so MCP-aware clients can offer per-action confirmation, distinguish destructive operations from idempotent updates, and filter by side-effect profile:
+
+| Tool kind | `readOnlyHint` | `destructiveHint` | `idempotentHint` | `openWorldHint` |
+|-----------|---------------|-------------------|-----------------|-----------------|
+| Read-only (list/get) | `true` | _(omit)_ | _(omit)_ | `true` |
+| Create | `false` | `false` | `false` | `true` |
+| Update | `false` | `true` | `true` | `true` |
+| Delete | `false` | `true` | `true` | `true` |
+
+`openWorldHint` is always `true` because every tool talks to GitLab's API. The annotation matrix is enforced by an invariants test.
+
 ### MCP Protocol Logging
 
 The server supports MCP protocol logging for agent observability. When connected, LLM clients can receive structured log messages showing what the server is doing:
@@ -228,7 +376,7 @@ The server supports MCP protocol logging for agent observability. When connected
 - GitLab API call details
 - Error information with context
 
-This helps agents understand server behavior and debug issues.
+This helps agents understand server behavior and debug issues — instead of opaque `console.log` output that only the developer sees.
 
 ### HTTP Transport Security
 
@@ -254,7 +402,10 @@ bun start
 ## Development
 
 ```bash
-# Run tests
+# Install dependencies
+bun install
+
+# Run tests (280+ tests, <1s)
 bun test
 
 # Run tests with coverage
@@ -269,51 +420,9 @@ bun run build
 
 ---
 
-## Configuration
+## Upstream Tracking
 
-### Core Settings
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `GITLAB_PERSONAL_ACCESS_TOKEN` | Yes* | - | GitLab personal access token (takes priority over CI_JOB_TOKEN) |
-| `CI_JOB_TOKEN` | No | - | GitLab CI job token (auto-detected in CI pipelines) |
-| `GITLAB_API_URL` | No | `https://gitlab.com` | GitLab instance URL |
-| `GITLAB_PROJECT_ID` | No | - | Default project ID when tools omit `project_id` |
-| `GITLAB_ALLOWED_PROJECT_IDS` | No | - | Restrict tools to these projects (comma-separated). With a single project, acts as default. With multiple, `project_id` is required per call |
-| `GITLAB_READ_ONLY_MODE` | No | `false` | Only expose read-only tools. Auto-detected from PAT scopes if not set |
-| `GITLAB_IS_OLD` | No | `false` | For older GitLab instances |
-
-\*PAT is recommended. `CI_JOB_TOKEN` is auto-detected in GitLab CI pipelines when no PAT is set. OAuth support is planned (see DET-44).
-
-### Transport Settings
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `STREAMABLE_HTTP` | No | `false` | Enable HTTP transport |
-| `SSE` | No | `false` | Enable SSE transport |
-| `PORT` | No | `3002` | HTTP server port |
-| `HOST` | No | `127.0.0.1` | HTTP server host |
-
-### Logging & Security
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `LOG_LEVEL` | No | `info` | `debug`, `info`, `warn`, `error` |
-| `LOG_FORMAT` | No | `pretty` | `json`, `pretty` |
-| `HTTP_ALLOWED_HOSTS` | No | `localhost,127.0.0.1` | Allowed Host headers |
-| `HTTP_ALLOWED_ORIGINS` | No | (any) | Allowed Origin headers |
-
-### Remote Authorization (Multi-tenant)
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `REMOTE_AUTHORIZATION` | No | `false` | Enable remote auth |
-| `ENABLE_DYNAMIC_API_URL` | No | `false` | Allow dynamic GitLab URLs |
-| `SESSION_TIMEOUT_SECONDS` | No | `3600` | Session timeout |
-| `MAX_SESSIONS` | No | `1000` | Maximum concurrent sessions |
-| `MAX_REQUESTS_PER_MINUTE` | No | `60` | Rate limit per session |
-
-*Or use `CI_JOB_TOKEN` in GitLab CI pipelines. OAuth authentication is planned — see [OAuth Setup Guide](./docs/oauth-setup.md) for the design.
+We maintain `main` as a read-only mirror of upstream. New features and bugfixes from upstream are reviewed and ported into our architecture as needed — we don't blindly rebase, since the codebases have structurally diverged. If you're looking for a specific upstream feature, check our [releases](https://github.com/detailobsessed/efficient-gitlab-mcp/releases) or open an issue.
 
 ---
 
@@ -323,6 +432,7 @@ bun run build
 - **Rotate tokens** — Regenerate periodically
 - **Least privilege** — Only grant necessary API scopes
 - **Audit logs** — Monitor API access
+- **Secret redaction** — `runners_token` is redacted by default; see [Secret Redaction](#secret-redaction)
 
 ---
 
