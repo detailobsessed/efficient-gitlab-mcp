@@ -11,6 +11,7 @@ import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server
 import { z } from "zod";
 import { defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
+import { resolveWorkItemGID } from "./work-items.js";
 
 // Shared schema fragments — coerce strings/numbers to strings since GitLab's
 // REST endpoints accept either. award_id is unconditionally a string in
@@ -547,6 +548,263 @@ export function registerReactionTools(
   );
   t12.disable();
   tools.set("delete_issue_note_emoji_reaction", t12);
+
+  // ---------- Work-item reactions (GraphQL) ----------
+  //
+  // REST /award_emoji doesn't cover work items — only the GraphQL awardEmoji
+  // mutations do. These tools resolve (project_id, iid) to a work-item GID
+  // via the existing resolveWorkItemGID helper (from work-items.ts) and
+  // issue awardEmojiAdd / awardEmojiRemove mutations against the GID.
+  //
+  // Note: GraphQL deletes by name, NOT by award_id like REST.
+
+  const t13 = server.registerTool(
+    "list_work_item_emoji_reactions",
+    {
+      title: "List Work Item Emoji Reactions",
+      description: "List all emoji reactions on a work item",
+      inputSchema: {
+        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        iid: z.coerce.number().describe("The internal ID (IID) of the work item"),
+      },
+      annotations: READ_ONLY_HINT,
+    },
+    async (params) => {
+      const args = z
+        .object({ project_id: z.coerce.string(), iid: z.coerce.number() })
+        .parse(params);
+      const { workItemGID } = await resolveWorkItemGID(args.project_id, args.iid);
+      const data = await defaultClient.graphql<{
+        awardEmojis: { nodes: Array<Record<string, unknown>> };
+      }>(
+        `query($awardableId: AwardableID!) {
+          awardEmojis(awardableId: $awardableId) {
+            nodes { name user { id username name } }
+          }
+        }`,
+        { awardableId: workItemGID },
+      );
+      return {
+        content: [{ type: "text", text: JSON.stringify(data.awardEmojis?.nodes ?? [], null, 2) }],
+      };
+    },
+  );
+  t13.disable();
+  tools.set("list_work_item_emoji_reactions", t13);
+
+  const t14 = server.registerTool(
+    "create_work_item_emoji_reaction",
+    {
+      title: "Create Work Item Emoji Reaction",
+      description: "Add an emoji reaction to a work item (e.g. thumbsup, rocket, eyes)",
+      inputSchema: {
+        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        iid: z.coerce.number().describe("The internal ID (IID) of the work item"),
+        name: emojiNameField,
+      },
+      annotations: CREATE_HINT,
+    },
+    async (params) => {
+      const args = z
+        .object({
+          project_id: z.coerce.string(),
+          iid: z.coerce.number(),
+          name: z.string(),
+        })
+        .parse(params);
+      const { workItemGID } = await resolveWorkItemGID(args.project_id, args.iid);
+      const data = await defaultClient.graphql<{
+        awardEmojiAdd: { awardEmoji: Record<string, unknown>; errors: string[] };
+      }>(
+        `mutation($awardableId: AwardableID!, $name: String!) {
+          awardEmojiAdd(input: { awardableId: $awardableId, name: $name }) {
+            awardEmoji { name user { id username } }
+            errors
+          }
+        }`,
+        { awardableId: workItemGID, name: args.name },
+      );
+      if (data.awardEmojiAdd?.errors?.length) {
+        throw new Error(`awardEmojiAdd: ${data.awardEmojiAdd.errors.join(", ")}`);
+      }
+      return { content: [{ type: "text", text: JSON.stringify(data.awardEmojiAdd, null, 2) }] };
+    },
+  );
+  t14.disable();
+  tools.set("create_work_item_emoji_reaction", t14);
+
+  const t15 = server.registerTool(
+    "delete_work_item_emoji_reaction",
+    {
+      title: "Delete Work Item Emoji Reaction",
+      description:
+        "Remove an emoji reaction from a work item by name (GraphQL deletes by name, not by award_id).",
+      inputSchema: {
+        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        iid: z.coerce.number().describe("The internal ID (IID) of the work item"),
+        name: emojiNameField,
+      },
+      annotations: DELETE_HINT,
+    },
+    async (params) => {
+      const args = z
+        .object({
+          project_id: z.coerce.string(),
+          iid: z.coerce.number(),
+          name: z.string(),
+        })
+        .parse(params);
+      const { workItemGID } = await resolveWorkItemGID(args.project_id, args.iid);
+      const data = await defaultClient.graphql<{
+        awardEmojiRemove: { errors: string[] };
+      }>(
+        `mutation($awardableId: AwardableID!, $name: String!) {
+          awardEmojiRemove(input: { awardableId: $awardableId, name: $name }) {
+            errors
+          }
+        }`,
+        { awardableId: workItemGID, name: args.name },
+      );
+      if (data.awardEmojiRemove?.errors?.length) {
+        throw new Error(`awardEmojiRemove: ${data.awardEmojiRemove.errors.join(", ")}`);
+      }
+      return { content: [{ type: "text", text: "Reaction removed" }] };
+    },
+  );
+  t15.disable();
+  tools.set("delete_work_item_emoji_reaction", t15);
+
+  const t16 = server.registerTool(
+    "list_work_item_note_emoji_reactions",
+    {
+      title: "List Work Item Note Emoji Reactions",
+      description:
+        "List all emoji reactions on a work item note. note_id is the GraphQL GID (e.g. 'gid://gitlab/Note/123' from list_work_item_notes).",
+      inputSchema: {
+        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        iid: z.coerce.number().describe("The internal ID of the work item"),
+        note_id: z
+          .string()
+          .describe("GraphQL note GID (e.g. 'gid://gitlab/Note/123' from list_work_item_notes)"),
+      },
+      annotations: READ_ONLY_HINT,
+    },
+    async (params) => {
+      const args = z
+        .object({
+          project_id: z.coerce.string(),
+          iid: z.coerce.number(),
+          note_id: z.string(),
+        })
+        .parse(params);
+      // Resolve work-item GID to validate the iid even though the query
+      // operates on the note GID directly — surfaces "not found" errors
+      // with a friendlier message than GraphQL's raw "node not found".
+      await resolveWorkItemGID(args.project_id, args.iid);
+      const data = await defaultClient.graphql<{
+        awardEmojis: { nodes: Array<Record<string, unknown>> };
+      }>(
+        `query($awardableId: AwardableID!) {
+          awardEmojis(awardableId: $awardableId) {
+            nodes { name user { id username name } }
+          }
+        }`,
+        { awardableId: args.note_id },
+      );
+      return {
+        content: [{ type: "text", text: JSON.stringify(data.awardEmojis?.nodes ?? [], null, 2) }],
+      };
+    },
+  );
+  t16.disable();
+  tools.set("list_work_item_note_emoji_reactions", t16);
+
+  const t17 = server.registerTool(
+    "create_work_item_note_emoji_reaction",
+    {
+      title: "Create Work Item Note Emoji Reaction",
+      description:
+        "Add an emoji reaction to a work item note. note_id is the GraphQL GID from list_work_item_notes.",
+      inputSchema: {
+        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        iid: z.coerce.number().describe("The internal ID of the work item"),
+        note_id: z.string().describe("GraphQL note GID (e.g. 'gid://gitlab/Note/123')"),
+        name: emojiNameField,
+      },
+      annotations: CREATE_HINT,
+    },
+    async (params) => {
+      const args = z
+        .object({
+          project_id: z.coerce.string(),
+          iid: z.coerce.number(),
+          note_id: z.string(),
+          name: z.string(),
+        })
+        .parse(params);
+      await resolveWorkItemGID(args.project_id, args.iid);
+      const data = await defaultClient.graphql<{
+        awardEmojiAdd: { awardEmoji: Record<string, unknown>; errors: string[] };
+      }>(
+        `mutation($awardableId: AwardableID!, $name: String!) {
+          awardEmojiAdd(input: { awardableId: $awardableId, name: $name }) {
+            awardEmoji { name user { id username } }
+            errors
+          }
+        }`,
+        { awardableId: args.note_id, name: args.name },
+      );
+      if (data.awardEmojiAdd?.errors?.length) {
+        throw new Error(`awardEmojiAdd: ${data.awardEmojiAdd.errors.join(", ")}`);
+      }
+      return { content: [{ type: "text", text: JSON.stringify(data.awardEmojiAdd, null, 2) }] };
+    },
+  );
+  t17.disable();
+  tools.set("create_work_item_note_emoji_reaction", t17);
+
+  const t18 = server.registerTool(
+    "delete_work_item_note_emoji_reaction",
+    {
+      title: "Delete Work Item Note Emoji Reaction",
+      description:
+        "Remove an emoji reaction from a work item note by name (GraphQL deletes by name, not by award_id).",
+      inputSchema: {
+        project_id: z.coerce.string().describe("Project ID or URL-encoded path"),
+        iid: z.coerce.number().describe("The internal ID of the work item"),
+        note_id: z.string().describe("GraphQL note GID (e.g. 'gid://gitlab/Note/123')"),
+        name: emojiNameField,
+      },
+      annotations: DELETE_HINT,
+    },
+    async (params) => {
+      const args = z
+        .object({
+          project_id: z.coerce.string(),
+          iid: z.coerce.number(),
+          note_id: z.string(),
+          name: z.string(),
+        })
+        .parse(params);
+      await resolveWorkItemGID(args.project_id, args.iid);
+      const data = await defaultClient.graphql<{
+        awardEmojiRemove: { errors: string[] };
+      }>(
+        `mutation($awardableId: AwardableID!, $name: String!) {
+          awardEmojiRemove(input: { awardableId: $awardableId, name: $name }) {
+            errors
+          }
+        }`,
+        { awardableId: args.note_id, name: args.name },
+      );
+      if (data.awardEmojiRemove?.errors?.length) {
+        throw new Error(`awardEmojiRemove: ${data.awardEmojiRemove.errors.join(", ")}`);
+      }
+      return { content: [{ type: "text", text: "Reaction removed" }] };
+    },
+  );
+  t18.disable();
+  tools.set("delete_work_item_note_emoji_reaction", t18);
 
   return tools;
 }
