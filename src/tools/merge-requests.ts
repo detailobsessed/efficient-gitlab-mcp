@@ -37,7 +37,7 @@ const GetMergeRequestSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().optional().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().optional().describe("Merge request IID"),
   branch_name: z.string().optional().describe("Branch name to find MR"),
 });
 
@@ -99,7 +99,7 @@ const UpdateMergeRequestSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   title: z.string().optional().describe("New title"),
   description: z.string().optional().describe("New description"),
   state_event: z.enum(["close", "reopen"]).optional().describe("State change"),
@@ -117,7 +117,7 @@ const MergeMergeRequestSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   merge_commit_message: z.string().optional().describe("Custom merge commit message"),
   squash_commit_message: z.string().optional().describe("Custom squash commit message"),
   squash: z.coerce.boolean().optional().describe("Squash commits"),
@@ -134,7 +134,7 @@ const GetMergeRequestDiffsSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
   excluded_file_patterns: z
@@ -148,7 +148,7 @@ const ListMergeRequestDiscussionsSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
@@ -158,7 +158,7 @@ const CreateMergeRequestThreadSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   body: z.string().describe("Thread body"),
   position: z
     .object({
@@ -180,7 +180,7 @@ const ResolveMergeRequestThreadSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   discussion_id: z.string().describe("Discussion ID"),
   resolved: z.coerce.boolean().describe("Resolve or unresolve"),
 });
@@ -190,7 +190,7 @@ const CreateMergeRequestNoteSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   body: z.string().describe("Note body"),
 });
 
@@ -199,7 +199,7 @@ const UpdateMergeRequestNoteSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   note_id: z.number().describe("Note ID"),
   body: z.string().describe("New note body"),
 });
@@ -209,7 +209,7 @@ const DeleteMergeRequestNoteSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   note_id: z.number().describe("Note ID"),
 });
 
@@ -218,7 +218,7 @@ const GetMergeRequestNotesSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
@@ -228,7 +228,7 @@ const ApproveMergeRequestSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of the merge request to approve"),
+  merge_request_iid: z.coerce.number().describe("The IID of the merge request to approve"),
   sha: z
     .string()
     .optional()
@@ -248,7 +248,7 @@ const UnapproveMergeRequestSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of the merge request to unapprove"),
+  merge_request_iid: z.coerce.number().describe("The IID of the merge request to unapprove"),
 });
 
 const GetMergeRequestApprovalStateSchema = z.object({
@@ -256,7 +256,7 @@ const GetMergeRequestApprovalStateSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of the merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of the merge request"),
 });
 
 const GetMergeRequestConflictsSchema = z.object({
@@ -264,7 +264,7 @@ const GetMergeRequestConflictsSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of the merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of the merge request"),
 });
 
 const ListMergeRequestChangedFilesSchema = z.object({
@@ -272,7 +272,7 @@ const ListMergeRequestChangedFilesSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   excluded_file_patterns: z
     .array(z.string())
     .optional()
@@ -284,7 +284,7 @@ const ListMergeRequestDiffsApiSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   page: z.number().optional().describe("Page number for pagination (default: 1)"),
   per_page: z.number().optional().describe("Number of items per page (max: 100, default: 20)"),
   unidiff: z
@@ -300,7 +300,7 @@ const GetMergeRequestFileDiffSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("Merge request IID"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
   file_paths: z
     .array(z.string())
     .describe(
@@ -318,7 +318,7 @@ const ListMergeRequestVersionsSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The internal ID of the merge request"),
+  merge_request_iid: z.coerce.number().describe("The internal ID of the merge request"),
 });
 
 const GetMergeRequestVersionSchema = z.object({
@@ -326,7 +326,7 @@ const GetMergeRequestVersionSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The internal ID of the merge request"),
+  merge_request_iid: z.coerce.number().describe("The internal ID of the merge request"),
   version_id: z.number().describe("The ID of the merge request diff version"),
   unidiff: z
     .boolean()
@@ -341,7 +341,7 @@ const GetMergeRequestNoteSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of a merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
   note_id: z.number().describe("The ID of a thread note"),
 });
 
@@ -350,7 +350,7 @@ const DeleteMergeRequestDiscussionNoteSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of a merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
   discussion_id: z.string().describe("The ID of a thread"),
   note_id: z.number().describe("The ID of a thread note"),
 });
@@ -360,7 +360,7 @@ const UpdateMergeRequestDiscussionNoteSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of a merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
   discussion_id: z.string().describe("The ID of a thread"),
   note_id: z.number().describe("The ID of a thread note"),
   body: z.string().optional().describe("The content of the note or reply"),
@@ -372,7 +372,7 @@ const CreateMergeRequestDiscussionNoteSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of a merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
   discussion_id: z.string().describe("The ID of a thread"),
   body: z.string().describe("The content of the note or reply"),
   created_at: z.string().optional().describe("Date the note was created at (ISO 8601 format)"),
@@ -383,7 +383,7 @@ const GetDraftNoteSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of a merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
   draft_note_id: z.number().describe("The ID of the draft note"),
 });
 
@@ -392,7 +392,7 @@ const ListDraftNotesSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of a merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
 });
 
 const CreateDraftNoteSchema = z.object({
@@ -400,7 +400,7 @@ const CreateDraftNoteSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of a merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
   body: z.string().describe("The content of the draft note"),
   in_reply_to_discussion_id: z
     .string()
@@ -417,7 +417,7 @@ const UpdateDraftNoteSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of a merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
   draft_note_id: z.number().describe("The ID of the draft note"),
   body: z.string().optional().describe("The content of the draft note"),
   resolve_discussion: z
@@ -431,7 +431,7 @@ const DeleteDraftNoteSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of a merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
   draft_note_id: z.number().describe("The ID of the draft note"),
 });
 
@@ -440,7 +440,7 @@ const PublishDraftNoteSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of a merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
   draft_note_id: z.number().describe("The ID of the draft note"),
 });
 
@@ -449,7 +449,7 @@ const BulkPublishDraftNotesSchema = z.object({
     .string()
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-  merge_request_iid: z.number().describe("The IID of a merge request"),
+  merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
 });
 
 export function registerMergeRequestTools(
@@ -469,7 +469,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().optional().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().optional().describe("Merge request IID"),
         branch_name: z.string().optional().describe("Branch name to find MR"),
       },
       annotations: {
@@ -628,7 +628,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         title: z.string().optional().describe("New title"),
         description: z.string().optional().describe("New description"),
         state_event: z.enum(["close", "reopen"]).optional().describe("State change"),
@@ -673,7 +673,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         merge_commit_message: z.string().optional().describe("Custom merge commit message"),
         squash_commit_message: z.string().optional().describe("Custom squash commit message"),
         squash: z.coerce.boolean().optional().describe("Squash commits"),
@@ -717,7 +717,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
         excluded_file_patterns: z
@@ -760,7 +760,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
@@ -793,7 +793,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         body: z.string().describe("Thread body"),
         position: z
           .object({
@@ -840,7 +840,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         discussion_id: z.string().describe("Discussion ID"),
         resolved: z.coerce.boolean().describe("Resolve or unresolve"),
       },
@@ -875,7 +875,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         body: z.string().describe("Note body"),
       },
       annotations: {
@@ -909,7 +909,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         note_id: z.number().describe("Note ID"),
         body: z.string().describe("New note body"),
       },
@@ -944,7 +944,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         note_id: z.number().describe("Note ID"),
       },
       annotations: {
@@ -977,7 +977,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
@@ -1012,7 +1012,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of the merge request to approve"),
+        merge_request_iid: z.coerce.number().describe("The IID of the merge request to approve"),
         sha: z
           .string()
           .optional()
@@ -1061,7 +1061,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of the merge request to unapprove"),
+        merge_request_iid: z.coerce.number().describe("The IID of the merge request to unapprove"),
       },
       annotations: {
         readOnlyHint: false,
@@ -1095,7 +1095,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of the merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of the merge request"),
       },
       annotations: {
         readOnlyHint: true,
@@ -1125,7 +1125,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of the merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of the merge request"),
       },
       annotations: {
         readOnlyHint: true,
@@ -1161,7 +1161,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         excluded_file_patterns: z
           .array(z.string())
           .optional()
@@ -1214,7 +1214,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         page: z.number().optional().describe("Page number for pagination (default: 1)"),
         per_page: z
           .number()
@@ -1265,7 +1265,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("Merge request IID"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
         file_paths: z
           .array(z.string())
           .describe(
@@ -1330,7 +1330,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The internal ID of the merge request"),
+        merge_request_iid: z.coerce.number().describe("The internal ID of the merge request"),
       },
       annotations: {
         readOnlyHint: true,
@@ -1360,7 +1360,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The internal ID of the merge request"),
+        merge_request_iid: z.coerce.number().describe("The internal ID of the merge request"),
         version_id: z.number().describe("The ID of the merge request diff version"),
         unidiff: z
           .boolean()
@@ -1400,7 +1400,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of a merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
         note_id: z.number().describe("The ID of a thread note"),
       },
       annotations: {
@@ -1431,7 +1431,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of a merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
         discussion_id: z.string().describe("The ID of a thread"),
         note_id: z.number().describe("The ID of a thread note"),
       },
@@ -1467,7 +1467,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of a merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
         discussion_id: z.string().describe("The ID of a thread"),
         note_id: z.number().describe("The ID of a thread note"),
         body: z.string().optional().describe("The content of the note or reply"),
@@ -1507,7 +1507,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of a merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
         discussion_id: z.string().describe("The ID of a thread"),
         body: z.string().describe("The content of the note or reply"),
         created_at: z
@@ -1550,7 +1550,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of a merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
         draft_note_id: z.number().describe("The ID of the draft note"),
       },
       annotations: {
@@ -1581,7 +1581,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of a merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
       },
       annotations: {
         readOnlyHint: true,
@@ -1611,7 +1611,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of a merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
         body: z.string().describe("The content of the draft note"),
         in_reply_to_discussion_id: z
           .string()
@@ -1657,7 +1657,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of a merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
         draft_note_id: z.number().describe("The ID of the draft note"),
         body: z.string().optional().describe("The content of the draft note"),
         resolve_discussion: z
@@ -1699,7 +1699,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of a merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
         draft_note_id: z.number().describe("The ID of the draft note"),
       },
       annotations: {
@@ -1732,7 +1732,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of a merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
         draft_note_id: z.number().describe("The ID of the draft note"),
       },
       annotations: {
@@ -1766,7 +1766,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
-        merge_request_iid: z.number().describe("The IID of a merge request"),
+        merge_request_iid: z.coerce.number().describe("The IID of a merge request"),
       },
       annotations: {
         readOnlyHint: false,
