@@ -318,4 +318,96 @@ describe("Issue Tools Handlers", () => {
       expect(body.confidential).toBe(true);
     });
   });
+
+  describe("list_issues field projection (DOT-516.3)", () => {
+    function mockIssuesResponse(issues: Record<string, unknown>[]) {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify(issues)),
+        } as Response),
+      );
+    }
+
+    it("returns only the default field set when fields is unset", async () => {
+      mockIssuesResponse([
+        {
+          id: 1,
+          iid: 42,
+          title: "Bug",
+          state: "opened",
+          web_url: "https://gitlab.example/p/-/issues/42",
+          // Bloat fields that should NOT survive projection:
+          subscribed: true,
+          time_stats: { time_estimate: 0 },
+          task_completion_status: { count: 0, completed_count: 0 },
+          discussion_locked: false,
+          merge_requests_count: 0,
+        },
+      ]);
+
+      const result = await client.callTool({
+        name: "list_issues",
+        arguments: { project_id: "p" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data[0].iid).toBe(42);
+      expect(data[0].title).toBe("Bug");
+      expect(data[0].state).toBe("opened");
+      // Bloat dropped
+      expect(data[0].subscribed).toBeUndefined();
+      expect(data[0].time_stats).toBeUndefined();
+      expect(data[0].task_completion_status).toBeUndefined();
+      expect(data[0].merge_requests_count).toBeUndefined();
+    });
+
+    it('returns the full payload when fields="all"', async () => {
+      mockIssuesResponse([{ id: 1, iid: 42, title: "Bug", subscribed: true }]);
+
+      const result = await client.callTool({
+        name: "list_issues",
+        arguments: { project_id: "p", fields: "all" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data[0].subscribed).toBe(true);
+    });
+
+    it("respects a caller-supplied field allow-list", async () => {
+      mockIssuesResponse([{ id: 1, iid: 42, title: "Bug", state: "opened" }]);
+
+      const result = await client.callTool({
+        name: "list_issues",
+        arguments: { project_id: "p", fields: ["iid", "title"] },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(Object.keys(data[0]).sort()).toEqual(["iid", "title"]);
+      expect(data[0].state).toBeUndefined();
+    });
+  });
+
+  describe("my_issues field projection (DOT-516.3)", () => {
+    it("applies the same default field set across all projects", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () =>
+            Promise.resolve(
+              JSON.stringify([{ id: 1, iid: 1, title: "Mine", state: "opened", subscribed: true }]),
+            ),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "my_issues",
+        arguments: {},
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data[0].title).toBe("Mine");
+      expect(data[0].subscribed).toBeUndefined();
+    });
+  });
 });
