@@ -1,3 +1,10 @@
+## [2.11.12](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.11...v2.11.12) (2026-04-28)
+
+
+### Bug Fixes
+
+* **users:** return explicit null for usernames that don't resolve ([#73](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/73)) ([66185ce](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/66185ce431f4997c05a066662dbf045be9ff7aec))
+
 ## [2.11.11](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.10...v2.11.11) (2026-04-28)
 
 
