@@ -38,6 +38,22 @@ import { detectReadOnlyFromScopes } from "../utils/token-scopes.js";
 import { loadConfig, type ServerConfig } from "./config.js";
 
 /**
+ * MCP server capabilities advertised on every `initialize` handshake. Exposed
+ * as a module-level constant so tests can verify the contract without
+ * duplicating it.
+ *
+ * `tools.listChanged: true` is load-bearing for progressive disclosure — if
+ * the server doesn't advertise it, spec-compliant clients silently drop the
+ * `tools/list_changed` notifications we send after `activate_tools`, and the
+ * activated tools never become callable from the LLM side. Upstream's
+ * `discover_tools` mechanism currently has this exact bug.
+ */
+export const SERVER_CAPABILITIES = {
+  logging: {},
+  tools: { listChanged: true },
+};
+
+/**
  * Creates a fully configured McpServer with all tools registered (disabled)
  * and disclosure meta-tools attached. Each call returns an independent server
  * with its own tool state, ensuring HTTP sessions don't share disclosure state.
@@ -53,10 +69,7 @@ function createMcpServer(
       version: config.serverVersion,
     },
     {
-      capabilities: {
-        logging: {},
-        tools: { listChanged: true },
-      },
+      capabilities: SERVER_CAPABILITIES,
     },
   );
 
@@ -298,7 +311,12 @@ async function main() {
   });
 }
 
-main().catch((error) => {
-  console.error("Fatal error:", error);
-  process.exit(1);
-});
+// Only invoke main() when this module is the entry point. Importing
+// `SERVER_CAPABILITIES` (or anything else exported here) from another module
+// — e.g. tests — should not trigger a server startup as a side effect.
+if (import.meta.main) {
+  main().catch((error) => {
+    console.error("Fatal error:", error);
+    process.exit(1);
+  });
+}
