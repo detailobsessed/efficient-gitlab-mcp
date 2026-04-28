@@ -1,3 +1,10 @@
+# [2.18.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.17.1...v2.18.0) (2026-04-28)
+
+
+### Features
+
+* **repositories:** add server-side file trimming to get_file_contents ([#84](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/84)) ([1f2f98e](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/1f2f98e562f633d14fb010bc86b00f19e26a0cea))
+
 ## [2.17.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.17.0...v2.17.1) (2026-04-28)
 
 
