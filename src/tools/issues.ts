@@ -2,7 +2,27 @@ import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server
 import { z } from "zod";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
-import { coerceStringArray } from "../utils/schema-helpers.js";
+import { projectFields } from "../utils/projection.js";
+import { coerceStringArray, fieldsParam } from "../utils/schema-helpers.js";
+
+// Compact set of issue fields useful to an LLM by default. Identifies the
+// issue, its current state, who's involved, and how to reach it. Pass
+// `fields: "all"` for the raw GitLab response or `fields: [...]` to override.
+const LIST_ISSUES_DEFAULT_FIELDS = [
+  "id",
+  "iid",
+  "title",
+  "state",
+  "labels",
+  "author",
+  "assignees",
+  "milestone",
+  "due_date",
+  "web_url",
+  "created_at",
+  "updated_at",
+  "confidential",
+] as const;
 
 const CreateIssueSchema = z.object({
   project_id: z
@@ -30,6 +50,7 @@ const ListIssuesSchema = z.object({
   search: z.string().optional().describe("Search in title and description"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
+  fields: fieldsParam("issue").optional(),
 });
 
 const MyIssuesSchema = z.object({
@@ -37,6 +58,7 @@ const MyIssuesSchema = z.object({
   scope: z.enum(["created_by_me", "assigned_to_me", "all"]).optional().describe("Scope filter"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
+  fields: fieldsParam("issue").optional(),
 });
 
 const GetIssueSchema = z.object({
@@ -199,7 +221,8 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     "list_issues",
     {
       title: "List Issues",
-      description: "List issues in a GitLab project",
+      description:
+        "List issues in a GitLab project. Returns a compact set of fields per issue by default; pass `fields: 'all'` for the raw GitLab response or `fields: ['id', 'title', ...]` to pick your own.",
       inputSchema: {
         project_id: z
           .string()
@@ -212,6 +235,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         search: z.string().optional().describe("Search in title and description"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
+        fields: fieldsParam("issue").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -221,11 +245,15 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     async (params) => {
       const args = ListIssuesSchema.parse(params);
       const projectId = resolveProjectId(args.project_id);
-      const { project_id: _, ...queryParams } = args;
+      const { project_id: _, fields, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
-      const issues = await defaultClient.get(`/projects/${projectId}/issues${query}`);
-      return { content: [{ type: "text", text: JSON.stringify(issues, null, 2) }] };
+      const issues = (await defaultClient.get(`/projects/${projectId}/issues${query}`)) as Record<
+        string,
+        unknown
+      >[];
+      const projected = projectFields(issues, LIST_ISSUES_DEFAULT_FIELDS, fields);
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef2.disable();
@@ -235,12 +263,14 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     "my_issues",
     {
       title: "My Issues",
-      description: "List issues assigned to the authenticated user",
+      description:
+        "List issues assigned to the authenticated user. Returns a compact set of fields per issue by default; pass `fields: 'all'` for the raw GitLab response or `fields: [...]` to pick your own.",
       inputSchema: {
         state: z.enum(["opened", "closed", "all"]).optional().describe("Issue state filter"),
         scope: z.enum(["created_by_me", "assigned_to_me", "all"]).optional().describe("Scope"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
+        fields: fieldsParam("issue").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -249,10 +279,12 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     },
     async (params) => {
       const args = MyIssuesSchema.parse(params);
-      const query = buildQueryString(args);
+      const { fields, ...queryParams } = args;
+      const query = buildQueryString(queryParams);
 
-      const issues = await defaultClient.get(`/issues${query}`);
-      return { content: [{ type: "text", text: JSON.stringify(issues, null, 2) }] };
+      const issues = (await defaultClient.get(`/issues${query}`)) as Record<string, unknown>[];
+      const projected = projectFields(issues, LIST_ISSUES_DEFAULT_FIELDS, fields);
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef3.disable();
