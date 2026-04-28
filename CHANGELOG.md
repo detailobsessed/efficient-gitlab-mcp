@@ -1,3 +1,10 @@
+# [2.15.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.14.0...v2.15.0) (2026-04-28)
+
+
+### Features
+
+* **disclosure:** add deactivate_tools meta-tool ([#77](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/77)) ([0f5289a](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/0f5289a78775ddadb4a66766948c92d2f5093169))
+
 # [2.14.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.13.0...v2.14.0) (2026-04-28)
 
 
