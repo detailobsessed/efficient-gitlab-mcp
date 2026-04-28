@@ -1,3 +1,10 @@
+# [2.12.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.12...v2.12.0) (2026-04-28)
+
+
+### Features
+
+* **repositories:** add keyset pagination + envelope to get_repository_tree ([#74](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/74)) ([395c4ce](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/395c4cecb53d113961d338e4f52c8df9c7139217))
+
 ## [2.11.12](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.11...v2.11.12) (2026-04-28)
 
 
