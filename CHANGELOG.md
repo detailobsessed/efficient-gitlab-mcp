@@ -1,3 +1,10 @@
+# [2.13.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.12.0...v2.13.0) (2026-04-28)
+
+
+### Features
+
+* **repositories:** add list_branches and get_branch tools ([#75](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/75)) ([e226bfc](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/e226bfc7036712868b1463160e92148d3777403c))
+
 # [2.12.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.12...v2.12.0) (2026-04-28)
 
 
