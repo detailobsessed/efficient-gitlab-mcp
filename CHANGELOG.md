@@ -1,3 +1,10 @@
+# [2.21.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.20.0...v2.21.0) (2026-04-28)
+
+
+### Features
+
+* **issues:** apply field projection to list_issues + my_issues (DOT-516.3) ([#87](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/87)) ([0a7d3f7](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/0a7d3f7e627fea537f088b11364651c2cecd44fd))
+
 # [2.20.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.19.0...v2.20.0) (2026-04-28)
 
 
