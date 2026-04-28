@@ -1,3 +1,10 @@
+# [2.22.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.21.0...v2.22.0) (2026-04-28)
+
+
+### Features
+
+* **merge-requests:** apply field projection to list_merge_requests (DOT-516.4) ([#88](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/88)) ([e147b66](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/e147b66c917269b25a9a4960e94c49fb22bc7fd5))
+
 # [2.21.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.20.0...v2.21.0) (2026-04-28)
 
 
