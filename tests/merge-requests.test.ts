@@ -381,4 +381,94 @@ describe("Merge Request Tools Handlers", () => {
       expect(capturedMethod).toBe("PUT");
     });
   });
+
+  describe("list_merge_requests field projection (DOT-516.4)", () => {
+    function mockMRsResponse(mrs: Record<string, unknown>[]) {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify(mrs)),
+        } as Response),
+      );
+    }
+
+    it("returns only the default field set when fields is unset", async () => {
+      mockMRsResponse([
+        {
+          id: 1,
+          iid: 5,
+          title: "Refactor",
+          state: "opened",
+          source_branch: "feature/x",
+          target_branch: "main",
+          web_url: "https://gitlab.example/p/-/merge_requests/5",
+          merge_status: "can_be_merged",
+          // Bloat fields that should NOT survive projection:
+          changes_count: "12",
+          time_stats: { time_estimate: 0 },
+          has_conflicts: false,
+          blocking_discussions_resolved: true,
+          _links: { self: "..." },
+          merge_commit_sha: null,
+          rebase_in_progress: false,
+        },
+      ]);
+
+      const result = await client.callTool({
+        name: "list_merge_requests",
+        arguments: { project_id: "p" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data[0].iid).toBe(5);
+      expect(data[0].state).toBe("opened");
+      expect(data[0].source_branch).toBe("feature/x");
+      // Bloat dropped
+      expect(data[0].changes_count).toBeUndefined();
+      expect(data[0].time_stats).toBeUndefined();
+      expect(data[0].has_conflicts).toBeUndefined();
+      expect(data[0]._links).toBeUndefined();
+    });
+
+    it('returns the full payload when fields="all"', async () => {
+      mockMRsResponse([{ id: 1, iid: 5, title: "Refactor", changes_count: "12" }]);
+
+      const result = await client.callTool({
+        name: "list_merge_requests",
+        arguments: { project_id: "p", fields: "all" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data[0].changes_count).toBe("12");
+    });
+
+    it("preserves the existing state filter alongside projection", async () => {
+      // Regression: the username/id mutual-exclusion logic in the handler
+      // shouldn't be disturbed by the new fields destructure.
+      let capturedUrl: string | undefined;
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_merge_requests",
+        arguments: {
+          project_id: "p",
+          state: "opened",
+          author_id: 42,
+          author_username: "alice",
+        },
+      });
+      // username wins over id when both provided
+      expect(capturedUrl).toContain("state=opened");
+      expect(capturedUrl).toContain("author_username=alice");
+      expect(capturedUrl).not.toContain("author_id=42");
+    });
+  });
 });
