@@ -32,12 +32,14 @@ describe("Tool Registration", () => {
       const server = createTestServer();
       const tools = registerRepositoryTools(server, logger);
 
-      expect(tools.size).toBe(9);
+      expect(tools.size).toBe(11);
       expect(tools.has("search_repositories")).toBe(true);
       expect(tools.has("get_file_contents")).toBe(true);
       expect(tools.has("create_repository")).toBe(true);
       expect(tools.has("fork_repository")).toBe(true);
       expect(tools.has("create_branch")).toBe(true);
+      expect(tools.has("list_branches")).toBe(true);
+      expect(tools.has("get_branch")).toBe(true);
       expect(tools.has("get_repository_tree")).toBe(true);
       expect(tools.has("create_or_update_file")).toBe(true);
       expect(tools.has("push_files")).toBe(true);
@@ -171,7 +173,7 @@ describe("Tool Registration", () => {
       total += registerWorkItemTools(server, logger).size;
       total += registerGraphqlTools(server, logger).size;
 
-      expect(total).toBe(127);
+      expect(total).toBe(129);
     });
 
     it("should register all tools with pipelines enabled", () => {
@@ -194,7 +196,7 @@ describe("Tool Registration", () => {
       total += registerWorkItemTools(server, logger).size;
       total += registerGraphqlTools(server, logger).size;
 
-      expect(total).toBe(146);
+      expect(total).toBe(148);
     });
 
     it("should all start disabled", () => {
