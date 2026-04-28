@@ -1,3 +1,10 @@
+## [2.17.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.17.0...v2.17.1) (2026-04-28)
+
+
+### Bug Fixes
+
+* **merge-requests:** coerce merge_request_iid to number defensively ([#83](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/83)) ([24d8329](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/24d8329a0c4205cd540f11ab67c2cc316498bdec))
+
 # [2.17.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.16.1...v2.17.0) (2026-04-28)
 
 
