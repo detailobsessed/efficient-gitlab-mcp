@@ -318,5 +318,235 @@ export function registerReactionTools(
   t6.disable();
   tools.set("delete_merge_request_note_emoji_reaction", t6);
 
+  // ---------- Issue-level reactions ----------
+
+  const t7 = server.registerTool(
+    "list_issue_emoji_reactions",
+    {
+      title: "List Issue Emoji Reactions",
+      description: "List all emoji reactions on an issue",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        issue_iid: z.coerce.number().describe("Issue IID"),
+      },
+      annotations: READ_ONLY_HINT,
+    },
+    async (params) => {
+      const args = z
+        .object({
+          project_id: z.string().optional(),
+          issue_iid: z.coerce.number(),
+        })
+        .parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const data = await defaultClient.get(
+        `/projects/${projectId}/issues/${args.issue_iid}/award_emoji`,
+      );
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+  t7.disable();
+  tools.set("list_issue_emoji_reactions", t7);
+
+  const t8 = server.registerTool(
+    "create_issue_emoji_reaction",
+    {
+      title: "Create Issue Emoji Reaction",
+      description: "Add an emoji reaction to an issue (e.g. thumbsup, rocket, eyes)",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        issue_iid: z.coerce.number().describe("Issue IID"),
+        name: emojiNameField,
+      },
+      annotations: CREATE_HINT,
+    },
+    async (params) => {
+      const args = z
+        .object({
+          project_id: z.string().optional(),
+          issue_iid: z.coerce.number(),
+          name: z.string(),
+        })
+        .parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const data = await defaultClient.post(
+        `/projects/${projectId}/issues/${args.issue_iid}/award_emoji`,
+        { name: args.name },
+      );
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+  t8.disable();
+  tools.set("create_issue_emoji_reaction", t8);
+
+  const t9 = server.registerTool(
+    "delete_issue_emoji_reaction",
+    {
+      title: "Delete Issue Emoji Reaction",
+      description: "Remove an emoji reaction from an issue",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        issue_iid: z.coerce.number().describe("Issue IID"),
+        award_id: awardIdField,
+      },
+      annotations: DELETE_HINT,
+    },
+    async (params) => {
+      const args = z
+        .object({
+          project_id: z.string().optional(),
+          issue_iid: z.coerce.number(),
+          award_id: z.coerce.string(),
+        })
+        .parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      await defaultClient.delete(
+        `/projects/${projectId}/issues/${args.issue_iid}/award_emoji/${encodeURIComponent(args.award_id)}`,
+      );
+      return { content: [{ type: "text", text: "Reaction removed" }] };
+    },
+  );
+  t9.disable();
+  tools.set("delete_issue_emoji_reaction", t9);
+
+  // ---------- Issue-note-level reactions ----------
+
+  const t10 = server.registerTool(
+    "list_issue_note_emoji_reactions",
+    {
+      title: "List Issue Note Emoji Reactions",
+      description:
+        "List all emoji reactions on an issue note. Pass discussion_id for replies inside a discussion thread.",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        issue_iid: z.coerce.number().describe("Issue IID"),
+        note_id: z.coerce.number().describe("Note ID"),
+        discussion_id: noteDiscussionField,
+      },
+      annotations: READ_ONLY_HINT,
+    },
+    async (params) => {
+      const args = z
+        .object({
+          project_id: z.string().optional(),
+          issue_iid: z.coerce.number(),
+          note_id: z.coerce.number(),
+          discussion_id: z.coerce.string().optional(),
+        })
+        .parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const url = buildNoteReactionUrl(
+        projectId,
+        "issues",
+        args.issue_iid,
+        args.note_id,
+        args.discussion_id,
+      );
+      const data = await defaultClient.get(url);
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+  t10.disable();
+  tools.set("list_issue_note_emoji_reactions", t10);
+
+  const t11 = server.registerTool(
+    "create_issue_note_emoji_reaction",
+    {
+      title: "Create Issue Note Emoji Reaction",
+      description:
+        "Add an emoji reaction to an issue note. Pass discussion_id for replies inside a discussion thread.",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        issue_iid: z.coerce.number().describe("Issue IID"),
+        note_id: z.coerce.number().describe("Note ID"),
+        discussion_id: noteDiscussionField,
+        name: emojiNameField,
+      },
+      annotations: CREATE_HINT,
+    },
+    async (params) => {
+      const args = z
+        .object({
+          project_id: z.string().optional(),
+          issue_iid: z.coerce.number(),
+          note_id: z.coerce.number(),
+          discussion_id: z.coerce.string().optional(),
+          name: z.string(),
+        })
+        .parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const url = buildNoteReactionUrl(
+        projectId,
+        "issues",
+        args.issue_iid,
+        args.note_id,
+        args.discussion_id,
+      );
+      const data = await defaultClient.post(url, { name: args.name });
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+  t11.disable();
+  tools.set("create_issue_note_emoji_reaction", t11);
+
+  const t12 = server.registerTool(
+    "delete_issue_note_emoji_reaction",
+    {
+      title: "Delete Issue Note Emoji Reaction",
+      description:
+        "Remove an emoji reaction from an issue note. Pass discussion_id for replies inside a discussion thread.",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        issue_iid: z.coerce.number().describe("Issue IID"),
+        note_id: z.coerce.number().describe("Note ID"),
+        discussion_id: noteDiscussionField,
+        award_id: awardIdField,
+      },
+      annotations: DELETE_HINT,
+    },
+    async (params) => {
+      const args = z
+        .object({
+          project_id: z.string().optional(),
+          issue_iid: z.coerce.number(),
+          note_id: z.coerce.number(),
+          discussion_id: z.coerce.string().optional(),
+          award_id: z.coerce.string(),
+        })
+        .parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const url = buildNoteReactionUrl(
+        projectId,
+        "issues",
+        args.issue_iid,
+        args.note_id,
+        args.discussion_id,
+        encodeURIComponent(args.award_id),
+      );
+      await defaultClient.delete(url);
+      return { content: [{ type: "text", text: "Reaction removed" }] };
+    },
+  );
+  t12.disable();
+  tools.set("delete_issue_note_emoji_reaction", t12);
+
   return tools;
 }
