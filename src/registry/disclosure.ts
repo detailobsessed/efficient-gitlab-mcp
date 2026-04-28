@@ -219,7 +219,7 @@ export function registerDisclosureTools(
     {
       title: "Activate Tool Category",
       description:
-        "Enable all tools in one or more categories. After activation, the tools will appear in your tool list automatically.",
+        "Enable all tools in one or more categories. After activation, the tools will appear in your tool list automatically. Note: in Claude Code, freshly-activated tools become callable starting in the next turn, not the same turn that activated them — other clients may behave differently.",
       inputSchema: {
         categories: z
           .array(z.string())
@@ -284,7 +284,7 @@ export function registerDisclosureTools(
     {
       title: "Deactivate Tool Category",
       description:
-        "Disable all tools in one or more categories. After deactivation, those tools are removed from the active set and stop appearing in tools/list. Useful for reclaiming context-window budget on long sessions when a category is no longer needed.",
+        "Disable all tools in one or more categories. After deactivation, those tools are removed from the active set and stop appearing in tools/list. Useful for reclaiming context-window budget on long sessions when a category is no longer needed. Note: in Claude Code, the deactivated tools stop being callable starting in the next turn — other clients may behave differently.",
       inputSchema: {
         categories: z
           .array(z.string())
