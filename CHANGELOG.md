@@ -1,3 +1,10 @@
+# [2.26.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.25.0...v2.26.0) (2026-04-28)
+
+
+### Features
+
+* **reactions:** REST tools for issue emoji reactions (DOT-521.3) ([#92](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/92)) ([37a8395](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/37a83950f5cae2c6127e69e14e0971736ee075f0))
+
 # [2.25.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.24.0...v2.25.0) (2026-04-28)
 
 
