@@ -2,6 +2,7 @@ import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server
 import { z } from "zod";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
+import { coerceStringArray } from "../utils/schema-helpers.js";
 
 const CreateIssueSchema = z.object({
   project_id: z
@@ -11,7 +12,7 @@ const CreateIssueSchema = z.object({
   title: z.string().describe("Issue title"),
   description: z.string().optional().describe("Issue description"),
   assignee_ids: z.array(z.number()).optional().describe("Assignee user IDs"),
-  labels: z.string().optional().describe("Comma-separated labels"),
+  labels: coerceStringArray("Label names").optional(),
   milestone_id: z.number().optional().describe("Milestone ID"),
   due_date: z.string().optional().describe("Due date (YYYY-MM-DD)"),
   confidential: z.coerce.boolean().optional().describe("Mark as confidential"),
@@ -24,7 +25,7 @@ const ListIssuesSchema = z.object({
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   state: z.enum(["opened", "closed", "all"]).optional().describe("Issue state filter"),
   scope: z.enum(["created_by_me", "assigned_to_me", "all"]).optional().describe("Scope filter"),
-  labels: z.string().optional().describe("Comma-separated labels filter"),
+  labels: coerceStringArray("Label names to filter by").optional(),
   milestone: z.string().optional().describe("Milestone title"),
   search: z.string().optional().describe("Search in title and description"),
   page: z.number().optional().describe("Page number"),
@@ -55,7 +56,7 @@ const UpdateIssueSchema = z.object({
   title: z.string().optional().describe("New title"),
   description: z.string().optional().describe("New description"),
   assignee_ids: z.array(z.number()).optional().describe("Assignee user IDs"),
-  labels: z.string().optional().describe("Comma-separated labels"),
+  labels: coerceStringArray("Label names").optional(),
   milestone_id: z.number().optional().describe("Milestone ID"),
   state_event: z.enum(["close", "reopen"]).optional().describe("State change"),
   due_date: z.string().optional().describe("Due date (YYYY-MM-DD)"),
@@ -170,7 +171,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         title: z.string().describe("Issue title"),
         description: z.string().optional().describe("Issue description"),
         assignee_ids: z.array(z.number()).optional().describe("Assignee user IDs"),
-        labels: z.string().optional().describe("Comma-separated labels"),
+        labels: coerceStringArray("Label names").optional(),
         milestone_id: z.number().optional().describe("Milestone ID"),
         due_date: z.string().optional().describe("Due date (YYYY-MM-DD)"),
         confidential: z.coerce.boolean().optional().describe("Mark as confidential"),
@@ -206,7 +207,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         state: z.enum(["opened", "closed", "all"]).optional().describe("Issue state filter"),
         scope: z.enum(["created_by_me", "assigned_to_me", "all"]).optional().describe("Scope"),
-        labels: z.string().optional().describe("Comma-separated labels filter"),
+        labels: coerceStringArray("Label names to filter by").optional(),
         milestone: z.string().optional().describe("Milestone title"),
         search: z.string().optional().describe("Search in title and description"),
         page: z.number().optional().describe("Page number"),
@@ -299,7 +300,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         title: z.string().optional().describe("New title"),
         description: z.string().optional().describe("New description"),
         assignee_ids: z.array(z.number()).optional().describe("Assignee user IDs"),
-        labels: z.string().optional().describe("Comma-separated labels"),
+        labels: coerceStringArray("Label names").optional(),
         state_event: z.enum(["close", "reopen"]).optional().describe("State change"),
         due_date: z.string().optional().describe("Due date (YYYY-MM-DD)"),
         confidential: z.coerce.boolean().optional().describe("Mark as confidential"),
