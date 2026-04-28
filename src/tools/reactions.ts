@@ -2,22 +2,321 @@
  * Emoji reaction tools — added on top of GitLab's `/award_emoji` REST family
  * (for MRs and issues) and the `awardEmoji*` GraphQL mutations (for work items).
  *
- * Scaffolding only at this point (DOT-521.1). Tools are added in subsequent
- * subtasks:
- *   - DOT-521.2: REST tools for merge_request reactions (6 tools)
- *   - DOT-521.3: REST tools for issue reactions (6 tools)
- *   - DOT-521.4: GraphQL tools for work_item reactions (6 tools)
- *   - DOT-521.5: read-only mode integration + tool-count regression updates
+ * REST MR tools land in DOT-521.2 (this file). REST issue tools follow in
+ * DOT-521.3 (same shapes, different resource). GraphQL work-item tools follow
+ * in DOT-521.4.
  */
 
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+import { defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
+// Shared schema fragments — coerce strings/numbers to strings since GitLab's
+// REST endpoints accept either. award_id is unconditionally a string in
+// /award_emoji responses but agents tend to pass numeric literals.
+const emojiNameField = z
+  .string()
+  .describe("Name of the emoji without colons (e.g. 'thumbsup', 'rocket', 'eyes')");
+const awardIdField = z.coerce.string().describe("The ID of the emoji reaction to delete");
+const noteDiscussionField = z.coerce
+  .string()
+  .optional()
+  .describe(
+    "The ID of a discussion thread. Required for notes that are discussion replies; omit for top-level notes.",
+  );
+
+// --- MR reaction schemas ---
+
+const ListMergeRequestEmojiReactionsSchema = z.object({
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
+});
+
+const CreateMergeRequestEmojiReactionSchema = z.object({
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
+  name: emojiNameField,
+});
+
+const DeleteMergeRequestEmojiReactionSchema = z.object({
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
+  award_id: awardIdField,
+});
+
+const ListMergeRequestNoteEmojiReactionsSchema = z.object({
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
+  note_id: z.coerce.number().describe("Note ID"),
+  discussion_id: noteDiscussionField,
+});
+
+const CreateMergeRequestNoteEmojiReactionSchema = z.object({
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
+  note_id: z.coerce.number().describe("Note ID"),
+  discussion_id: noteDiscussionField,
+  name: emojiNameField,
+});
+
+const DeleteMergeRequestNoteEmojiReactionSchema = z.object({
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+  merge_request_iid: z.coerce.number().describe("Merge request IID"),
+  note_id: z.coerce.number().describe("Note ID"),
+  discussion_id: noteDiscussionField,
+  award_id: awardIdField,
+});
+
+/**
+ * Build the URL fragment for a note's reactions, picking between the
+ * top-level `/notes/:id/` shape and the discussion-scoped
+ * `/discussions/:did/notes/:id/` shape based on whether a discussion_id
+ * was supplied.
+ */
+function buildNoteReactionUrl(
+  projectId: string,
+  resource: "merge_requests" | "issues",
+  resourceIid: number,
+  noteId: number,
+  discussionId: string | undefined,
+  suffix = "",
+): string {
+  const base = `/projects/${projectId}/${resource}/${resourceIid}`;
+  const path = discussionId
+    ? `${base}/discussions/${encodeURIComponent(discussionId)}/notes/${noteId}/award_emoji`
+    : `${base}/notes/${noteId}/award_emoji`;
+  return suffix ? `${path}/${suffix}` : path;
+}
+
+const READ_ONLY_HINT = { readOnlyHint: true, openWorldHint: true } as const;
+const CREATE_HINT = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: true,
+} as const;
+const DELETE_HINT = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const;
+
 export function registerReactionTools(
-  _server: McpServer,
+  server: McpServer,
   logger: Logger,
 ): Map<string, RegisteredTool> {
-  logger.debug("Registering emoji-reaction tools (scaffolding — no tools yet)");
+  logger.debug("Registering emoji-reaction tools");
   const tools = new Map<string, RegisteredTool>();
+
+  // ---------- MR-level reactions ----------
+
+  const t1 = server.registerTool(
+    "list_merge_request_emoji_reactions",
+    {
+      title: "List Merge Request Emoji Reactions",
+      description: "List all emoji reactions on a merge request",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
+      },
+      annotations: READ_ONLY_HINT,
+    },
+    async (params) => {
+      const args = ListMergeRequestEmojiReactionsSchema.parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const data = await defaultClient.get(
+        `/projects/${projectId}/merge_requests/${args.merge_request_iid}/award_emoji`,
+      );
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+  t1.disable();
+  tools.set("list_merge_request_emoji_reactions", t1);
+
+  const t2 = server.registerTool(
+    "create_merge_request_emoji_reaction",
+    {
+      title: "Create Merge Request Emoji Reaction",
+      description: "Add an emoji reaction to a merge request (e.g. thumbsup, rocket, eyes)",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
+        name: emojiNameField,
+      },
+      annotations: CREATE_HINT,
+    },
+    async (params) => {
+      const args = CreateMergeRequestEmojiReactionSchema.parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const data = await defaultClient.post(
+        `/projects/${projectId}/merge_requests/${args.merge_request_iid}/award_emoji`,
+        { name: args.name },
+      );
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+  t2.disable();
+  tools.set("create_merge_request_emoji_reaction", t2);
+
+  const t3 = server.registerTool(
+    "delete_merge_request_emoji_reaction",
+    {
+      title: "Delete Merge Request Emoji Reaction",
+      description: "Remove an emoji reaction from a merge request",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
+        award_id: awardIdField,
+      },
+      annotations: DELETE_HINT,
+    },
+    async (params) => {
+      const args = DeleteMergeRequestEmojiReactionSchema.parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      await defaultClient.delete(
+        `/projects/${projectId}/merge_requests/${args.merge_request_iid}/award_emoji/${encodeURIComponent(args.award_id)}`,
+      );
+      return { content: [{ type: "text", text: "Reaction removed" }] };
+    },
+  );
+  t3.disable();
+  tools.set("delete_merge_request_emoji_reaction", t3);
+
+  // ---------- MR-note-level reactions ----------
+
+  const t4 = server.registerTool(
+    "list_merge_request_note_emoji_reactions",
+    {
+      title: "List Merge Request Note Emoji Reactions",
+      description:
+        "List all emoji reactions on a merge request note. Pass discussion_id for replies inside a discussion thread.",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
+        note_id: z.coerce.number().describe("Note ID"),
+        discussion_id: noteDiscussionField,
+      },
+      annotations: READ_ONLY_HINT,
+    },
+    async (params) => {
+      const args = ListMergeRequestNoteEmojiReactionsSchema.parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const url = buildNoteReactionUrl(
+        projectId,
+        "merge_requests",
+        args.merge_request_iid,
+        args.note_id,
+        args.discussion_id,
+      );
+      const data = await defaultClient.get(url);
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+  t4.disable();
+  tools.set("list_merge_request_note_emoji_reactions", t4);
+
+  const t5 = server.registerTool(
+    "create_merge_request_note_emoji_reaction",
+    {
+      title: "Create Merge Request Note Emoji Reaction",
+      description:
+        "Add an emoji reaction to a merge request note. Pass discussion_id for replies inside a discussion thread.",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
+        note_id: z.coerce.number().describe("Note ID"),
+        discussion_id: noteDiscussionField,
+        name: emojiNameField,
+      },
+      annotations: CREATE_HINT,
+    },
+    async (params) => {
+      const args = CreateMergeRequestNoteEmojiReactionSchema.parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const url = buildNoteReactionUrl(
+        projectId,
+        "merge_requests",
+        args.merge_request_iid,
+        args.note_id,
+        args.discussion_id,
+      );
+      const data = await defaultClient.post(url, { name: args.name });
+      return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+  t5.disable();
+  tools.set("create_merge_request_note_emoji_reaction", t5);
+
+  const t6 = server.registerTool(
+    "delete_merge_request_note_emoji_reaction",
+    {
+      title: "Delete Merge Request Note Emoji Reaction",
+      description:
+        "Remove an emoji reaction from a merge request note. Pass discussion_id for replies inside a discussion thread.",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        merge_request_iid: z.coerce.number().describe("Merge request IID"),
+        note_id: z.coerce.number().describe("Note ID"),
+        discussion_id: noteDiscussionField,
+        award_id: awardIdField,
+      },
+      annotations: DELETE_HINT,
+    },
+    async (params) => {
+      const args = DeleteMergeRequestNoteEmojiReactionSchema.parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const url = buildNoteReactionUrl(
+        projectId,
+        "merge_requests",
+        args.merge_request_iid,
+        args.note_id,
+        args.discussion_id,
+        encodeURIComponent(args.award_id),
+      );
+      await defaultClient.delete(url);
+      return { content: [{ type: "text", text: "Reaction removed" }] };
+    },
+  );
+  t6.disable();
+  tools.set("delete_merge_request_note_emoji_reaction", t6);
+
   return tools;
 }
