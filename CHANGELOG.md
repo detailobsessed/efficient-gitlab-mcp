@@ -1,3 +1,10 @@
+## [2.11.11](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.10...v2.11.11) (2026-04-28)
+
+
+### Bug Fixes
+
+* **labels:** honor with_counts parameter in list_labels ([#72](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/72)) ([cc555b5](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/cc555b5c17bd559a63f2356c83716a64c03843bb))
+
 ## [2.11.10](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.9...v2.11.10) (2026-04-28)
 
 
