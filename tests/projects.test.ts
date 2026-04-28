@@ -380,5 +380,19 @@ describe("Project Tools Handlers", () => {
       expect(text).toContain("runners_token");
       expect(text).toContain("secret-alpha");
     });
+
+    it("applies field projection (DOT-516.5) using LIST_PROJECTS_DEFAULT_FIELDS", async () => {
+      mockJsonResponse([
+        { id: 1, name: "Alpha", visibility: "public", shared_runners_enabled: true },
+      ]);
+
+      const result = await client.callTool({
+        name: "list_group_projects",
+        arguments: { group_id: "my-group" },
+      });
+      const data = JSON.parse((result.content as TextContent)[0].text);
+      expect(data[0].name).toBe("Alpha");
+      expect(data[0].shared_runners_enabled).toBeUndefined();
+    });
   });
 });

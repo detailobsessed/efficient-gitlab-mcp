@@ -79,6 +79,46 @@ describe("Release Tools Handlers", () => {
       expect(responseData).toHaveLength(2);
       expect(responseData[0].tag_name).toBe("v1.0.0");
     });
+
+    it("applies field projection (DOT-516.5) by default", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () =>
+            Promise.resolve(
+              JSON.stringify([
+                {
+                  tag_name: "v1.0.0",
+                  name: "Release 1.0.0",
+                  description: "First release",
+                  released_at: "2026-04-01T00:00:00Z",
+                  // Bloat that should be dropped:
+                  description_html: "<p>First release</p>",
+                  _links: { self: "..." },
+                  evidences: [{ id: 1, sha: "abc" }],
+                  assets: { count: 0, sources: [] },
+                  milestones: [],
+                },
+              ]),
+            ),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "list_releases",
+        arguments: { project_id: "p" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data[0].tag_name).toBe("v1.0.0");
+      expect(data[0].description).toBe("First release");
+      // Bloat dropped
+      expect(data[0].description_html).toBeUndefined();
+      expect(data[0]._links).toBeUndefined();
+      expect(data[0].evidences).toBeUndefined();
+      expect(data[0].assets).toBeUndefined();
+    });
   });
 
   describe("download_release_asset", () => {

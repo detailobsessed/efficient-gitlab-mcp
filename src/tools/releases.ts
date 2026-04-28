@@ -2,6 +2,23 @@ import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server
 import { z } from "zod";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
+import { projectFields } from "../utils/projection.js";
+import { fieldsParam } from "../utils/schema-helpers.js";
+
+// Compact set of release fields. Identifies the release, its tag/SHA,
+// when it was released, and how to reach it. Drops description_html,
+// _links, evidences (large), assets (verbose nested), milestones (nested).
+// Pass `fields: "all"` for the raw GitLab response.
+const LIST_RELEASES_DEFAULT_FIELDS = [
+  "name",
+  "tag_name",
+  "description",
+  "released_at",
+  "created_at",
+  "author",
+  "commit",
+  "upcoming_release",
+] as const;
 
 const ListReleasesSchema = z.object({
   project_id: z
@@ -22,6 +39,7 @@ const ListReleasesSchema = z.object({
     .describe("If true, a response includes HTML rendered Markdown of the release description."),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
+  fields: fieldsParam("release").optional(),
 });
 
 const GetReleaseSchema = z.object({
@@ -150,7 +168,8 @@ export function registerReleaseTools(
     "list_releases",
     {
       title: "List Releases",
-      description: "List releases for a project",
+      description:
+        "List releases for a project. Returns a compact set of fields per release by default; pass `fields: 'all'` for the raw GitLab response (with assets, evidences, _links, milestones) or `fields: [...]` to pick your own.",
       inputSchema: {
         project_id: z
           .string()
@@ -167,6 +186,7 @@ export function registerReleaseTools(
           .describe("If true, include HTML rendered Markdown of the release description."),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
+        fields: fieldsParam("release").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -176,11 +196,14 @@ export function registerReleaseTools(
     async (params) => {
       const args = ListReleasesSchema.parse(params);
       const projectId = resolveProjectId(args.project_id);
-      const { project_id: _, ...queryParams } = args;
+      const { project_id: _, fields, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
-      const releases = await defaultClient.get(`/projects/${projectId}/releases${query}`);
-      return { content: [{ type: "text", text: JSON.stringify(releases, null, 2) }] };
+      const releases = (await defaultClient.get(
+        `/projects/${projectId}/releases${query}`,
+      )) as Record<string, unknown>[];
+      const projected = projectFields(releases, LIST_RELEASES_DEFAULT_FIELDS, fields);
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef1.disable();

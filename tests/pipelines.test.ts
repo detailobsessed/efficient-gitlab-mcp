@@ -83,6 +83,45 @@ describe("Pipeline Tools Handlers", () => {
       expect(responseData).toHaveLength(2);
       expect(responseData[0].status).toBe("success");
     });
+
+    it("applies field projection (DOT-516.5) by default", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () =>
+            Promise.resolve(
+              JSON.stringify([
+                {
+                  id: 101,
+                  ref: "main",
+                  status: "success",
+                  sha: "abc123",
+                  // Bloat fields that should be dropped:
+                  before_sha: "0000000000000000000000000000000000000000",
+                  user: { id: 1, username: "alice" },
+                  finished_at: "2026-04-28T07:00:00Z",
+                  duration: 120,
+                  queued_duration: 5,
+                },
+              ]),
+            ),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "list_pipelines",
+        arguments: { project_id: "p" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data[0].ref).toBe("main");
+      expect(data[0].status).toBe("success");
+      // Bloat dropped
+      expect(data[0].before_sha).toBeUndefined();
+      expect(data[0].user).toBeUndefined();
+      expect(data[0].duration).toBeUndefined();
+    });
   });
 
   describe("create_pipeline", () => {
