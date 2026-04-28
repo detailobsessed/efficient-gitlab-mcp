@@ -154,6 +154,7 @@ export function registerRepositoryTools(
       },
       annotations: {
         readOnlyHint: true,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -189,6 +190,7 @@ export function registerRepositoryTools(
       },
       annotations: {
         readOnlyHint: true,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -238,7 +240,10 @@ export function registerRepositoryTools(
         namespace_id: z.number().optional().describe("Namespace ID for the project"),
       },
       annotations: {
+        readOnlyHint: false,
         destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -264,7 +269,10 @@ export function registerRepositoryTools(
         path: z.string().optional().describe("New project path"),
       },
       annotations: {
+        readOnlyHint: false,
         destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -295,7 +303,10 @@ export function registerRepositoryTools(
         ref: z.string().describe("Source branch or commit SHA"),
       },
       annotations: {
+        readOnlyHint: false,
         destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -343,6 +354,7 @@ export function registerRepositoryTools(
       },
       annotations: {
         readOnlyHint: true,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -412,7 +424,10 @@ export function registerRepositoryTools(
         author_name: z.string().optional().describe("Author name"),
       },
       annotations: {
+        readOnlyHint: false,
         destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -479,7 +494,10 @@ export function registerRepositoryTools(
         start_branch: z.string().optional().describe("Source branch if creating new branch"),
       },
       annotations: {
+        readOnlyHint: false,
         destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -522,6 +540,7 @@ export function registerRepositoryTools(
       },
       annotations: {
         readOnlyHint: true,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -564,6 +583,7 @@ export function registerRepositoryTools(
       },
       annotations: {
         readOnlyHint: true,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -597,6 +617,7 @@ export function registerRepositoryTools(
       },
       annotations: {
         readOnlyHint: true,
+        openWorldHint: true,
       },
     },
     async (params) => {

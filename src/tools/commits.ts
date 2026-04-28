@@ -60,7 +60,10 @@ export function registerCommitTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListCommitsSchema.parse(params);
@@ -87,7 +90,10 @@ export function registerCommitTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         sha: z.string().describe("Commit SHA"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetCommitSchema.parse(params);
@@ -116,7 +122,10 @@ export function registerCommitTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetCommitDiffSchema.parse(params);

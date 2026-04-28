@@ -20,7 +20,12 @@ export function registerGraphqlTools(
     {
       title: "Execute GraphQL",
       description: "Execute a GraphQL query against the GitLab GraphQL API",
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
       inputSchema: {
         query: z.string().describe("GraphQL query string"),
         variables: z.record(z.any()).optional().describe("Variables object for the GraphQL query"),

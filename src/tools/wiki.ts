@@ -100,7 +100,10 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListWikiPagesSchema.parse(params);
@@ -127,7 +130,10 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         slug: z.string().describe("Slug of the wiki page (will be URL-encoded internally)"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetWikiPageSchema.parse(params);
@@ -146,7 +152,12 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
     {
       title: "Create Wiki Page",
       description: "Create a new wiki page in a project",
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z
           .string()
@@ -174,7 +185,12 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
     {
       title: "Update Wiki Page",
       description: "Update an existing wiki page in a project",
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z
           .string()
@@ -211,7 +227,12 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         slug: z.string().describe("Slug of the wiki page (will be URL-encoded internally)"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DeleteWikiPageSchema.parse(params);
@@ -247,7 +268,10 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListGroupWikiPagesSchema.parse(params);
@@ -271,7 +295,10 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
         group_id: z.string().describe("Group ID or URL-encoded path"),
         slug: z.string().describe("Slug of the wiki page (will be URL-encoded internally)"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetGroupWikiPageSchema.parse(params);
@@ -290,7 +317,12 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
     {
       title: "Create Group Wiki Page",
       description: "Create a new wiki page in a group",
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
       inputSchema: {
         group_id: z.string().describe("Group ID or URL-encoded path"),
         title: z.string().describe("Title of the wiki page"),
@@ -315,7 +347,12 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
     {
       title: "Update Group Wiki Page",
       description: "Update an existing wiki page in a group",
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         group_id: z.string().describe("Group ID or URL-encoded path"),
         slug: z.string().describe("Slug of the wiki page (will be URL-encoded internally)"),
@@ -346,7 +383,12 @@ export function registerWikiTools(server: McpServer, logger: Logger): Map<string
         group_id: z.string().describe("Group ID or URL-encoded path"),
         slug: z.string().describe("Slug of the wiki page (will be URL-encoded internally)"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DeleteGroupWikiPageSchema.parse(params);

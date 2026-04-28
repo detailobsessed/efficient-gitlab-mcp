@@ -171,6 +171,7 @@ export function registerSearchTools(
       },
       annotations: {
         readOnlyHint: true,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -217,6 +218,7 @@ export function registerSearchTools(
       },
       annotations: {
         readOnlyHint: true,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -261,6 +263,7 @@ export function registerSearchTools(
       },
       annotations: {
         readOnlyHint: true,
+        openWorldHint: true,
       },
     },
     async (params) => {
@@ -299,7 +302,10 @@ export function registerSearchTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page (max 100)"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = SearchCodeSchema.parse(params);
@@ -337,7 +343,10 @@ export function registerSearchTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page (max 100)"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = SearchProjectCodeSchema.parse(params);
@@ -370,7 +379,10 @@ export function registerSearchTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page (max 100)"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = SearchGroupCodeSchema.parse(params);

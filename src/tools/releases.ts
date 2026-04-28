@@ -168,7 +168,10 @@ export function registerReleaseTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListReleasesSchema.parse(params);
@@ -199,7 +202,10 @@ export function registerReleaseTools(
           .optional()
           .describe("If true, include HTML rendered Markdown of the release description."),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetReleaseSchema.parse(params);
@@ -221,7 +227,12 @@ export function registerReleaseTools(
     {
       title: "Create Release",
       description: "Create a new release for a project",
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z
           .string()
@@ -289,7 +300,12 @@ export function registerReleaseTools(
     {
       title: "Update Release",
       description: "Update an existing release",
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z
           .string()
@@ -336,7 +352,12 @@ export function registerReleaseTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         tag_name: z.string().describe("The Git tag the release is associated with"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DeleteReleaseSchema.parse(params);
@@ -366,7 +387,12 @@ export function registerReleaseTools(
     {
       title: "Create Release Evidence",
       description: "Create evidence for an existing release",
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z
           .string()
@@ -415,7 +441,10 @@ export function registerReleaseTools(
             "Path to the release asset file as specified when creating or updating its link",
           ),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DownloadReleaseAssetSchema.parse(params);

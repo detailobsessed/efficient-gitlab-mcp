@@ -471,7 +471,10 @@ export function registerMergeRequestTools(
         merge_request_iid: z.number().optional().describe("Merge request IID"),
         branch_name: z.string().optional().describe("Branch name to find MR"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetMergeRequestSchema.parse(params);
@@ -540,7 +543,10 @@ export function registerMergeRequestTools(
           .optional()
           .describe("Reviewer username (mutually exclusive with reviewer_id)"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListMergeRequestsSchema.parse(params);
@@ -592,7 +598,12 @@ export function registerMergeRequestTools(
         squash: z.coerce.boolean().optional().describe("Squash commits on merge"),
         draft: z.coerce.boolean().optional().describe("Create as draft MR"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = CreateMergeRequestSchema.parse(params);
@@ -629,7 +640,12 @@ export function registerMergeRequestTools(
           .describe("Remove source branch after merge"),
         squash: z.coerce.boolean().optional().describe("Squash commits on merge"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = UpdateMergeRequestSchema.parse(params);
@@ -667,7 +683,12 @@ export function registerMergeRequestTools(
           .describe("Merge when pipeline succeeds"),
         sha: z.string().optional().describe("Expected HEAD SHA"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = MergeMergeRequestSchema.parse(params);
@@ -705,7 +726,10 @@ export function registerMergeRequestTools(
             'Array of regex patterns to exclude files. Examples: ["^vendor/", "\\.pb\\.go$"]',
           ),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetMergeRequestDiffsSchema.parse(params);
@@ -739,7 +763,10 @@ export function registerMergeRequestTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListMergeRequestDiscussionsSchema.parse(params);
@@ -781,7 +808,12 @@ export function registerMergeRequestTools(
           .optional()
           .describe("Position for diff comment"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = CreateMergeRequestThreadSchema.parse(params);
@@ -811,7 +843,12 @@ export function registerMergeRequestTools(
         discussion_id: z.string().describe("Discussion ID"),
         resolved: z.coerce.boolean().describe("Resolve or unresolve"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ResolveMergeRequestThreadSchema.parse(params);
@@ -840,7 +877,12 @@ export function registerMergeRequestTools(
         merge_request_iid: z.number().describe("Merge request IID"),
         body: z.string().describe("Note body"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = CreateMergeRequestNoteSchema.parse(params);
@@ -870,7 +912,12 @@ export function registerMergeRequestTools(
         note_id: z.number().describe("Note ID"),
         body: z.string().describe("New note body"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = UpdateMergeRequestNoteSchema.parse(params);
@@ -899,7 +946,12 @@ export function registerMergeRequestTools(
         merge_request_iid: z.number().describe("Merge request IID"),
         note_id: z.number().describe("Note ID"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DeleteMergeRequestNoteSchema.parse(params);
@@ -928,7 +980,10 @@ export function registerMergeRequestTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetMergeRequestNotesSchema.parse(params);
@@ -970,7 +1025,12 @@ export function registerMergeRequestTools(
             "Current user's password. Required if 'Require user re-authentication to approve' is enabled in the project settings",
           ),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ApproveMergeRequestSchema.parse(params);
@@ -1002,7 +1062,12 @@ export function registerMergeRequestTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         merge_request_iid: z.number().describe("The IID of the merge request to unapprove"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = UnapproveMergeRequestSchema.parse(params);
@@ -1031,7 +1096,10 @@ export function registerMergeRequestTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         merge_request_iid: z.number().describe("The IID of the merge request"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetMergeRequestApprovalStateSchema.parse(params);
@@ -1058,7 +1126,10 @@ export function registerMergeRequestTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         merge_request_iid: z.number().describe("The IID of the merge request"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetMergeRequestConflictsSchema.parse(params);
@@ -1097,7 +1168,10 @@ export function registerMergeRequestTools(
             'Array of regex patterns to exclude files. Examples: ["^vendor/", "\\.pb\\.go$"]',
           ),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListMergeRequestChangedFilesSchema.parse(params);
@@ -1152,7 +1226,10 @@ export function registerMergeRequestTools(
             "Present diffs in the unified diff format. Default is false. Introduced in GitLab 16.5.",
           ),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListMergeRequestDiffsApiSchema.parse(params);
@@ -1199,7 +1276,10 @@ export function registerMergeRequestTools(
           .optional()
           .describe("Present diff in the unified diff format. Default is false."),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetMergeRequestFileDiffSchema.parse(params);
@@ -1251,7 +1331,10 @@ export function registerMergeRequestTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         merge_request_iid: z.number().describe("The internal ID of the merge request"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListMergeRequestVersionsSchema.parse(params);
@@ -1285,7 +1368,10 @@ export function registerMergeRequestTools(
             "Present diffs in the unified diff format. Default is false. Introduced in GitLab 16.5.",
           ),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetMergeRequestVersionSchema.parse(params);
@@ -1316,7 +1402,10 @@ export function registerMergeRequestTools(
         merge_request_iid: z.number().describe("The IID of a merge request"),
         note_id: z.number().describe("The ID of a thread note"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetMergeRequestNoteSchema.parse(params);
@@ -1345,7 +1434,12 @@ export function registerMergeRequestTools(
         discussion_id: z.string().describe("The ID of a thread"),
         note_id: z.number().describe("The ID of a thread note"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DeleteMergeRequestDiscussionNoteSchema.parse(params);
@@ -1378,7 +1472,12 @@ export function registerMergeRequestTools(
         body: z.string().optional().describe("The content of the note or reply"),
         resolved: z.coerce.boolean().optional().describe("Resolve or unresolve the note"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = UpdateMergeRequestDiscussionNoteSchema.parse(params);
@@ -1415,7 +1514,12 @@ export function registerMergeRequestTools(
           .optional()
           .describe("Date the note was created at (ISO 8601 format)"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = CreateMergeRequestDiscussionNoteSchema.parse(params);
@@ -1448,7 +1552,10 @@ export function registerMergeRequestTools(
         merge_request_iid: z.number().describe("The IID of a merge request"),
         draft_note_id: z.number().describe("The ID of the draft note"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetDraftNoteSchema.parse(params);
@@ -1475,7 +1582,10 @@ export function registerMergeRequestTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         merge_request_iid: z.number().describe("The IID of a merge request"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListDraftNotesSchema.parse(params);
@@ -1511,7 +1621,12 @@ export function registerMergeRequestTools(
           .optional()
           .describe("Whether to resolve the discussion when publishing"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = CreateDraftNoteSchema.parse(params);
@@ -1549,7 +1664,12 @@ export function registerMergeRequestTools(
           .optional()
           .describe("Whether to resolve the discussion when publishing"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = UpdateDraftNoteSchema.parse(params);
@@ -1581,7 +1701,12 @@ export function registerMergeRequestTools(
         merge_request_iid: z.number().describe("The IID of a merge request"),
         draft_note_id: z.number().describe("The ID of the draft note"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DeleteDraftNoteSchema.parse(params);
@@ -1609,7 +1734,12 @@ export function registerMergeRequestTools(
         merge_request_iid: z.number().describe("The IID of a merge request"),
         draft_note_id: z.number().describe("The ID of the draft note"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = PublishDraftNoteSchema.parse(params);
@@ -1637,7 +1767,12 @@ export function registerMergeRequestTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         merge_request_iid: z.number().describe("The IID of a merge request"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = BulkPublishDraftNotesSchema.parse(params);

@@ -160,7 +160,10 @@ export function registerMilestoneTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListMilestonesSchema.parse(params);
@@ -187,7 +190,10 @@ export function registerMilestoneTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         milestone_id: z.string().describe("The ID of a project milestone"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetMilestoneSchema.parse(params);
@@ -207,7 +213,12 @@ export function registerMilestoneTools(
     {
       title: "Create Milestone",
       description: "Create a new project milestone",
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z
           .string()
@@ -236,7 +247,12 @@ export function registerMilestoneTools(
     {
       title: "Edit Milestone",
       description: "Edit an existing project milestone",
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z
           .string()
@@ -280,7 +296,12 @@ export function registerMilestoneTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         milestone_id: z.string().describe("The ID of a project milestone"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DeleteMilestoneSchema.parse(params);
@@ -316,7 +337,10 @@ export function registerMilestoneTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         milestone_id: z.string().describe("The ID of a project milestone"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetMilestoneIssuesSchema.parse(params);
@@ -345,7 +369,10 @@ export function registerMilestoneTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetMilestoneMergeRequestsSchema.parse(params);
@@ -366,7 +393,12 @@ export function registerMilestoneTools(
     {
       title: "Promote Milestone",
       description: "Promote a project milestone to a group milestone",
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
       inputSchema: {
         project_id: z
           .string()
@@ -402,7 +434,10 @@ export function registerMilestoneTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetMilestoneBurndownEventsSchema.parse(params);

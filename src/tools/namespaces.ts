@@ -36,7 +36,10 @@ export function registerNamespaceTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListNamespacesSchema.parse(params);
@@ -57,7 +60,10 @@ export function registerNamespaceTools(
       inputSchema: {
         namespace_id: z.union([z.string(), z.number()]).describe("Namespace ID or path"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetNamespaceSchema.parse(params);
@@ -78,7 +84,10 @@ export function registerNamespaceTools(
       inputSchema: {
         path: z.string().describe("Namespace path to verify"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = VerifyNamespaceSchema.parse(params);

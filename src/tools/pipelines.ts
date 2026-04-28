@@ -282,7 +282,10 @@ export function registerPipelineTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListPipelinesSchema.parse(params);
@@ -309,7 +312,10 @@ export function registerPipelineTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         pipeline_id: z.number().describe("Pipeline ID"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetPipelineSchema.parse(params);
@@ -346,7 +352,12 @@ export function registerPipelineTools(
           .optional()
           .describe("Pipeline variables"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = CreatePipelineSchema.parse(params);
@@ -374,7 +385,12 @@ export function registerPipelineTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         pipeline_id: z.number().describe("Pipeline ID"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = RetryPipelineSchema.parse(params);
@@ -401,7 +417,12 @@ export function registerPipelineTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         pipeline_id: z.number().describe("Pipeline ID"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = CancelPipelineSchema.parse(params);
@@ -442,7 +463,10 @@ export function registerPipelineTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListPipelineJobsSchema.parse(params);
@@ -474,7 +498,10 @@ export function registerPipelineTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("Job ID"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetPipelineJobOutputSchema.parse(params);
@@ -512,7 +539,12 @@ export function registerPipelineTools(
           .optional()
           .describe("Job variables"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = PlayPipelineJobSchema.parse(params);
@@ -539,7 +571,12 @@ export function registerPipelineTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("Job ID"),
       },
-      annotations: { destructiveHint: false },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = RetryPipelineJobSchema.parse(params);
@@ -564,7 +601,12 @@ export function registerPipelineTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("Job ID"),
       },
-      annotations: { destructiveHint: true },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = CancelPipelineJobSchema.parse(params);
@@ -607,7 +649,10 @@ export function registerPipelineTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListDeploymentsSchema.parse(params);
@@ -634,7 +679,10 @@ export function registerPipelineTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         deployment_id: z.number().describe("The ID of the deployment"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetDeploymentSchema.parse(params);
@@ -668,7 +716,10 @@ export function registerPipelineTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListEnvironmentsSchema.parse(params);
@@ -695,7 +746,10 @@ export function registerPipelineTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         environment_id: z.number().describe("The ID of the environment"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetEnvironmentSchema.parse(params);
@@ -742,7 +796,10 @@ export function registerPipelineTools(
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListPipelineTriggerJobsSchema.parse(params);
@@ -774,7 +831,10 @@ export function registerPipelineTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("The ID of the job"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetPipelineJobSchema.parse(params);
@@ -805,7 +865,10 @@ export function registerPipelineTools(
           .describe("Directory path within the artifacts archive (defaults to root)"),
         recursive: z.coerce.boolean().optional().describe("Whether to list artifacts recursively"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = ListJobArtifactsSchema.parse(params);
@@ -837,7 +900,10 @@ export function registerPipelineTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         job_id: z.number().describe("The ID of the job"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = DownloadJobArtifactsSchema.parse(params);
@@ -876,7 +942,10 @@ export function registerPipelineTools(
         job_id: z.number().describe("The ID of the job"),
         artifact_path: z.string().describe("Path to the file within the artifacts archive"),
       },
-      annotations: { readOnlyHint: true },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
     },
     async (params) => {
       const args = GetJobArtifactFileSchema.parse(params);

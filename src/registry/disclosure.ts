@@ -165,8 +165,6 @@ export function registerDisclosureTools(
       annotations: {
         title: "List Tool Categories",
         readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
         openWorldHint: false,
       },
     },
