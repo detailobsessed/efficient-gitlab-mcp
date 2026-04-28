@@ -302,4 +302,201 @@ describe("Emoji Reaction Tools Handlers", () => {
       expect(cap.method).toBe("DELETE");
     });
   });
+
+  // ---------- Work item (GraphQL) reactions ----------
+
+  // All work-item tools first call /api/v4/projects/:id to resolve the
+  // project path, then a GraphQL query to resolve the work-item GID, then
+  // the actual awardEmoji query or mutation. So each test needs the mock
+  // to serve three responses in sequence (or we drive via response-count).
+
+  function captureGraphQLSequence(responses: unknown[]) {
+    const urls: string[] = [];
+    const bodies: (string | undefined)[] = [];
+    let callIdx = 0;
+
+    // @ts-expect-error - mock doesn't need full fetch signature
+    globalThis.fetch = mock((url: string, options?: RequestInit) => {
+      urls.push(url);
+      bodies.push(typeof options?.body === "string" ? options.body : undefined);
+      const response = responses[callIdx] ?? {};
+      callIdx++;
+      // graphql() uses response.json() — REST get() uses response.text(). Provide both.
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify(response)),
+        json: () => Promise.resolve(response),
+      } as Response);
+    });
+
+    return {
+      get urls() {
+        return urls;
+      },
+      get bodies() {
+        return bodies;
+      },
+      lastGraphQLBody() {
+        return bodies[bodies.length - 1]
+          ? (JSON.parse(bodies[bodies.length - 1] as string) as {
+              query: string;
+              variables: Record<string, unknown>;
+            })
+          : undefined;
+      },
+    };
+  }
+
+  // Standard 3-response fixture for work-item tools:
+  // 1. REST: GET /api/v4/projects/:id → { path_with_namespace }
+  // 2. GraphQL: resolveWorkItemGID query → workItem.id
+  // 3. GraphQL: the actual reaction query/mutation → varies per test
+  function workItemMockFor(finalResponse: unknown) {
+    return [
+      // projects/:id REST resolution
+      { path_with_namespace: "my-group/my-project" },
+      // resolveWorkItemGID GraphQL
+      { data: { namespace: { workItem: { id: "gid://gitlab/WorkItem/42" } } } },
+      // Actual tool's GraphQL call
+      { data: finalResponse },
+    ];
+  }
+
+  describe("list_work_item_emoji_reactions", () => {
+    it("resolves the work-item GID then queries awardEmojis", async () => {
+      const cap = captureGraphQLSequence(
+        workItemMockFor({ awardEmojis: { nodes: [{ name: "thumbsup" }] } }),
+      );
+
+      const result = await client.callTool({
+        name: "list_work_item_emoji_reactions",
+        arguments: { project_id: "my-group/my-project", iid: 42 },
+      });
+
+      expect(cap.urls).toHaveLength(3);
+      const body = cap.lastGraphQLBody();
+      expect(body?.query).toContain("awardEmojis");
+      expect(body?.variables.awardableId).toBe("gid://gitlab/WorkItem/42");
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data[0].name).toBe("thumbsup");
+    });
+  });
+
+  describe("create_work_item_emoji_reaction", () => {
+    it("mutates awardEmojiAdd with the work-item GID and name", async () => {
+      const cap = captureGraphQLSequence(
+        workItemMockFor({
+          awardEmojiAdd: { awardEmoji: { name: "rocket" }, errors: [] },
+        }),
+      );
+
+      await client.callTool({
+        name: "create_work_item_emoji_reaction",
+        arguments: { project_id: "my-group/my-project", iid: 42, name: "rocket" },
+      });
+
+      const body = cap.lastGraphQLBody();
+      expect(body?.query).toContain("awardEmojiAdd");
+      expect(body?.variables.awardableId).toBe("gid://gitlab/WorkItem/42");
+      expect(body?.variables.name).toBe("rocket");
+    });
+
+    it("throws on awardEmojiAdd errors", async () => {
+      captureGraphQLSequence(
+        workItemMockFor({
+          awardEmojiAdd: { awardEmoji: null, errors: ["Emoji already awarded"] },
+        }),
+      );
+
+      const result = await client.callTool({
+        name: "create_work_item_emoji_reaction",
+        arguments: { project_id: "p", iid: 42, name: "thumbsup" },
+      });
+
+      expect(result.isError).toBe(true);
+      const text = (result.content as Array<{ type: string; text: string }>)[0].text;
+      expect(text).toContain("Emoji already awarded");
+    });
+  });
+
+  describe("delete_work_item_emoji_reaction", () => {
+    it("mutates awardEmojiRemove by name (not by award_id)", async () => {
+      const cap = captureGraphQLSequence(workItemMockFor({ awardEmojiRemove: { errors: [] } }));
+
+      await client.callTool({
+        name: "delete_work_item_emoji_reaction",
+        arguments: { project_id: "p", iid: 42, name: "thumbsup" },
+      });
+
+      const body = cap.lastGraphQLBody();
+      expect(body?.query).toContain("awardEmojiRemove");
+      expect(body?.variables.awardableId).toBe("gid://gitlab/WorkItem/42");
+      expect(body?.variables.name).toBe("thumbsup");
+    });
+  });
+
+  describe("list_work_item_note_emoji_reactions", () => {
+    it("queries awardEmojis against the note GID (not the work-item GID)", async () => {
+      const cap = captureGraphQLSequence(workItemMockFor({ awardEmojis: { nodes: [] } }));
+
+      await client.callTool({
+        name: "list_work_item_note_emoji_reactions",
+        arguments: {
+          project_id: "p",
+          iid: 42,
+          note_id: "gid://gitlab/Note/123",
+        },
+      });
+
+      const body = cap.lastGraphQLBody();
+      expect(body?.variables.awardableId).toBe("gid://gitlab/Note/123");
+    });
+  });
+
+  describe("create_work_item_note_emoji_reaction", () => {
+    it("mutates awardEmojiAdd against the note GID", async () => {
+      const cap = captureGraphQLSequence(
+        workItemMockFor({
+          awardEmojiAdd: { awardEmoji: { name: "eyes" }, errors: [] },
+        }),
+      );
+
+      await client.callTool({
+        name: "create_work_item_note_emoji_reaction",
+        arguments: {
+          project_id: "p",
+          iid: 42,
+          note_id: "gid://gitlab/Note/123",
+          name: "eyes",
+        },
+      });
+
+      const body = cap.lastGraphQLBody();
+      expect(body?.query).toContain("awardEmojiAdd");
+      expect(body?.variables.awardableId).toBe("gid://gitlab/Note/123");
+      expect(body?.variables.name).toBe("eyes");
+    });
+  });
+
+  describe("delete_work_item_note_emoji_reaction", () => {
+    it("mutates awardEmojiRemove against the note GID by name", async () => {
+      const cap = captureGraphQLSequence(workItemMockFor({ awardEmojiRemove: { errors: [] } }));
+
+      await client.callTool({
+        name: "delete_work_item_note_emoji_reaction",
+        arguments: {
+          project_id: "p",
+          iid: 42,
+          note_id: "gid://gitlab/Note/123",
+          name: "eyes",
+        },
+      });
+
+      const body = cap.lastGraphQLBody();
+      expect(body?.query).toContain("awardEmojiRemove");
+      expect(body?.variables.awardableId).toBe("gid://gitlab/Note/123");
+      expect(body?.variables.name).toBe("eyes");
+    });
+  });
 });

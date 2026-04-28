@@ -371,7 +371,14 @@ async function resolveProjectPath(projectId: string): Promise<string> {
 // Helper: resolve work item GID
 // ---------------------------------------------------------------------------
 
-async function resolveWorkItemGID(
+/**
+ * Resolve a (project_id, iid) pair to its GraphQL work-item GID.
+ *
+ * Exported so reactions.ts (and future GraphQL mutation helpers that target
+ * work items) can reuse the resolution without duplicating the project-path
+ * lookup and the subsequent namespace.workItem query.
+ */
+export async function resolveWorkItemGID(
   projectId: string,
   issueIid: number,
 ): Promise<{ workItemGID: string; projectPath: string }> {
