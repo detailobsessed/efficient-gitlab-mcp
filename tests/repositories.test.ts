@@ -261,6 +261,189 @@ describe("Repository Tools Handlers", () => {
     });
   });
 
+  describe("get_file_contents trimming (DOT-513)", () => {
+    // Helper: build a base64-encoded mock response for a file with N numbered lines
+    function mockFileResponse(lineCount: number, ref = "main") {
+      const text = Array.from({ length: lineCount }, (_, i) => `line ${i + 1}`).join("\n");
+      const content = Buffer.from(text, "utf8").toString("base64");
+      const body = JSON.stringify({
+        file_path: "big.txt",
+        ref,
+        encoding: "base64",
+        size: text.length,
+        content,
+      });
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string) =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(body),
+          headers: new Headers(),
+        } as Response),
+      );
+      return { totalLines: lineCount, fullText: text };
+    }
+
+    it("returns the file unchanged when no trim params are passed", async () => {
+      mockFileResponse(50);
+
+      const result = await client.callTool({
+        name: "get_file_contents",
+        arguments: { project_id: "p", file_path: "big.txt", ref: "main" },
+      });
+
+      const text = (result.content as { type: "text"; text: string }[])[0].text;
+      const data = JSON.parse(text);
+      // Encoding stays base64 — no trim was requested
+      expect(data.encoding).toBe("base64");
+      expect(data.truncated).toBeUndefined();
+    });
+
+    it("head: returns first N lines and switches encoding to text", async () => {
+      const { totalLines } = mockFileResponse(50);
+
+      const result = await client.callTool({
+        name: "get_file_contents",
+        arguments: { project_id: "p", file_path: "big.txt", ref: "main", head: 5 },
+      });
+
+      const data = JSON.parse((result.content as { type: "text"; text: string }[])[0].text);
+      expect(data.encoding).toBe("text");
+      expect(data.truncated).toBe(true);
+      expect(data.content).toBe("line 1\nline 2\nline 3\nline 4\nline 5");
+      expect(data.truncation_note).toContain(`first 5 of ${totalLines} lines`);
+      expect(data.truncation_note).toContain(`${totalLines} total lines`);
+    });
+
+    it("tail: returns last N lines", async () => {
+      mockFileResponse(50);
+
+      const result = await client.callTool({
+        name: "get_file_contents",
+        arguments: { project_id: "p", file_path: "big.txt", ref: "main", tail: 3 },
+      });
+
+      const data = JSON.parse((result.content as { type: "text"; text: string }[])[0].text);
+      expect(data.content).toBe("line 48\nline 49\nline 50");
+      expect(data.truncated).toBe(true);
+    });
+
+    it("range: returns the requested 1-indexed inclusive range", async () => {
+      mockFileResponse(50);
+
+      const result = await client.callTool({
+        name: "get_file_contents",
+        arguments: { project_id: "p", file_path: "big.txt", ref: "main", range: "10-12" },
+      });
+
+      const data = JSON.parse((result.content as { type: "text"; text: string }[])[0].text);
+      expect(data.content).toBe("line 10\nline 11\nline 12");
+      expect(data.truncation_note).toContain("Showing lines 10-12 of 50");
+    });
+
+    it("max_bytes: caps at the byte boundary (no UTF-8 mid-character cuts)", async () => {
+      mockFileResponse(20);
+
+      const result = await client.callTool({
+        name: "get_file_contents",
+        arguments: { project_id: "p", file_path: "big.txt", ref: "main", max_bytes: 30 },
+      });
+
+      const data = JSON.parse((result.content as { type: "text"; text: string }[])[0].text);
+      expect(Buffer.byteLength(data.content as string, "utf8")).toBeLessThanOrEqual(30);
+      expect(data.truncated).toBe(true);
+      expect(data.truncation_note).toContain("Truncated to 30");
+    });
+
+    it("max_bytes composes with head — line trim first, then byte cap", async () => {
+      mockFileResponse(100);
+
+      const result = await client.callTool({
+        name: "get_file_contents",
+        arguments: {
+          project_id: "p",
+          file_path: "big.txt",
+          ref: "main",
+          head: 50,
+          max_bytes: 100,
+        },
+      });
+
+      const data = JSON.parse((result.content as { type: "text"; text: string }[])[0].text);
+      expect(Buffer.byteLength(data.content as string, "utf8")).toBeLessThanOrEqual(100);
+      // Both notes present (head trimmed AND max_bytes capped further)
+      expect(data.truncation_note).toContain("first 50 of 100 lines");
+      expect(data.truncation_note).toContain("Truncated to 100");
+    });
+
+    it("returns the file untrimmed when content fits within max_bytes", async () => {
+      mockFileResponse(3);
+
+      const result = await client.callTool({
+        name: "get_file_contents",
+        arguments: { project_id: "p", file_path: "big.txt", ref: "main", max_bytes: 10000 },
+      });
+
+      const data = JSON.parse((result.content as { type: "text"; text: string }[])[0].text);
+      expect(data.truncated).toBe(false);
+      // Content is the full file (line 1 / line 2 / line 3)
+      expect(data.content).toContain("line 1");
+      expect(data.content).toContain("line 3");
+    });
+
+    it("rejects passing more than one of head / tail / range", async () => {
+      mockFileResponse(50);
+
+      const result = await client.callTool({
+        name: "get_file_contents",
+        arguments: {
+          project_id: "p",
+          file_path: "big.txt",
+          ref: "main",
+          head: 5,
+          tail: 5,
+        },
+      });
+
+      // McpServer surfaces handler errors as text-content with isError: true
+      expect(result.isError).toBe(true);
+      const text = (result.content as { type: "text"; text: string }[])[0].text;
+      expect(text).toContain("mutually exclusive");
+    });
+
+    it("declines to trim binary files (null-byte heuristic)", async () => {
+      // Binary file: contains a null byte in the first chunk
+      const binary = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x00, 0x01, 0x02]);
+      const body = JSON.stringify({
+        file_path: "logo.png",
+        ref: "main",
+        encoding: "base64",
+        size: binary.length,
+        content: binary.toString("base64"),
+      });
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string) =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(body),
+          headers: new Headers(),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "get_file_contents",
+        arguments: { project_id: "p", file_path: "logo.png", ref: "main", head: 5 },
+      });
+
+      const data = JSON.parse((result.content as { type: "text"; text: string }[])[0].text);
+      expect(data.truncated).toBe(false);
+      expect(data.encoding).toBe("base64"); // Original encoding preserved
+      expect(data.truncation_note).toContain("binary");
+    });
+  });
+
   describe("list_branches", () => {
     it("calls /repository/branches with project ID", async () => {
       let capturedUrl: string | undefined;
