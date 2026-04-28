@@ -2,6 +2,26 @@ import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server
 import { z } from "zod";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
+import { projectFields } from "../utils/projection.js";
+import { fieldsParam } from "../utils/schema-helpers.js";
+
+// Compact set of commit fields. Identifies the commit, its parent chain,
+// who made it, and the message. Drops `last_pipeline` (rarely needed in a
+// list context) and trailers; keeps `parent_ids` (relevant for graph
+// reasoning) and `web_url` (consistent with other list endpoints' compact
+// defaults).
+const LIST_COMMITS_DEFAULT_FIELDS = [
+  "id",
+  "short_id",
+  "title",
+  "message",
+  "author_name",
+  "author_email",
+  "authored_date",
+  "committed_date",
+  "parent_ids",
+  "web_url",
+] as const;
 
 const ListCommitsSchema = z.object({
   project_id: z
@@ -15,6 +35,7 @@ const ListCommitsSchema = z.object({
   author: z.string().optional().describe("Filter by author email or name"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
+  fields: fieldsParam("commit").optional(),
 });
 
 const GetCommitSchema = z.object({
@@ -46,7 +67,8 @@ export function registerCommitTools(
     "list_commits",
     {
       title: "List Commits",
-      description: "List repository commits with filtering options",
+      description:
+        "List repository commits with filtering options. Returns a compact set of fields per commit by default; pass `fields: 'all'` for the raw GitLab response or `fields: [...]` to pick your own.",
       inputSchema: {
         project_id: z
           .string()
@@ -59,6 +81,7 @@ export function registerCommitTools(
         author: z.string().optional().describe("Filter by author email or name"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
+        fields: fieldsParam("commit").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -68,11 +91,14 @@ export function registerCommitTools(
     async (params) => {
       const args = ListCommitsSchema.parse(params);
       const projectId = resolveProjectId(args.project_id);
-      const { project_id: _, ...queryParams } = args;
+      const { project_id: _, fields, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
-      const commits = await defaultClient.get(`/projects/${projectId}/repository/commits${query}`);
-      return { content: [{ type: "text", text: JSON.stringify(commits, null, 2) }] };
+      const commits = (await defaultClient.get(
+        `/projects/${projectId}/repository/commits${query}`,
+      )) as Record<string, unknown>[];
+      const projected = projectFields(commits, LIST_COMMITS_DEFAULT_FIELDS, fields);
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef.disable();

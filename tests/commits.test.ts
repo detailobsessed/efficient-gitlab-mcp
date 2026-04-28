@@ -81,6 +81,49 @@ describe("Commit Tools Handlers", () => {
       expect(responseData).toHaveLength(2);
       expect(responseData[0].title).toBe("Initial commit");
     });
+
+    it("applies field projection (DOT-516.5) by default", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () =>
+            Promise.resolve(
+              JSON.stringify([
+                {
+                  id: "abc123",
+                  short_id: "abc1",
+                  title: "Initial",
+                  message: "Initial commit",
+                  author_name: "alice",
+                  author_email: "alice@example.com",
+                  authored_date: "2026-04-01T00:00:00Z",
+                  committed_date: "2026-04-01T00:00:00Z",
+                  parent_ids: [],
+                  // Bloat fields:
+                  trailers: { "Signed-off-by": "alice" },
+                  extended_trailers: {},
+                  last_pipeline: { id: 999, status: "success" },
+                  stats: { additions: 1, deletions: 0, total: 1 },
+                },
+              ]),
+            ),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "list_commits",
+        arguments: { project_id: "p" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data[0].title).toBe("Initial");
+      expect(data[0].author_name).toBe("alice");
+      // Bloat dropped
+      expect(data[0].trailers).toBeUndefined();
+      expect(data[0].last_pipeline).toBeUndefined();
+      expect(data[0].stats).toBeUndefined();
+    });
   });
 
   describe("get_commit", () => {

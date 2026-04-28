@@ -191,6 +191,7 @@ const ListGroupProjectsSchema = z.object({
     .boolean()
     .optional()
     .describe("Include sensitive fields like runners_token (default: false)"),
+  fields: fieldsParam("project").optional(),
 });
 
 export function registerProjectTools(
@@ -504,7 +505,8 @@ export function registerProjectTools(
     "list_group_projects",
     {
       title: "List Group Projects",
-      description: "List projects in a GitLab group with filtering options",
+      description:
+        "List projects in a GitLab group. Returns a compact set of fields per project by default; pass `fields: 'all'` for the raw GitLab response or `fields: [...]` to pick your own.",
       inputSchema: {
         group_id: z.string().describe("Group ID or URL-encoded path"),
         search: z.string().optional().describe("Search query"),
@@ -524,6 +526,7 @@ export function registerProjectTools(
           .boolean()
           .optional()
           .describe("Include sensitive fields like runners_token (default: false)"),
+        fields: fieldsParam("project").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -533,12 +536,20 @@ export function registerProjectTools(
     async (params) => {
       const args = ListGroupProjectsSchema.parse(params);
       const groupId = encodeURIComponent(args.group_id);
-      const { group_id: _, include_secrets, ...queryParams } = args;
+      const { group_id: _, include_secrets, fields, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
-      const projects = await defaultClient.get(`/groups/${groupId}/projects${query}`);
-      const redacted = redactProjectSecrets(projects, include_secrets ?? false);
-      return { content: [{ type: "text", text: JSON.stringify(redacted, null, 2) }] };
+      const projects = (await defaultClient.get(`/groups/${groupId}/projects${query}`)) as Record<
+        string,
+        unknown
+      >[];
+      const redacted = redactProjectSecrets(projects, include_secrets ?? false) as Record<
+        string,
+        unknown
+      >[];
+      const effectiveFields = fields ?? (include_secrets ? "all" : undefined);
+      const projected = projectFields(redacted, LIST_PROJECTS_DEFAULT_FIELDS, effectiveFields);
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef9.disable();

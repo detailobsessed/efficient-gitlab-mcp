@@ -2,6 +2,24 @@ import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server
 import { z } from "zod";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
+import { projectFields } from "../utils/projection.js";
+import { fieldsParam } from "../utils/schema-helpers.js";
+
+// Compact set of pipeline fields. Identifies the pipeline, its ref/SHA,
+// status, and how to reach it. Drops bridge metadata, queued_duration,
+// finished/started_at deltas. Pass `fields: "all"` for raw GitLab response.
+const LIST_PIPELINES_DEFAULT_FIELDS = [
+  "id",
+  "iid",
+  "project_id",
+  "sha",
+  "ref",
+  "status",
+  "source",
+  "web_url",
+  "created_at",
+  "updated_at",
+] as const;
 
 const ListPipelinesSchema = z.object({
   project_id: z
@@ -29,6 +47,7 @@ const ListPipelinesSchema = z.object({
   yaml_errors: z.coerce.boolean().optional().describe("Filter by YAML errors"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
+  fields: fieldsParam("pipeline").optional(),
 });
 
 const GetPipelineSchema = z.object({
@@ -257,7 +276,8 @@ export function registerPipelineTools(
     "list_pipelines",
     {
       title: "List Pipelines",
-      description: "List pipelines in a GitLab project with filtering options",
+      description:
+        "List pipelines in a GitLab project. Returns a compact set of fields per pipeline by default; pass `fields: 'all'` for the raw GitLab response or `fields: [...]` to pick your own.",
       inputSchema: {
         project_id: z
           .string()
@@ -281,6 +301,7 @@ export function registerPipelineTools(
         sha: z.string().optional().describe("Commit SHA"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
+        fields: fieldsParam("pipeline").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -290,11 +311,14 @@ export function registerPipelineTools(
     async (params) => {
       const args = ListPipelinesSchema.parse(params);
       const projectId = resolveProjectId(args.project_id);
-      const { project_id: _, ...queryParams } = args;
+      const { project_id: _, fields, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
-      const pipelines = await defaultClient.get(`/projects/${projectId}/pipelines${query}`);
-      return { content: [{ type: "text", text: JSON.stringify(pipelines, null, 2) }] };
+      const pipelines = (await defaultClient.get(
+        `/projects/${projectId}/pipelines${query}`,
+      )) as Record<string, unknown>[];
+      const projected = projectFields(pipelines, LIST_PIPELINES_DEFAULT_FIELDS, fields);
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef.disable();
