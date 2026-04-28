@@ -129,6 +129,57 @@ describe("Project Tools Handlers", () => {
     });
   });
 
+  describe("list_labels honors with_counts", () => {
+    it("passes with_counts=true through to GitLab when set", async () => {
+      let capturedUrl: string | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string, _options?: RequestInit) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () =>
+            Promise.resolve(
+              '[{"id": 1, "name": "bug", "open_issues_count": 3, "closed_issues_count": 1}]',
+            ),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "list_labels",
+        arguments: { project_id: "1", with_counts: true },
+      });
+
+      expect(capturedUrl).toContain("with_counts=true");
+      const text = (result.content as TextContent)[0].text;
+      expect(text).toContain("open_issues_count");
+    });
+
+    it("omits with_counts from the outgoing query when not set", async () => {
+      let capturedUrl: string | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string, _options?: RequestInit) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve('[{"id": 1, "name": "bug"}]'),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_labels",
+        arguments: { project_id: "1" },
+      });
+
+      expect(capturedUrl).not.toContain("with_counts");
+    });
+  });
+
   describe("list_group_projects redacts runners_token", () => {
     it("strips runners_token from group projects by default", async () => {
       mockJsonResponse([

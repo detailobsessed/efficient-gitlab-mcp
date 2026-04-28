@@ -69,6 +69,10 @@ const ListLabelsSchema = z.object({
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   search: z.string().optional().describe("Search query"),
+  with_counts: z.coerce
+    .boolean()
+    .optional()
+    .describe("Include open_issues_count / closed_issues_count per label"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
 });
@@ -288,6 +292,10 @@ export function registerProjectTools(
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         search: z.string().optional().describe("Search query"),
+        with_counts: z.coerce
+          .boolean()
+          .optional()
+          .describe("Include open_issues_count / closed_issues_count per label"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
       },
@@ -298,6 +306,7 @@ export function registerProjectTools(
       const projectId = resolveProjectId(args.project_id);
       const query = buildQueryString({
         search: args.search,
+        with_counts: args.with_counts,
         page: args.page,
         per_page: args.per_page,
       });
