@@ -1,3 +1,10 @@
+# [2.24.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.23.0...v2.24.0) (2026-04-28)
+
+
+### Features
+
+* **reactions:** scaffold reactions.ts + emoji-reactions category (DOT-521.1) ([#90](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/90)) ([21eac20](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/21eac2000e05863f2de598b1dc9f00493f152cd5))
+
 # [2.23.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.22.0...v2.23.0) (2026-04-28)
 
 
