@@ -3,6 +3,23 @@ import { z } from "zod";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
+// GitLab project responses include `runners_token` for projects the caller
+// can administer. That field is a CI-runner registration secret — leaking it
+// into LLM transcripts (or any logging pipeline) is a real risk. We redact it
+// by default and only retain when the caller explicitly passes
+// `include_secrets: true`.
+function redactProjectSecrets(value: unknown, includeSecrets: boolean): unknown {
+  if (includeSecrets) return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => redactProjectSecrets(item, false));
+  }
+  if (value && typeof value === "object") {
+    const { runners_token: _redacted, ...rest } = value as Record<string, unknown>;
+    return rest;
+  }
+  return value;
+}
+
 const GetProjectSchema = z.object({
   project_id: z
     .string()
@@ -11,6 +28,10 @@ const GetProjectSchema = z.object({
   license: z.coerce.boolean().optional().describe("Include license info"),
   statistics: z.coerce.boolean().optional().describe("Include project statistics"),
   with_custom_attributes: z.coerce.boolean().optional().describe("Include custom attributes"),
+  include_secrets: z.coerce
+    .boolean()
+    .optional()
+    .describe("Include sensitive fields like runners_token (default: false)"),
 });
 
 const ListProjectsSchema = z.object({
@@ -26,6 +47,10 @@ const ListProjectsSchema = z.object({
   sort: z.enum(["asc", "desc"]).optional().describe("Sort direction"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
+  include_secrets: z.coerce
+    .boolean()
+    .optional()
+    .describe("Include sensitive fields like runners_token (default: false)"),
 });
 
 const ListProjectMembersSchema = z.object({
@@ -132,6 +157,10 @@ const ListGroupProjectsSchema = z.object({
   sort: z.enum(["asc", "desc"]).optional().describe("Sort direction"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
+  include_secrets: z.coerce
+    .boolean()
+    .optional()
+    .describe("Include sensitive fields like runners_token (default: false)"),
 });
 
 export function registerProjectTools(
@@ -154,6 +183,10 @@ export function registerProjectTools(
         license: z.coerce.boolean().optional().describe("Include license info"),
         statistics: z.coerce.boolean().optional().describe("Include project statistics"),
         with_custom_attributes: z.coerce.boolean().optional().describe("Include custom attributes"),
+        include_secrets: z.coerce
+          .boolean()
+          .optional()
+          .describe("Include sensitive fields like runners_token (default: false)"),
       },
       annotations: { readOnlyHint: true },
     },
@@ -167,7 +200,8 @@ export function registerProjectTools(
       });
 
       const project = await defaultClient.get(`/projects/${projectId}${query}`);
-      return { content: [{ type: "text", text: JSON.stringify(project, null, 2) }] };
+      const redacted = redactProjectSecrets(project, args.include_secrets ?? false);
+      return { content: [{ type: "text", text: JSON.stringify(redacted, null, 2) }] };
     },
   );
   toolRef.disable();
@@ -191,15 +225,21 @@ export function registerProjectTools(
         sort: z.enum(["asc", "desc"]).optional().describe("Sort direction"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
+        include_secrets: z.coerce
+          .boolean()
+          .optional()
+          .describe("Include sensitive fields like runners_token (default: false)"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = ListProjectsSchema.parse(params);
-      const query = buildQueryString(args);
+      const { include_secrets, ...queryArgs } = args;
+      const query = buildQueryString(queryArgs);
 
       const projects = await defaultClient.get(`/projects${query}`);
-      return { content: [{ type: "text", text: JSON.stringify(projects, null, 2) }] };
+      const redacted = redactProjectSecrets(projects, include_secrets ?? false);
+      return { content: [{ type: "text", text: JSON.stringify(redacted, null, 2) }] };
     },
   );
   toolRef2.disable();
@@ -397,17 +437,22 @@ export function registerProjectTools(
         sort: z.enum(["asc", "desc"]).optional().describe("Sort direction"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
+        include_secrets: z.coerce
+          .boolean()
+          .optional()
+          .describe("Include sensitive fields like runners_token (default: false)"),
       },
       annotations: { readOnlyHint: true },
     },
     async (params) => {
       const args = ListGroupProjectsSchema.parse(params);
       const groupId = encodeURIComponent(args.group_id);
-      const { group_id: _, ...queryParams } = args;
+      const { group_id: _, include_secrets, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
       const projects = await defaultClient.get(`/groups/${groupId}/projects${query}`);
-      return { content: [{ type: "text", text: JSON.stringify(projects, null, 2) }] };
+      const redacted = redactProjectSecrets(projects, include_secrets ?? false);
+      return { content: [{ type: "text", text: JSON.stringify(redacted, null, 2) }] };
     },
   );
   toolRef9.disable();
