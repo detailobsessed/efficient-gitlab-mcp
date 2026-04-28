@@ -2,7 +2,32 @@ import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server
 import { z } from "zod";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
-import { coerceStringArray } from "../utils/schema-helpers.js";
+import { projectFields } from "../utils/projection.js";
+import { coerceStringArray, fieldsParam } from "../utils/schema-helpers.js";
+
+// Compact set of MR fields useful to an LLM by default. Identifies the MR,
+// its branches, who's involved, and its current merge state — without
+// dragging along the change_count, _links, time_stats, has_conflicts, etc.
+// Pass `fields: "all"` for the raw GitLab response, `fields: [...]` to override.
+const LIST_MERGE_REQUESTS_DEFAULT_FIELDS = [
+  "id",
+  "iid",
+  "title",
+  "state",
+  "draft",
+  "labels",
+  "source_branch",
+  "target_branch",
+  "author",
+  "assignees",
+  "reviewers",
+  "milestone",
+  "web_url",
+  "created_at",
+  "updated_at",
+  "merge_status",
+  "detailed_merge_status",
+] as const;
 
 const MAX_PATTERN_LENGTH = 200;
 const NESTED_QUANTIFIER_RE = /(\+|\*|\{)\s*(\+|\*|\{)/;
@@ -74,6 +99,7 @@ const ListMergeRequestsSchema = z.object({
     .string()
     .optional()
     .describe("Reviewer username (mutually exclusive with reviewer_id)"),
+  fields: fieldsParam("merge request").optional(),
 });
 
 const CreateMergeRequestSchema = z.object({
@@ -509,7 +535,8 @@ export function registerMergeRequestTools(
     "list_merge_requests",
     {
       title: "List Merge Requests",
-      description: "List merge requests in a GitLab project with filtering options",
+      description:
+        "List merge requests in a GitLab project with filtering options. Returns a compact set of fields per MR by default; pass `fields: 'all'` for the raw GitLab response or `fields: ['id', 'iid', ...]` to pick your own.",
       inputSchema: {
         project_id: z
           .string()
@@ -543,6 +570,7 @@ export function registerMergeRequestTools(
           .string()
           .optional()
           .describe("Reviewer username (mutually exclusive with reviewer_id)"),
+        fields: fieldsParam("merge request").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -552,7 +580,7 @@ export function registerMergeRequestTools(
     async (params) => {
       const args = ListMergeRequestsSchema.parse(params);
       const projectId = resolveProjectId(args.project_id);
-      const { project_id: _, ...queryParams } = args;
+      const { project_id: _, fields, ...queryParams } = args;
 
       // Prefer username over id when both provided (mutually exclusive in GitLab API)
       // Use !== undefined (not truthiness) because id=0 is valid ("no assignee/reviewer")
@@ -568,8 +596,11 @@ export function registerMergeRequestTools(
 
       const query = buildQueryString(queryParams);
 
-      const mrs = await defaultClient.get(`/projects/${projectId}/merge_requests${query}`);
-      return { content: [{ type: "text", text: JSON.stringify(mrs, null, 2) }] };
+      const mrs = (await defaultClient.get(
+        `/projects/${projectId}/merge_requests${query}`,
+      )) as Record<string, unknown>[];
+      const projected = projectFields(mrs, LIST_MERGE_REQUESTS_DEFAULT_FIELDS, fields);
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef2.disable();
