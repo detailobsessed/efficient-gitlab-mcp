@@ -22,7 +22,204 @@ const GetFileContentsSchema = z.object({
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   file_path: z.string().describe("Path to the file in the repository"),
   ref: z.string().optional().describe("Branch, tag, or commit SHA"),
+  max_bytes: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe(
+      "Hard byte cap on the returned (decoded) content. Applied after any head/tail/range. Useful for capping large files within a context budget.",
+    ),
+  head: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe("Return only the first N lines (mutually exclusive with tail and range)"),
+  tail: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe("Return only the last N lines (mutually exclusive with head and range)"),
+  range: z
+    .string()
+    .regex(/^\d+-\d+$/, "range must be 'start-end' (e.g. '10-50')")
+    .optional()
+    .describe(
+      "Line range to return, 1-indexed and inclusive (e.g. '10-50'). Mutually exclusive with head and tail.",
+    ),
 });
+
+type TrimResult = { content: string; truncated: boolean; note?: string };
+
+function trimByRange(text: string, range: string): TrimResult {
+  const match = range.match(/^(\d+)-(\d+)$/);
+  // Regex on the schema already validated the shape, but assert defensively
+  if (!match) throw new Error(`invalid range: ${range}`);
+  const start = Number.parseInt(match[1], 10);
+  const end = Number.parseInt(match[2], 10);
+  if (start < 1 || end < start) {
+    throw new Error(`invalid range '${range}': start must be >= 1 and <= end`);
+  }
+  const lines = text.split("\n");
+  const sliced = lines.slice(start - 1, end);
+  if (sliced.length === lines.length) return { content: text, truncated: false };
+  return {
+    content: sliced.join("\n"),
+    truncated: true,
+    note: `Showing lines ${start}-${Math.min(end, lines.length)} of ${lines.length}`,
+  };
+}
+
+function trimByHead(text: string, head: number): TrimResult {
+  const lines = text.split("\n");
+  if (lines.length <= head) return { content: text, truncated: false };
+  return {
+    content: lines.slice(0, head).join("\n"),
+    truncated: true,
+    note: `Showing first ${head} of ${lines.length} lines`,
+  };
+}
+
+function trimByTail(text: string, tail: number): TrimResult {
+  const lines = text.split("\n");
+  if (lines.length <= tail) return { content: text, truncated: false };
+  return {
+    content: lines.slice(-tail).join("\n"),
+    truncated: true,
+    note: `Showing last ${tail} of ${lines.length} lines`,
+  };
+}
+
+function trimByMaxBytes(text: string, max_bytes: number): TrimResult {
+  const buf = Buffer.from(text, "utf8");
+  if (buf.byteLength <= max_bytes) return { content: text, truncated: false };
+  // TextDecoder with fatal:false drops the trailing partial UTF-8 sequence
+  // gracefully so we never hand the LLM a half-character.
+  const decoder = new TextDecoder("utf-8", { fatal: false });
+  return {
+    content: decoder.decode(buf.subarray(0, max_bytes)),
+    truncated: true,
+    note: `Truncated to ${max_bytes} of ${buf.byteLength} bytes`,
+  };
+}
+
+function applyLineTrim(
+  text: string,
+  opts: { head?: number; tail?: number; range?: string },
+): TrimResult {
+  const set = [opts.head !== undefined, opts.tail !== undefined, !!opts.range].filter(
+    Boolean,
+  ).length;
+  if (set > 1) {
+    throw new Error(
+      "head, tail, and range are mutually exclusive — pass at most one line-based trim",
+    );
+  }
+  if (opts.range) return trimByRange(text, opts.range);
+  if (opts.head !== undefined) return trimByHead(text, opts.head);
+  if (opts.tail !== undefined) return trimByTail(text, opts.tail);
+  return { content: text, truncated: false };
+}
+
+/**
+ * Apply head / tail / range / max_bytes trimming to UTF-8 text. The line-based
+ * trims (head, tail, range) are mutually exclusive — at most one may be set;
+ * max_bytes composes on top of any of them as a final hard cap.
+ */
+function applyContentTrim(
+  text: string,
+  opts: { head?: number; tail?: number; range?: string; max_bytes?: number },
+): { content: string; truncated: boolean; truncation_note?: string } {
+  const totalLines = text.split("\n").length;
+  const lineTrim = applyLineTrim(text, opts);
+  const notes: string[] = [];
+  if (lineTrim.note) notes.push(lineTrim.note);
+
+  let content = lineTrim.content;
+  let truncated = lineTrim.truncated;
+
+  if (opts.max_bytes !== undefined) {
+    const byteTrim = trimByMaxBytes(content, opts.max_bytes);
+    content = byteTrim.content;
+    if (byteTrim.note) notes.push(byteTrim.note);
+    truncated = truncated || byteTrim.truncated;
+  }
+
+  // Always include totalLines hint when truncating, so callers can re-request
+  // a different range without re-fetching the file just to count lines.
+  if (truncated) notes.push(`File has ${totalLines} total lines`);
+
+  return {
+    content,
+    truncated,
+    truncation_note: truncated ? notes.join(". ") : undefined,
+  };
+}
+
+/**
+ * Detect whether decoded content is "binary enough" that text-based trimming
+ * would mangle it. Heuristic: any null byte in the first 8 KB. Simple, cheap,
+ * and matches what `git`, `grep`, and `file(1)` use as their text/binary cut.
+ */
+function looksBinary(text: string): boolean {
+  const sample = text.length > 8192 ? text.slice(0, 8192) : text;
+  return sample.indexOf("\0") !== -1;
+}
+
+type GitLabFileResponse = {
+  content?: string;
+  encoding?: string;
+  size?: number;
+  [k: string]: unknown;
+};
+
+type TrimOpts = { head?: number; tail?: number; range?: string; max_bytes?: number };
+
+/**
+ * Apply trim params to a GitLab file response. Returns the original (unchanged)
+ * response if no trim params are set, the file is binary, or the encoding is
+ * something other than what we know how to decode.
+ */
+function trimFileResponse(file: GitLabFileResponse, opts: TrimOpts): GitLabFileResponse {
+  const wantsTrim =
+    opts.max_bytes !== undefined ||
+    opts.head !== undefined ||
+    opts.tail !== undefined ||
+    opts.range !== undefined;
+  if (!wantsTrim) return file;
+
+  // Decode base64 content for trimming. GitLab returns base64 by default.
+  let decoded: string;
+  if (file.encoding === "base64" && typeof file.content === "string") {
+    decoded = Buffer.from(file.content, "base64").toString("utf8");
+  } else if (typeof file.content === "string") {
+    // Already plain text (rare — happens with `?raw=true` flow we don't use).
+    decoded = file.content;
+  } else {
+    // No content field at all (directory listing or unexpected response).
+    return file;
+  }
+
+  if (looksBinary(decoded)) {
+    return {
+      ...file,
+      truncated: false,
+      truncation_note:
+        "File appears to be binary (null byte detected); trim parameters ignored. Re-fetch without head/tail/range/max_bytes to get the full base64 payload.",
+    };
+  }
+
+  const trimmed = applyContentTrim(decoded, opts);
+  return {
+    ...file,
+    content: trimmed.content,
+    encoding: "text",
+    truncated: trimmed.truncated,
+    ...(trimmed.truncation_note ? { truncation_note: trimmed.truncation_note } : {}),
+  };
+}
 
 const CreateRepositorySchema = z.object({
   name: z.string().describe("Name of the new project"),
@@ -179,7 +376,8 @@ export function registerRepositoryTools(
     "get_file_contents",
     {
       title: "Get File Contents",
-      description: "Get the contents of a file or directory from a GitLab project",
+      description:
+        "Get the contents of a file from a GitLab project. Supports server-side trimming via head / tail / range (line-based, mutually exclusive) and max_bytes (final byte cap, composes with any line trim) to fit large files within a context budget.",
       inputSchema: {
         project_id: z
           .string()
@@ -187,6 +385,33 @@ export function registerRepositoryTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         file_path: z.string().describe("Path to the file in the repository"),
         ref: z.string().optional().describe("Branch, tag, or commit SHA"),
+        max_bytes: z.coerce
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            "Hard byte cap on the returned (decoded) content. Applied after any head/tail/range.",
+          ),
+        head: z.coerce
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("Return only the first N lines (mutually exclusive with tail and range)"),
+        tail: z.coerce
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe("Return only the last N lines (mutually exclusive with head and range)"),
+        range: z
+          .string()
+          .regex(/^\d+-\d+$/, "range must be 'start-end' (e.g. '10-50')")
+          .optional()
+          .describe(
+            "Line range, 1-indexed and inclusive (e.g. '10-50'). Mutually exclusive with head and tail.",
+          ),
       },
       annotations: {
         readOnlyHint: true,
@@ -207,18 +432,22 @@ export function registerRepositoryTools(
         const project = (await defaultClient.get(`/projects/${projectId}`)) as {
           default_branch?: string | null;
         } | null;
-        if (project?.default_branch) {
-          ref = project.default_branch;
-        }
+        if (project?.default_branch) ref = project.default_branch;
       }
 
       const query = ref ? `?ref=${encodeURIComponent(ref)}` : "";
-      const file = await defaultClient.get(
+      const file = (await defaultClient.get(
         `/projects/${projectId}/repository/files/${filePath}${query}`,
-      );
-      return {
-        content: [{ type: "text", text: JSON.stringify(file, null, 2) }],
-      };
+      )) as GitLabFileResponse;
+
+      const response = trimFileResponse(file, {
+        head: args.head,
+        tail: args.tail,
+        range: args.range,
+        max_bytes: args.max_bytes,
+      });
+
+      return { content: [{ type: "text", text: JSON.stringify(response, null, 2) }] };
     },
   );
   toolRef2.disable();
