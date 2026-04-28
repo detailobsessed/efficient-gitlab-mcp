@@ -1,3 +1,10 @@
+# [2.27.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.26.0...v2.27.0) (2026-04-28)
+
+
+### Features
+
+* **reactions:** GraphQL tools for work_item emoji reactions (DOT-521.4) ([#93](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/93)) ([02abe49](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/02abe49b7401cf8e2c1f81bd059b9d9dc77d7299))
+
 # [2.26.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.25.0...v2.26.0) (2026-04-28)
 
 
