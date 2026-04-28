@@ -6,6 +6,7 @@ export { registerMilestoneTools } from "./milestones.js";
 export { registerNamespaceTools } from "./namespaces.js";
 export { registerPipelineTools } from "./pipelines.js";
 export { registerProjectTools } from "./projects.js";
+export { registerReactionTools } from "./reactions.js";
 export { registerReleaseTools } from "./releases.js";
 export { registerRepositoryTools } from "./repositories.js";
 export { registerSearchTools } from "./search.js";
