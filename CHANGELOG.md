@@ -1,3 +1,10 @@
+# [2.16.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.15.0...v2.16.0) (2026-04-28)
+
+
+### Features
+
+* **tools:** set complete MCP annotations on every tool ([#78](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/78)) ([f205589](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/f20558967ea36af8d0dbda9606164f4f10695929))
+
 # [2.15.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.14.0...v2.15.0) (2026-04-28)
 
 
