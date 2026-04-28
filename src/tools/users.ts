@@ -112,9 +112,10 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
       for (const username of args.usernames) {
         const query = buildQueryString({ username });
         const users = await defaultClient.get<unknown[]>(`/users${query}`);
-        if (users.length > 0) {
-          results[username] = users[0];
-        }
+        // Always assign — null when the username didn't resolve. Omitting
+        // missing keys would collapse signal: callers couldn't tell whether
+        // a key wasn't asked for or actually didn't exist on GitLab.
+        results[username] = users.length > 0 ? users[0] : null;
       }
 
       return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
