@@ -154,6 +154,113 @@ describe("Repository Tools Handlers", () => {
     });
   });
 
+  describe("get_file_contents", () => {
+    it("auto-defaults ref to project's default_branch when ref is omitted", async () => {
+      const calls: { url: string; method: string }[] = [];
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string, options?: RequestInit) => {
+        calls.push({ url, method: options?.method ?? "GET" });
+        if (url.includes("/repository/files/")) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            text: () =>
+              Promise.resolve('{"file_path": "README.md", "ref": "main", "content": "..."}'),
+            headers: new Headers(),
+          } as Response);
+        }
+        // Project metadata fetch
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve('{"id": 42, "default_branch": "main"}'),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "get_file_contents",
+        arguments: {
+          project_id: "my-group/my-project",
+          file_path: "README.md",
+        },
+      });
+
+      // First call: GET /projects/:id (to look up default_branch)
+      expect(calls.length).toBe(2);
+      expect(calls[0].url).toContain("/projects/my-group");
+      expect(calls[0].url).not.toContain("/repository/files");
+      // Second call: GET /repository/files/... with the resolved ref
+      expect(calls[1].url).toContain("/repository/files/README.md");
+      expect(calls[1].url).toContain("ref=main");
+
+      const text = (result.content as { type: "text"; text: string }[])[0].text;
+      expect(text).toContain("README.md");
+    });
+
+    it("does not fetch project metadata when ref is explicitly provided", async () => {
+      const calls: string[] = [];
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string, _options?: RequestInit) => {
+        calls.push(url);
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () =>
+            Promise.resolve('{"file_path": "README.md", "ref": "develop", "content": "..."}'),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "get_file_contents",
+        arguments: {
+          project_id: "my-group/my-project",
+          file_path: "README.md",
+          ref: "develop",
+        },
+      });
+
+      // Only one call — straight to the file endpoint with the explicit ref.
+      expect(calls.length).toBe(1);
+      expect(calls[0]).toContain("/repository/files/README.md");
+      expect(calls[0]).toContain("ref=develop");
+    });
+
+    it("URL-encodes the resolved default_branch", async () => {
+      const calls: string[] = [];
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string, _options?: RequestInit) => {
+        calls.push(url);
+        if (url.includes("/repository/files/")) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            text: () => Promise.resolve('{"file_path": "x", "content": "..."}'),
+            headers: new Headers(),
+          } as Response);
+        }
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          // Default branch with a slash to verify encoding
+          text: () => Promise.resolve('{"id": 42, "default_branch": "feature/v2"}'),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "get_file_contents",
+        arguments: { project_id: "p", file_path: "x" },
+      });
+
+      expect(calls[1]).toContain("ref=feature%2Fv2");
+    });
+  });
+
   describe("search_repositories", () => {
     it("should accept 'query' as an alias for 'search'", async () => {
       let capturedUrl: string | undefined;

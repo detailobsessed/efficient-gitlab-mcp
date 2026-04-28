@@ -163,8 +163,22 @@ export function registerRepositoryTools(
       const args = GetFileContentsSchema.parse(params);
       const projectId = resolveProjectId(args.project_id);
       const filePath = encodeURIComponent(args.file_path);
-      const query = args.ref ? `?ref=${encodeURIComponent(args.ref)}` : "";
 
+      // Auto-default ref to the project's default branch when the caller
+      // omits it. GitLab's /repository/files endpoint requires a ref and
+      // would otherwise 400 "ref is missing", forcing every caller to
+      // know the project's default branch up front.
+      let ref = args.ref;
+      if (!ref) {
+        const project = (await defaultClient.get(`/projects/${projectId}`)) as {
+          default_branch?: string | null;
+        } | null;
+        if (project?.default_branch) {
+          ref = project.default_branch;
+        }
+      }
+
+      const query = ref ? `?ref=${encodeURIComponent(ref)}` : "";
       const file = await defaultClient.get(
         `/projects/${projectId}/repository/files/${filePath}${query}`,
       );
