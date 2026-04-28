@@ -226,6 +226,107 @@ describe("Project Tools Handlers", () => {
     });
   });
 
+  describe("list_projects field projection (DOT-516.2)", () => {
+    it("returns only the default field set when fields is unset", async () => {
+      mockJsonResponse([
+        {
+          id: 1,
+          name: "Alpha",
+          description: "first",
+          visibility: "public",
+          web_url: "https://gitlab.example/alpha",
+          default_branch: "main",
+          last_activity_at: "2026-04-01T00:00:00Z",
+          archived: false,
+          // Bloat fields that should NOT survive projection:
+          container_registry_image_prefix: "registry.example/alpha",
+          shared_runners_enabled: true,
+          forking_access_level: "enabled",
+          issues_template: "...",
+        },
+      ]);
+
+      const result = await client.callTool({
+        name: "list_projects",
+        arguments: {},
+      });
+      const text = (result.content as TextContent)[0].text;
+      const data = JSON.parse(text);
+
+      // Default fields kept
+      expect(data[0].id).toBe(1);
+      expect(data[0].name).toBe("Alpha");
+      expect(data[0].visibility).toBe("public");
+      // Bloat dropped
+      expect(data[0].container_registry_image_prefix).toBeUndefined();
+      expect(data[0].shared_runners_enabled).toBeUndefined();
+      expect(data[0].forking_access_level).toBeUndefined();
+      expect(data[0].issues_template).toBeUndefined();
+    });
+
+    it('returns the full GitLab payload when fields="all"', async () => {
+      mockJsonResponse([
+        {
+          id: 1,
+          name: "Alpha",
+          shared_runners_enabled: true,
+          forking_access_level: "enabled",
+        },
+      ]);
+
+      const result = await client.callTool({
+        name: "list_projects",
+        arguments: { fields: "all" },
+      });
+      const data = JSON.parse((result.content as TextContent)[0].text);
+      expect(data[0].shared_runners_enabled).toBe(true);
+      expect(data[0].forking_access_level).toBe("enabled");
+    });
+
+    it("respects a caller-supplied field allow-list", async () => {
+      mockJsonResponse([{ id: 1, name: "Alpha", visibility: "public", description: "first" }]);
+
+      const result = await client.callTool({
+        name: "list_projects",
+        arguments: { fields: ["id", "description"] },
+      });
+      const data = JSON.parse((result.content as TextContent)[0].text);
+      expect(Object.keys(data[0]).sort()).toEqual(["description", "id"]);
+      expect(data[0].name).toBeUndefined();
+      expect(data[0].visibility).toBeUndefined();
+    });
+
+    it("include_secrets:true implies fields:'all' so the secret survives", async () => {
+      // Without this rule, projection's default set would silently strip
+      // runners_token even though the caller explicitly opted in.
+      mockJsonResponse([
+        { id: 1, name: "Alpha", runners_token: "secret-alpha", shared_runners_enabled: true },
+      ]);
+
+      const result = await client.callTool({
+        name: "list_projects",
+        arguments: { include_secrets: true },
+      });
+      const data = JSON.parse((result.content as TextContent)[0].text);
+      expect(data[0].runners_token).toBe("secret-alpha");
+      expect(data[0].shared_runners_enabled).toBe(true);
+    });
+
+    it("explicit fields wins over include_secrets implication", async () => {
+      // Caller opts into secrets but ALSO explicitly narrows the field set.
+      // The narrow list should win — caller said exactly what they wanted.
+      mockJsonResponse([{ id: 1, name: "Alpha", runners_token: "secret-alpha" }]);
+
+      const result = await client.callTool({
+        name: "list_projects",
+        arguments: { include_secrets: true, fields: ["id"] },
+      });
+      const data = JSON.parse((result.content as TextContent)[0].text);
+      expect(Object.keys(data[0])).toEqual(["id"]);
+      expect(data[0].runners_token).toBeUndefined();
+    });
+  });
+
   describe("list_group_projects forwards topic filter", () => {
     it("passes topic=foo through to GitLab when set", async () => {
       let capturedUrl: string | undefined;
