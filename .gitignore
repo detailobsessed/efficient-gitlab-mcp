@@ -7,14 +7,13 @@ dist
 .env.local
 .env.test
 coverage/
+.ruff_cache/
 *.log
 # bun.lock should be committed for CI
 
 # ai
 .opencode*
 .aider*
-mempalace.yaml
-entities.json
 
 # mcp-publisher tokens
 .mcpregistry_*

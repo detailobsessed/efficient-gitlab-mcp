@@ -1,8 +1,8 @@
-[default.extend-identifiers]
-
 [default.extend-words]
+# Git commit hashes that look like typos
+ba = "ba"
 # Korean comments in the codebase
 iid = "iid"
 
 [files]
-extend-exclude = ["package-lock.json", "node_modules/", "dist/"]
+extend-exclude = ["*.lock"]
