@@ -1,3 +1,10 @@
+# [2.23.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.22.0...v2.23.0) (2026-04-28)
+
+
+### Features
+
+* apply field projection to list_group_projects, list_pipelines, list_releases, list_commits (DOT-516.5) ([#89](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/89)) ([4c29b51](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/4c29b515ca67903304fb310853495ffbff01946f))
+
 # [2.22.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.21.0...v2.22.0) (2026-04-28)
 
 
