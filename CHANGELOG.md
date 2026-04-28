@@ -1,3 +1,10 @@
+## [2.16.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.16.0...v2.16.1) (2026-04-28)
+
+
+### Bug Fixes
+
+* **schemas:** switch labels from comma-separated string to array ([#79](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/79)) ([3d79cdc](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/3d79cdcd9e56d0c58416d43c4cf52544b140ff1c))
+
 # [2.16.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.15.0...v2.16.0) (2026-04-28)
 
 
