@@ -1,3 +1,10 @@
+## [2.11.9](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.8...v2.11.9) (2026-04-28)
+
+
+### Bug Fixes
+
+* **projects:** redact runners_token from project responses by default ([#69](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/69)) ([2b2a57d](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/2b2a57d0894a58e295aedffbf004a0a4309bbc30))
+
 ## [2.11.8](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.7...v2.11.8) (2026-04-14)
 
 
