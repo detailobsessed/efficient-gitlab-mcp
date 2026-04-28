@@ -1,3 +1,10 @@
+# [2.17.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.16.1...v2.17.0) (2026-04-28)
+
+
+### Features
+
+* **projects:** add topic filter to list_projects and list_group_projects ([#81](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/81)) ([29676a8](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/29676a887c41eed5b5663a0e4e69621b8573b4d2)), closes [#418](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/418) [#412](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/412)
+
 ## [2.16.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.16.0...v2.16.1) (2026-04-28)
 
 
