@@ -1,3 +1,10 @@
+## [2.11.10](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.9...v2.11.10) (2026-04-28)
+
+
+### Bug Fixes
+
+* **repositories:** auto-default ref to project's default branch ([#71](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/71)) ([66c0f5b](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/66c0f5b821c3130cefcf0e8022579a4e43e93207))
+
 ## [2.11.9](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.11.8...v2.11.9) (2026-04-28)
 
 
