@@ -8,6 +8,7 @@ import { registerMilestoneTools } from "../src/tools/milestones.js";
 import { registerNamespaceTools } from "../src/tools/namespaces.js";
 import { registerPipelineTools } from "../src/tools/pipelines.js";
 import { registerProjectTools } from "../src/tools/projects.js";
+import { registerReactionTools } from "../src/tools/reactions.js";
 import { registerReleaseTools } from "../src/tools/releases.js";
 import { registerRepositoryTools } from "../src/tools/repositories.js";
 import { registerSearchTools } from "../src/tools/search.js";
@@ -154,6 +155,39 @@ describe("Tool Registration", () => {
     });
   });
 
+  describe("registerReactionTools", () => {
+    it("should register all 18 emoji-reaction tools", () => {
+      const server = createTestServer();
+      const tools = registerReactionTools(server, logger);
+
+      expect(tools.size).toBe(18);
+      // MR-level reactions
+      expect(tools.has("list_merge_request_emoji_reactions")).toBe(true);
+      expect(tools.has("create_merge_request_emoji_reaction")).toBe(true);
+      expect(tools.has("delete_merge_request_emoji_reaction")).toBe(true);
+      // MR-note reactions
+      expect(tools.has("list_merge_request_note_emoji_reactions")).toBe(true);
+      expect(tools.has("create_merge_request_note_emoji_reaction")).toBe(true);
+      expect(tools.has("delete_merge_request_note_emoji_reaction")).toBe(true);
+      // Issue-level reactions
+      expect(tools.has("list_issue_emoji_reactions")).toBe(true);
+      expect(tools.has("create_issue_emoji_reaction")).toBe(true);
+      expect(tools.has("delete_issue_emoji_reaction")).toBe(true);
+      // Issue-note reactions
+      expect(tools.has("list_issue_note_emoji_reactions")).toBe(true);
+      expect(tools.has("create_issue_note_emoji_reaction")).toBe(true);
+      expect(tools.has("delete_issue_note_emoji_reaction")).toBe(true);
+      // Work-item (GraphQL) reactions
+      expect(tools.has("list_work_item_emoji_reactions")).toBe(true);
+      expect(tools.has("create_work_item_emoji_reaction")).toBe(true);
+      expect(tools.has("delete_work_item_emoji_reaction")).toBe(true);
+      // Work-item note (GraphQL) reactions
+      expect(tools.has("list_work_item_note_emoji_reactions")).toBe(true);
+      expect(tools.has("create_work_item_note_emoji_reaction")).toBe(true);
+      expect(tools.has("delete_work_item_note_emoji_reaction")).toBe(true);
+    });
+  });
+
   describe("All tools combined", () => {
     it("should register all tools across all categories (without pipelines)", () => {
       const server = createTestServer();
@@ -173,8 +207,9 @@ describe("Tool Registration", () => {
       total += registerWebhookTools(server, logger).size;
       total += registerWorkItemTools(server, logger).size;
       total += registerGraphqlTools(server, logger).size;
+      total += registerReactionTools(server, logger).size;
 
-      expect(total).toBe(130);
+      expect(total).toBe(148);
     });
 
     it("should register all tools with pipelines enabled", () => {
@@ -196,8 +231,9 @@ describe("Tool Registration", () => {
       total += registerWebhookTools(server, logger).size;
       total += registerWorkItemTools(server, logger).size;
       total += registerGraphqlTools(server, logger).size;
+      total += registerReactionTools(server, logger).size;
 
-      expect(total).toBe(149);
+      expect(total).toBe(167);
     });
 
     it("should all start disabled", () => {
