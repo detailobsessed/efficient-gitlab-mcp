@@ -41,6 +41,7 @@ const ListProjectsSchema = z.object({
   membership: z.coerce.boolean().optional().describe("Only member projects"),
   starred: z.coerce.boolean().optional().describe("Only starred projects"),
   archived: z.coerce.boolean().optional().describe("Include archived projects"),
+  topic: z.string().optional().describe("Filter by topic tag (e.g. 'mkdocs', 'terraform-module')"),
   order_by: z
     .enum(["id", "name", "path", "created_at", "updated_at", "last_activity_at"])
     .optional(),
@@ -155,6 +156,7 @@ const ListGroupProjectsSchema = z.object({
   search: z.string().optional().describe("Search query"),
   visibility: z.enum(["public", "internal", "private"]).optional().describe("Visibility filter"),
   archived: z.coerce.boolean().optional().describe("Include archived projects"),
+  topic: z.string().optional().describe("Filter by topic tag (e.g. 'mkdocs', 'terraform-module')"),
   order_by: z
     .enum(["id", "name", "path", "created_at", "updated_at", "last_activity_at"])
     .optional(),
@@ -226,6 +228,10 @@ export function registerProjectTools(
         membership: z.coerce.boolean().optional().describe("Only member projects"),
         starred: z.coerce.boolean().optional().describe("Only starred projects"),
         archived: z.coerce.boolean().optional().describe("Include archived projects"),
+        topic: z
+          .string()
+          .optional()
+          .describe("Filter by topic tag (e.g. 'mkdocs', 'terraform-module')"),
         order_by: z
           .enum(["id", "name", "path", "created_at", "updated_at", "last_activity_at"])
           .optional(),
@@ -470,6 +476,10 @@ export function registerProjectTools(
         search: z.string().optional().describe("Search query"),
         visibility: z.enum(["public", "internal", "private"]).optional().describe("Visibility"),
         archived: z.coerce.boolean().optional().describe("Include archived projects"),
+        topic: z
+          .string()
+          .optional()
+          .describe("Filter by topic tag (e.g. 'mkdocs', 'terraform-module')"),
         order_by: z
           .enum(["id", "name", "path", "created_at", "updated_at", "last_activity_at"])
           .optional(),
