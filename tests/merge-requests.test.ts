@@ -319,4 +319,66 @@ describe("Merge Request Tools Handlers", () => {
       expect(responseData[0].body).toBe("Draft comment one");
     });
   });
+
+  describe("merge_request_iid coerces stringified numbers (DOT-519)", () => {
+    // Defensive hardening: regardless of whether a client passes 26 (number)
+    // or "26" (stringified number, the symptom in DOT-519), the schema accepts
+    // both and the URL ends up identical.
+    it("accepts a stringified merge_request_iid for get_merge_request", async () => {
+      let capturedUrl = "";
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string) => {
+        capturedUrl = _url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve('{"id": 1, "iid": 26, "title": "Test MR"}'),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "get_merge_request",
+        arguments: {
+          project_id: "my-group/my-project",
+          // @ts-expect-error - intentionally passing a string to verify coercion
+          merge_request_iid: "26",
+        },
+      });
+
+      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/merge_requests/26");
+      const content = result.content as Array<{ type: string; text: string }>;
+      const data = JSON.parse(content[0].text);
+      expect(data.iid).toBe(26);
+    });
+
+    it("accepts a stringified merge_request_iid for update_merge_request", async () => {
+      let capturedUrl = "";
+      let capturedMethod = "";
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((_url: string, options?: RequestInit) => {
+        capturedUrl = _url;
+        capturedMethod = options?.method ?? "GET";
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve('{"id": 1, "iid": 27}'),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "update_merge_request",
+        arguments: {
+          project_id: "my-group/my-project",
+          // @ts-expect-error - intentionally passing a string to verify coercion
+          merge_request_iid: "27",
+          title: "Renamed",
+        },
+      });
+
+      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/merge_requests/27");
+      expect(capturedMethod).toBe("PUT");
+    });
+  });
 });
