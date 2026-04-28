@@ -1,3 +1,10 @@
+# [2.14.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.13.0...v2.14.0) (2026-04-28)
+
+
+### Features
+
+* **users:** add get_current_user (whoami) tool ([#76](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/76)) ([b7698a0](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/b7698a01ed419b8f79f5e4aa4b78f9bc3b1f57f3))
+
 # [2.13.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.12.0...v2.13.0) (2026-04-28)
 
 
