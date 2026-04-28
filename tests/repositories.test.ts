@@ -261,6 +261,149 @@ describe("Repository Tools Handlers", () => {
     });
   });
 
+  describe("get_repository_tree", () => {
+    it("returns {items, pagination_note} envelope on offset pagination", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () =>
+            Promise.resolve(
+              '[{"id": "abc", "name": "src", "type": "tree"},{"id": "def", "name": "README.md", "type": "blob"}]',
+            ),
+          headers: new Headers(),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "get_repository_tree",
+        arguments: { project_id: "1", per_page: 50 },
+      });
+      const text = (result.content as { type: "text"; text: string }[])[0].text;
+      const parsed = JSON.parse(text);
+
+      expect(parsed.items).toBeArray();
+      expect(parsed.items.length).toBe(2);
+      expect(parsed.items[0].name).toBe("src");
+      expect(parsed.pagination_note).toBeDefined();
+    });
+
+    it("forwards pagination=keyset and page_token to GitLab", async () => {
+      let capturedUrl: string | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "get_repository_tree",
+        arguments: { project_id: "1", pagination: "keyset", page_token: "TOKEN_ABC" },
+      });
+
+      expect(capturedUrl).toContain("pagination=keyset");
+      expect(capturedUrl).toContain("page_token=TOKEN_ABC");
+    });
+
+    it("surfaces X-Next-Page-Token in pagination_note when present", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+          headers: new Headers({ "X-Next-Page-Token": "NEXT_PAGE_XYZ" }),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "get_repository_tree",
+        arguments: { project_id: "1", pagination: "keyset" },
+      });
+      const text = (result.content as { type: "text"; text: string }[])[0].text;
+      const parsed = JSON.parse(text);
+
+      expect(parsed.pagination_note).toContain("NEXT_PAGE_XYZ");
+    });
+
+    it("indicates no more pages when no X-Next-Page-Token is present in keyset mode", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+          headers: new Headers(),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "get_repository_tree",
+        arguments: { project_id: "1", pagination: "keyset" },
+      });
+      const text = (result.content as { type: "text"; text: string }[])[0].text;
+      const parsed = JSON.parse(text);
+
+      expect(parsed.pagination_note.toLowerCase()).toContain("no more pages");
+    });
+
+    it("falls back to X-Next-Page for the keyset cursor on older GitLab versions", async () => {
+      // Older GitLab versions (and some configurations) emit the keyset cursor
+      // under `X-Next-Page` — the header originally used for offset page
+      // numbers — rather than the newer `X-Next-Page-Token`. The handler must
+      // read both in keyset mode so we don't silently lose pagination on those
+      // instances. See upstream/41f92e6.
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+          headers: new Headers({ "X-Next-Page": "LEGACY_CURSOR_XYZ" }),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "get_repository_tree",
+        arguments: { project_id: "1", pagination: "keyset" },
+      });
+      const parsed = JSON.parse((result.content as { type: "text"; text: string }[])[0].text);
+      expect(parsed.pagination_note).toContain("LEGACY_CURSOR_XYZ");
+    });
+
+    it("ignores X-Next-Page in offset pagination mode (it's a page number there)", async () => {
+      // Regression: `X-Next-Page` in offset mode is a page *number*, not a
+      // keyset cursor. The fallback must NOT kick in when pagination isn't
+      // keyset — otherwise we'd surface page numbers as if they were cursors.
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+          headers: new Headers({ "X-Next-Page": "2" }),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "get_repository_tree",
+        arguments: { project_id: "1" },
+      });
+      const parsed = JSON.parse((result.content as { type: "text"; text: string }[])[0].text);
+      // In offset mode with no X-Next-Page-Token, the note should fall through
+      // to the default "use offset / keyset available" guidance — not quote
+      // the page-number "2" as if it were a keyset cursor.
+      expect(parsed.pagination_note).not.toContain("page_token=2");
+    });
+  });
+
   describe("search_repositories", () => {
     it("should accept 'query' as an alias for 'search'", async () => {
       let capturedUrl: string | undefined;

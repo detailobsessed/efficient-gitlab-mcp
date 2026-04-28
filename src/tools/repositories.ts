@@ -56,8 +56,18 @@ const GetRepositoryTreeSchema = z.object({
   path: z.string().optional().describe("Path inside repository"),
   ref: z.string().optional().describe("Branch, tag, or commit SHA"),
   recursive: z.coerce.boolean().optional().describe("Get tree recursively"),
-  page: z.number().optional().describe("Page number"),
+  page: z.number().optional().describe("Page number (offset pagination)"),
   per_page: z.number().optional().describe("Results per page"),
+  pagination: z
+    .enum(["keyset"])
+    .optional()
+    .describe("Set to 'keyset' for keyset pagination on large trees (recommended)"),
+  page_token: z
+    .string()
+    .optional()
+    .describe(
+      "Continuation token for keyset pagination — pass the value surfaced in pagination_note from the previous page",
+    ),
 });
 
 const CreateOrUpdateFileSchema = z.object({
@@ -286,7 +296,8 @@ export function registerRepositoryTools(
     "get_repository_tree",
     {
       title: "Get Repository Tree",
-      description: "Get the repository tree for a GitLab project (list files and directories)",
+      description:
+        "Get the repository tree for a GitLab project (list files and directories). Returns {items, pagination_note}. Pass pagination=keyset for keyset pagination on large trees.",
       inputSchema: {
         project_id: z
           .string()
@@ -295,8 +306,18 @@ export function registerRepositoryTools(
         path: z.string().optional().describe("Path inside repository"),
         ref: z.string().optional().describe("Branch, tag, or commit SHA"),
         recursive: z.coerce.boolean().optional().describe("Get tree recursively"),
-        page: z.number().optional().describe("Page number"),
+        page: z.number().optional().describe("Page number (offset pagination)"),
         per_page: z.number().optional().describe("Results per page"),
+        pagination: z
+          .enum(["keyset"])
+          .optional()
+          .describe("Set to 'keyset' for keyset pagination on large trees (recommended)"),
+        page_token: z
+          .string()
+          .optional()
+          .describe(
+            "Continuation token for keyset pagination — pass the value surfaced in pagination_note from the previous page",
+          ),
       },
       annotations: {
         readOnlyHint: true,
@@ -308,9 +329,43 @@ export function registerRepositoryTools(
       const { project_id: _, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
-      const tree = await defaultClient.get(`/projects/${projectId}/repository/tree${query}`);
+      // Use rawFetch so we can read the keyset cursor from response headers.
+      // Wrapping the response in {items, pagination_note} gives callers a
+      // consistent shape regardless of pagination mode and surfaces the
+      // next-page token visibly.
+      const response = await defaultClient.rawFetch(
+        `/projects/${projectId}/repository/tree${query}`,
+      );
+      const responseText = await response.text();
+      const items = responseText ? JSON.parse(responseText) : [];
+      // GitLab emits the keyset cursor under `X-Next-Page-Token` on newer
+      // versions. On older versions (and some configurations) the cursor is
+      // reused under the `X-Next-Page` header that was originally an offset
+      // page number. Fall back to that in keyset mode so pagination doesn't
+      // silently stop on instances that haven't adopted the new header name.
+      // Ref: upstream/41f92e6 (zereight/gitlab-mcp).
+      const nextToken =
+        response.headers.get("X-Next-Page-Token") ??
+        (args.pagination === "keyset" ? response.headers.get("X-Next-Page") : null);
+
+      let paginationNote: string;
+      if (args.pagination === "keyset") {
+        paginationNote = nextToken
+          ? `Next page available — call again with pagination=keyset&page_token=${nextToken}`
+          : "No more pages.";
+      } else {
+        paginationNote = nextToken
+          ? `Next page available — call again with pagination=keyset&page_token=${nextToken} (or use offset page=N)`
+          : "Using offset pagination (page/per_page). For large trees, pass pagination=keyset for token-based pagination.";
+      }
+
       return {
-        content: [{ type: "text", text: JSON.stringify(tree, null, 2) }],
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ items, pagination_note: paginationNote }, null, 2),
+          },
+        ],
       };
     },
   );
