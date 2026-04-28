@@ -41,6 +41,36 @@ describe("User Tools Handlers", () => {
     await server.close();
   });
 
+  describe("get_current_user", () => {
+    it("hits /user with no extra params", async () => {
+      let capturedUrl: string | undefined;
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () =>
+            Promise.resolve('{"id": 42, "username": "ismart", "name": "Ismar Iljazovic"}'),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "get_current_user",
+        arguments: {},
+      });
+      const text = (result.content as TextContent)[0].text;
+
+      expect(capturedUrl).toContain("/user");
+      // Make sure we hit /user (singular) not /users (plural).
+      expect(capturedUrl).not.toMatch(/\/users(?:\?|$)/);
+      expect(text).toContain("ismart");
+      expect(text).toContain("42");
+    });
+  });
+
   describe("get_users explicit-null shape", () => {
     it("returns null for usernames the API doesn't resolve", async () => {
       // @ts-expect-error - mock doesn't need full fetch signature

@@ -335,6 +335,23 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
   toolRef7.disable();
   tools.set("download_attachment", toolRef7);
 
+  const toolRef8 = server.registerTool(
+    "get_current_user",
+    {
+      title: "Get Current User",
+      description:
+        "Get details of the authenticated user (whoami). Returns the user identified by the configured PAT / OAuth token.",
+      inputSchema: {},
+      annotations: { readOnlyHint: true },
+    },
+    async () => {
+      const user = await defaultClient.get(`/user`);
+      return { content: [{ type: "text", text: JSON.stringify(user, null, 2) }] };
+    },
+  );
+  toolRef8.disable();
+  tools.set("get_current_user", toolRef8);
+
   logger.debug("User tools registered", { count: tools.size });
   return tools;
 }
