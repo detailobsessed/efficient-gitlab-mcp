@@ -462,7 +462,7 @@ bun start
 
 Your MCP client needs to support the [`tools/list_changed` notification](https://modelcontextprotocol.io/specification/draft/server/tools/#tool-list-update-notifications) for runtime activations to be picked up. Most modern clients do.
 
-In **Claude Code** specifically, activated tools become callable starting from the **next** turn — the client rebuilds its deferred-tool index between turns, not synchronously inside one. So calling `activate_tools(["issues"])` and then `list_issues()` in the same turn won't work; the next turn will. Other clients (Claude Desktop, Cursor) tend to be eager.
+In **Claude Code** specifically, activated tools become callable starting from the **next** turn — the client rebuilds its deferred-tool index between turns, not synchronously inside one. So calling `activate_tools({ categories: ["issues"] })` and then `list_issues()` in the same turn won't work; the next turn will. Other clients (Claude Desktop, Cursor) tend to be eager.
 
 ### "403 Forbidden" on a tool I expected to work
 
