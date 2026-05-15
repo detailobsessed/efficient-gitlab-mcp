@@ -471,4 +471,86 @@ describe("Merge Request Tools Handlers", () => {
       expect(capturedUrl).not.toContain("author_id=42");
     });
   });
+
+  describe("list_merge_request_pipelines (DOT-543)", () => {
+    it("GETs the MR pipelines endpoint and forwards pagination", async () => {
+      let capturedUrl = "";
+      let capturedMethod = "";
+
+      const mockPipelines = [
+        {
+          id: 77,
+          sha: "959e04d7c7a30600c894bd3c0cd0e1ce7f42c11d",
+          ref: "main",
+          status: "success",
+        },
+        {
+          id: 78,
+          sha: "a59e04d7c7a30600c894bd3c0cd0e1ce7f42c22e",
+          ref: "refs/merge-requests/1/head",
+          status: "running",
+          source: "merge_request_event",
+          web_url: "https://gitlab.example.com/test/project/-/pipelines/78",
+        },
+      ];
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string, options?: RequestInit) => {
+        capturedUrl = url;
+        capturedMethod = options?.method ?? "GET";
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify(mockPipelines)),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "list_merge_request_pipelines",
+        arguments: {
+          project_id: "my-group/my-project",
+          merge_request_iid: 1,
+          page: 2,
+          per_page: 10,
+        },
+      });
+
+      expect(capturedMethod).toBe("GET");
+      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/merge_requests/1/pipelines");
+      expect(capturedUrl).toContain("page=2");
+      expect(capturedUrl).toContain("per_page=10");
+      // project_id and merge_request_iid live in the path, not the query.
+      expect(capturedUrl).not.toContain("project_id=");
+      expect(capturedUrl).not.toContain("merge_request_iid=");
+
+      const content = result.content as Array<{ type: string; text: string }>;
+      const responseData = JSON.parse(content[0].text);
+      expect(responseData).toHaveLength(2);
+      expect(responseData[0].id).toBe(77);
+      expect(responseData[1].source).toBe("merge_request_event");
+    });
+
+    it("coerces a stringified merge_request_iid", async () => {
+      let capturedUrl = "";
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve("[]"),
+        } as Response);
+      });
+
+      await client.callTool({
+        name: "list_merge_request_pipelines",
+        arguments: {
+          project_id: "g/p",
+          merge_request_iid: "42",
+        },
+      });
+
+      expect(capturedUrl).toContain("/merge_requests/42/pipelines");
+    });
+  });
 });
