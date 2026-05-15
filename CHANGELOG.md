@@ -1,3 +1,10 @@
+# [2.30.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.29.0...v2.30.0) (2026-05-15)
+
+
+### Features
+
+* **schemas:** schema-driven slim fields on get_merge_request (DOT-557) ([#109](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/109)) ([585e7d9](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/585e7d9a032e15a427733a1691ec7a907dd1635f))
+
 # [2.29.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.28.4...v2.29.0) (2026-05-15)
 
 
