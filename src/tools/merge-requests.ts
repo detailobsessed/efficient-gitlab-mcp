@@ -293,6 +293,16 @@ const GetMergeRequestConflictsSchema = z.object({
   merge_request_iid: z.coerce.number().describe("The IID of the merge request"),
 });
 
+const ListMergeRequestPipelinesSchema = z.object({
+  project_id: z
+    .string()
+    .optional()
+    .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+  merge_request_iid: z.coerce.number().describe("The internal ID of the merge request"),
+  page: z.number().optional().describe("Page number"),
+  per_page: z.number().optional().describe("Results per page"),
+});
+
 const ListMergeRequestChangedFilesSchema = z.object({
   project_id: z
     .string()
@@ -1175,6 +1185,41 @@ export function registerMergeRequestTools(
   );
   toolRef17.disable();
   tools.set("get_merge_request_conflicts", toolRef17);
+
+  const toolRefMrPipelines = server.registerTool(
+    "list_merge_request_pipelines",
+    {
+      title: "List MR Pipelines",
+      description:
+        "List pipelines attached to a merge request (GET /projects/:id/merge_requests/:iid/pipelines). Supports pagination.",
+      inputSchema: {
+        project_id: z
+          .string()
+          .optional()
+          .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
+        merge_request_iid: z.coerce.number().describe("The internal ID of the merge request"),
+        page: z.number().optional().describe("Page number"),
+        per_page: z.number().optional().describe("Results per page"),
+      },
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
+    },
+    async (params) => {
+      const args = ListMergeRequestPipelinesSchema.parse(params);
+      const projectId = resolveProjectId(args.project_id);
+      const { project_id: _, merge_request_iid, ...queryParams } = args;
+      const query = buildQueryString(queryParams);
+
+      const pipelines = await defaultClient.get(
+        `/projects/${projectId}/merge_requests/${merge_request_iid}/pipelines${query}`,
+      );
+      return { content: [{ type: "text", text: JSON.stringify(pipelines, null, 2) }] };
+    },
+  );
+  toolRefMrPipelines.disable();
+  tools.set("list_merge_request_pipelines", toolRefMrPipelines);
 
   // --- File diffs & versions ---
 

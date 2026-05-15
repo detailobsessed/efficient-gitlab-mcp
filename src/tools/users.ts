@@ -378,6 +378,47 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
   toolRef8.disable();
   tools.set("get_current_user", toolRef8);
 
+  const toolRef9 = server.registerTool(
+    "health_check",
+    {
+      title: "Health Check",
+      description:
+        "Verify GitLab server connectivity and authentication. Probes the /user endpoint and returns " +
+        "{ status, authenticated, gitlab_url }. Useful for diagnosing PAT/OAuth issues and confirming " +
+        "the server can reach the configured GitLab API URL.",
+      inputSchema: {},
+      annotations: {
+        readOnlyHint: true,
+        openWorldHint: true,
+      },
+    },
+    async () => {
+      // Use rawFetch so we can inspect the Response without it throwing on
+      // non-2xx — an unauthenticated probe is a valid health-check outcome,
+      // not an error. rawFetch still throws on non-ok status, so we treat
+      // any thrown error as "unauthenticated" for the purposes of the report.
+      const apiUrl = defaultClient.getApiUrl();
+      let authenticated = false;
+      try {
+        const response = await defaultClient.rawFetch("/user");
+        authenticated = response.ok;
+      } catch {
+        authenticated = false;
+      }
+      const status = authenticated ? "ok" : "error";
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({ status, authenticated, gitlab_url: apiUrl }, null, 2),
+          },
+        ],
+      };
+    },
+  );
+  toolRef9.disable();
+  tools.set("health_check", toolRef9);
+
   logger.debug("User tools registered", { count: tools.size });
   return tools;
 }

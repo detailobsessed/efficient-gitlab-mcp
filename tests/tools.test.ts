@@ -62,7 +62,7 @@ describe("Tool Registration", () => {
       const server = createTestServer();
       const tools = registerMergeRequestTools(server, logger);
 
-      expect(tools.size).toBe(33);
+      expect(tools.size).toBe(34);
       expect(tools.has("get_merge_request")).toBe(true);
       expect(tools.has("list_merge_requests")).toBe(true);
       expect(tools.has("create_merge_request")).toBe(true);
@@ -70,6 +70,7 @@ describe("Tool Registration", () => {
       expect(tools.has("mr_discussions")).toBe(true);
       expect(tools.has("approve_merge_request")).toBe(true);
       expect(tools.has("list_draft_notes")).toBe(true);
+      expect(tools.has("list_merge_request_pipelines")).toBe(true);
     });
   });
 
@@ -141,8 +142,9 @@ describe("Tool Registration", () => {
       const server = createTestServer();
       const tools = registerUserTools(server, logger);
 
-      expect(tools.size).toBe(8);
+      expect(tools.size).toBe(9);
       expect(tools.has("get_current_user")).toBe(true);
+      expect(tools.has("health_check")).toBe(true);
     });
   });
 
@@ -209,7 +211,7 @@ describe("Tool Registration", () => {
       total += registerGraphqlTools(server, logger).size;
       total += registerReactionTools(server, logger).size;
 
-      expect(total).toBe(148);
+      expect(total).toBe(150);
     });
 
     it("should register all tools with pipelines enabled", () => {
@@ -233,7 +235,7 @@ describe("Tool Registration", () => {
       total += registerGraphqlTools(server, logger).size;
       total += registerReactionTools(server, logger).size;
 
-      expect(total).toBe(167);
+      expect(total).toBe(169);
     });
 
     it("should all start disabled", () => {

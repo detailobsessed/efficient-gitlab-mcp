@@ -125,4 +125,72 @@ describe("User Tools Handlers", () => {
       expect(Object.keys(parsed).length).toBe(0);
     });
   });
+
+  describe("health_check (DOT-543)", () => {
+    it("reports status:ok and authenticated:true when /user returns 200", async () => {
+      let capturedUrl: string | undefined;
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock((url: string) => {
+        capturedUrl = url;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve('{"id": 1, "username": "ismart"}'),
+          headers: new Headers(),
+        } as Response);
+      });
+
+      const result = await client.callTool({
+        name: "health_check",
+        arguments: {},
+      });
+      const text = (result.content as TextContent)[0].text;
+      const parsed = JSON.parse(text);
+
+      expect(capturedUrl).toContain("/user");
+      expect(parsed.status).toBe("ok");
+      expect(parsed.authenticated).toBe(true);
+      expect(typeof parsed.gitlab_url).toBe("string");
+      expect(parsed.gitlab_url.length).toBeGreaterThan(0);
+    });
+
+    it("reports status:error and authenticated:false on 401", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: false,
+          status: 401,
+          statusText: "Unauthorized",
+          text: () => Promise.resolve('{"message": "401 Unauthorized"}'),
+          headers: new Headers(),
+        } as Response),
+      );
+
+      const result = await client.callTool({
+        name: "health_check",
+        arguments: {},
+      });
+      const text = (result.content as TextContent)[0].text;
+      const parsed = JSON.parse(text);
+
+      expect(parsed.status).toBe("error");
+      expect(parsed.authenticated).toBe(false);
+      expect(typeof parsed.gitlab_url).toBe("string");
+    });
+
+    it("reports status:error on network failure (does not throw)", async () => {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() => Promise.reject(new Error("ECONNREFUSED")));
+
+      const result = await client.callTool({
+        name: "health_check",
+        arguments: {},
+      });
+      const text = (result.content as TextContent)[0].text;
+      const parsed = JSON.parse(text);
+
+      expect(parsed.status).toBe("error");
+      expect(parsed.authenticated).toBe(false);
+    });
+  });
 });
