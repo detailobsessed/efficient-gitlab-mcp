@@ -171,4 +171,79 @@ describe("Commit Tools Handlers", () => {
       expect(responseData.author_name).toBe("Dev User");
     });
   });
+
+  describe("get_commit field projection (DOT-558)", () => {
+    function mockCommitResponse(commit: Record<string, unknown>) {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify(commit)),
+        } as Response),
+      );
+    }
+
+    const fullCommit = {
+      id: "abc123def4567890abc123def4567890abc123de",
+      short_id: "abc123de",
+      title: "Add feature",
+      message: "Add feature\n\nLong description",
+      author_name: "Alice",
+      author_email: "alice@example.com",
+      authored_date: "2026-04-01T00:00:00Z",
+      committer_name: "Alice",
+      committer_email: "alice@example.com",
+      committed_date: "2026-04-01T00:00:00Z",
+      parent_ids: ["xyz"],
+      web_url: "https://gitlab.example/-/commit/abc123de",
+      // Bloat the slim default should drop:
+      trailers: { "Signed-off-by": "alice" },
+      extended_trailers: {},
+      stats: { additions: 10, deletions: 2, total: 12 },
+      last_pipeline: { id: 999, status: "success" },
+      created_at: "2026-04-01T00:00:00Z",
+    };
+
+    it("returns only the default field set when fields is unset", async () => {
+      mockCommitResponse(fullCommit);
+      const result = await client.callTool({
+        name: "get_commit",
+        arguments: { project_id: "p", sha: fullCommit.id },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data.short_id).toBe("abc123de");
+      expect(data.author_name).toBe("Alice");
+      // Bloat dropped
+      expect(data.stats).toBeUndefined();
+      expect(data.last_pipeline).toBeUndefined();
+      expect(data.trailers).toBeUndefined();
+      expect(data.created_at).toBeUndefined();
+    });
+
+    it('returns the full payload when fields="all"', async () => {
+      mockCommitResponse(fullCommit);
+      const result = await client.callTool({
+        name: "get_commit",
+        arguments: { project_id: "p", sha: fullCommit.id, fields: "all" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data.stats).toEqual({ additions: 10, deletions: 2, total: 12 });
+      expect(data.last_pipeline).toEqual({ id: 999, status: "success" });
+    });
+
+    it("returns exactly the requested fields when fields is a custom list", async () => {
+      mockCommitResponse(fullCommit);
+      const result = await client.callTool({
+        name: "get_commit",
+        arguments: {
+          project_id: "p",
+          sha: fullCommit.id,
+          fields: ["id", "title", "author_email"],
+        },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(Object.keys(data).sort()).toEqual(["author_email", "id", "title"]);
+    });
+  });
 });
