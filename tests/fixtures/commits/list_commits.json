@@ -1,0 +1,21 @@
+[
+  {
+    "id": "abc123def4567890abc123def4567890abc123de",
+    "short_id": "abc123de",
+    "title": "Initial commit",
+    "message": "Initial commit\n\nFirst commit on the repo.",
+    "author_name": "Alice",
+    "author_email": "alice@example.com",
+    "authored_date": "2026-04-01T00:00:00Z",
+    "committer_name": "Alice",
+    "committer_email": "alice@example.com",
+    "committed_date": "2026-04-01T00:00:00Z",
+    "parent_ids": [],
+    "web_url": "https://gitlab.com/example/-/commit/abc123de",
+    "created_at": "2026-04-01T00:00:00Z",
+    "trailers": { "Signed-off-by": "alice" },
+    "extended_trailers": {},
+    "stats": { "additions": 1, "deletions": 0, "total": 1 },
+    "last_pipeline": { "id": 999, "status": "success" }
+  }
+]
