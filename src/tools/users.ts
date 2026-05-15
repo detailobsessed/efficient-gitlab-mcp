@@ -1,5 +1,7 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { parseGitLabResponse } from "../schemas/parse.js";
+import { GitLabUserSchema } from "../schemas/users.js";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 
@@ -371,7 +373,8 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
       },
     },
     async () => {
-      const user = await defaultClient.get(`/user`);
+      const raw = await defaultClient.get(`/user`);
+      const user = parseGitLabResponse(GitLabUserSchema, raw, "get_current_user", logger);
       return { content: [{ type: "text", text: JSON.stringify(user, null, 2) }] };
     },
   );
