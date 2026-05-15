@@ -10,18 +10,44 @@ interface FetchOptions {
   body?: string;
 }
 
-const SCOPE_GUIDANCE =
-  "This may indicate insufficient token scopes. " +
-  "Check your Personal Access Token scopes at GitLab > Settings > Access Tokens. " +
-  "Required scope for write operations: 'api'. Read operations need 'read_api'.";
+export type TokenHeader = "PRIVATE-TOKEN" | "JOB-TOKEN";
 
-function throwIfForbidden(status: number, errorBody: string, prefix: string): void {
+/**
+ * Builds 403-error guidance tailored to the auth method in use.
+ * PAT 403s are usually scope problems; CI_JOB_TOKEN 403s are project
+ * CI/CD permission problems — pointing the latter at PAT scopes is
+ * unactionable.
+ */
+export function scopeGuidance(tokenHeader: TokenHeader): string {
+  if (tokenHeader === "JOB-TOKEN") {
+    return (
+      "This may indicate insufficient CI job token permissions. " +
+      "Check the target project's Settings > CI/CD > Token Access " +
+      "(allowlist the calling project) and the job's `id_tokens` / `secrets` config. " +
+      "CI_JOB_TOKEN cannot perform most write operations by default."
+    );
+  }
+  return (
+    "This may indicate insufficient token scopes. " +
+    "Check your Personal Access Token scopes at GitLab > Settings > Access Tokens. " +
+    "Required scope for write operations: 'api'. Read operations need 'read_api'."
+  );
+}
+
+function throwIfForbidden(
+  status: number,
+  errorBody: string,
+  prefix: string,
+  tokenHeader: TokenHeader,
+): void {
   if (status !== 403) return;
   if (errorBody.toLowerCase().includes("rate limit")) {
     logger.error(`${prefix} Rate Limit Exceeded`, { error: errorBody });
     throw new Error(`${prefix} Rate Limit Exceeded: ${errorBody}`);
   }
-  throw new Error(`${prefix} permission denied (403): ${errorBody}\n\n${SCOPE_GUIDANCE}`);
+  throw new Error(
+    `${prefix} permission denied (403): ${errorBody}\n\n${scopeGuidance(tokenHeader)}`,
+  );
 }
 
 export class GitLabClient {
@@ -73,7 +99,7 @@ export class GitLabClient {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throwIfForbidden(response.status, errorBody, "GitLab API");
+      throwIfForbidden(response.status, errorBody, "GitLab API", this.tokenHeader);
       throw new Error(`GitLab API error: ${response.status} ${response.statusText}\n${errorBody}`);
     }
 
@@ -129,7 +155,7 @@ export class GitLabClient {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throwIfForbidden(response.status, errorBody, "GitLab API");
+      throwIfForbidden(response.status, errorBody, "GitLab API", this.tokenHeader);
       throw new Error(`GitLab API error: ${response.status} ${response.statusText}\n${errorBody}`);
     }
 
@@ -149,7 +175,7 @@ export class GitLabClient {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throwIfForbidden(response.status, errorBody, "GraphQL");
+      throwIfForbidden(response.status, errorBody, "GraphQL", this.tokenHeader);
       throw new Error(`GraphQL request failed (${response.status}): ${errorBody}`);
     }
 
