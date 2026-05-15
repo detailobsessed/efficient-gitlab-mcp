@@ -5,6 +5,7 @@ import {
   GitLabClient,
   getEffectiveProjectId,
   isNotFoundError,
+  scopeGuidance,
 } from "../src/utils/gitlab-client.js";
 
 describe("GitLab Client Utilities", () => {
@@ -135,6 +136,50 @@ describe("isNotFoundError", () => {
     expect(isNotFoundError("not an error")).toBe(false);
     expect(isNotFoundError(null)).toBe(false);
     expect(isNotFoundError(undefined)).toBe(false);
+  });
+});
+
+describe("scopeGuidance", () => {
+  it("returns PAT-flavored guidance for PRIVATE-TOKEN", () => {
+    const msg = scopeGuidance("PRIVATE-TOKEN");
+    expect(msg).toContain("insufficient token scopes");
+    expect(msg).toContain("Personal Access Token");
+    expect(msg).toContain("read_api");
+  });
+
+  it("returns CI/CD-flavored guidance for JOB-TOKEN", () => {
+    const msg = scopeGuidance("JOB-TOKEN");
+    expect(msg).toContain("CI job token permissions");
+    expect(msg).toContain("CI/CD");
+    expect(msg).not.toContain("Personal Access Token");
+  });
+});
+
+describe("403 guidance integration (JOB-TOKEN)", () => {
+  const originalFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("emits CI/CD guidance when the client uses JOB-TOKEN auth", async () => {
+    // @ts-expect-error - mock doesn't need full fetch signature
+    globalThis.fetch = mock(() =>
+      Promise.resolve({
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        text: () => Promise.resolve('{"message":"403 Forbidden"}'),
+      } as Response),
+    );
+
+    const client = new GitLabClient("https://gitlab.example.com/api/v4", "test-token");
+    // Force JOB-TOKEN path: PAT constructor arg gives us a PRIVATE-TOKEN client,
+    // but we want to exercise the JOB-TOKEN guidance branch end-to-end.
+    Reflect.set(client, "tokenHeader", "JOB-TOKEN");
+
+    const err = await client.get("/projects/1/issues").catch((e: Error) => e);
+    expect((err as Error).message).toContain("CI job token permissions");
+    expect((err as Error).message).not.toContain("Personal Access Token");
   });
 });
 
