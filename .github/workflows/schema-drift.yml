@@ -1,0 +1,46 @@
+name: Schema Drift
+
+# Phase 4 of the response-schemas initiative (DOT-555 / DOT-559).
+# Calls real GitLab against every response-schema-bearing endpoint and
+# fails the workflow on any Zod schema mismatch — catches GitLab API
+# drift the moment it ships, not the moment a user trips over it.
+#
+# Required repo secrets:
+#   GITLAB_API_URL                — e.g. https://gitlab.com
+#   GITLAB_PERSONAL_ACCESS_TOKEN  — read_api scope only
+#   GITLAB_PROJECT_ID             — fixture project with at least one
+#                                   MR, commit, issue, and pipeline.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check schema drift
+        env:
+          GITLAB_API_URL: ${{ secrets.GITLAB_API_URL }}
+          GITLAB_PERSONAL_ACCESS_TOKEN: ${{ secrets.GITLAB_PERSONAL_ACCESS_TOKEN }}
+          GITLAB_PROJECT_ID: ${{ secrets.GITLAB_PROJECT_ID }}
+          LOG_LEVEL: warn
+        run: bun run scripts/check-schema-drift.ts

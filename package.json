@@ -33,7 +33,8 @@
     "dev": "bun run build && bun start",
     "test": "bun test",
     "check": "biome check --write",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "drift": "bun run scripts/check-schema-drift.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
