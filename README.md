@@ -504,6 +504,10 @@ It's [redacted by default](#secret-redaction) for safety. To get it back, pass `
 
 For `list_issues`, `list_merge_requests`, etc.: GitLab's global endpoints (when no `project_id` is supplied) historically defaulted to `scope: created_by_me`. To see everything, pass `scope: "all"` explicitly. If you supply `project_id`, the call routes to the project-scoped endpoint and this default doesn't apply.
 
+### `GitLab response failed schema validation` in MCP server logs
+
+GitLab responses on the server's schematized read endpoints (users, projects, merge requests, commits, issues, pipelines, repository tree) run through a Zod schema. On a mismatch the server logs `WARN GitLab response failed schema validation; passing through unchanged` with the field path and Zod error code, then passes the response on to your LLM unchanged — so the call still succeeds, but you've got a signal that GitLab returned a shape we don't know about. Causes are usually GitLab API drift (new field, type change, removal) or a self-hosted EE instance returning EE-only fields. If you see one of these warnings, [open an issue](https://github.com/detailobsessed/efficient-gitlab-mcp/issues) with the `path`, `code`, and which tool triggered it — that's our cue to update the schema.
+
 ---
 
 ## Development
@@ -524,6 +528,27 @@ bun run check
 # Build
 bun run build
 ```
+
+### Schema-drift CI
+
+The runtime path through `parseGitLabResponse` is intentionally lenient (`.safeParse()` + log warning + pass through) so an unexpected GitLab field never blocks an MCP tool call. The drift gate is the strict counterpart: a Bun script that calls every response-schema-bearing GitLab REST endpoint and `.parse()`s each response against its declared Zod schema, failing on any mismatch.
+
+Run it locally:
+
+```bash
+export GITLAB_API_URL=https://gitlab.com
+export GITLAB_PERSONAL_ACCESS_TOKEN=glpat-...   # read_api scope only
+export GITLAB_PROJECT_ID=12345                  # must have ≥1 MR/commit/issue/pipeline
+bun run drift
+```
+
+When to run it manually:
+
+- **Before merging a PR that touches `src/schemas/`** — catches schema bugs against a real instance, complementing the fixture-based unit tests.
+- **After upgrading a self-hosted GitLab** — quick sanity check that nothing in the response shape moved.
+- **Triaging suspicious LLM behavior** — if responses look wrong but the tool returned OK, a schema mismatch silently passed through; drift check confirms or rules that out.
+
+The same script runs in CI via `.github/workflows/schema-drift.yml` — `schedule` Mondays 06:00 UTC and `workflow_dispatch` on demand. The same three env vars are wired as repo secrets.
 
 ---
 
