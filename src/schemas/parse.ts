@@ -31,16 +31,13 @@ export function parseGitLabResponse<S extends ZodTypeAny>(
   if (result.success) {
     return result.data;
   }
-  logger?.warn(
-    {
-      ctx,
-      issues: result.error.issues.map((i) => ({
-        path: i.path.join("."),
-        code: i.code,
-        message: i.message,
-      })),
-    },
-    "GitLab response failed schema validation; passing through unchanged",
-  );
+  logger?.warn("GitLab response failed schema validation; passing through unchanged", {
+    ctx,
+    issues: result.error.issues.map((i) => ({
+      path: i.path.join("."),
+      code: i.code,
+      message: i.message,
+    })),
+  });
   return response as z.infer<S>;
 }
