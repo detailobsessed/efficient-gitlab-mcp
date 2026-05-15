@@ -1,5 +1,7 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { parseGitLabResponse } from "../schemas/parse.js";
+import { GitLabPipelineListSchema } from "../schemas/pipelines.js";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 import { projectFields } from "../utils/projection.js";
@@ -314,9 +316,13 @@ export function registerPipelineTools(
       const { project_id: _, fields, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
-      const pipelines = (await defaultClient.get(
-        `/projects/${projectId}/pipelines${query}`,
-      )) as Record<string, unknown>[];
+      const raw = await defaultClient.get(`/projects/${projectId}/pipelines${query}`);
+      const pipelines = parseGitLabResponse(
+        GitLabPipelineListSchema,
+        raw,
+        "list_pipelines",
+        logger,
+      ) as unknown as Record<string, unknown>[];
       const projected = projectFields(pipelines, LIST_PIPELINES_DEFAULT_FIELDS, fields);
       return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
