@@ -210,4 +210,79 @@ describe("Pipeline Tools Handlers", () => {
       expect(responseData[0].environment).toBe("production");
     });
   });
+
+  describe("get_pipeline field projection (DOT-558)", () => {
+    function mockPipelineResponse(pipeline: Record<string, unknown>) {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify(pipeline)),
+        } as Response),
+      );
+    }
+
+    const fullPipeline = {
+      id: 101,
+      iid: 1,
+      project_id: 999,
+      sha: "abc123",
+      ref: "main",
+      status: "success",
+      source: "push",
+      web_url: "https://gitlab.example/-/pipelines/101",
+      created_at: "2026-04-01T00:00:00Z",
+      updated_at: "2026-04-01T00:05:00Z",
+      // Bloat that should NOT survive default projection:
+      started_at: "2026-04-01T00:00:30Z",
+      finished_at: "2026-04-01T00:04:50Z",
+      duration: 260,
+      queued_duration: 30,
+      before_sha: "0000000000000000000000000000000000000000",
+      user: { id: 1, username: "alice", state: "active" },
+      committed_at: "2026-04-01T00:00:00Z",
+    };
+
+    it("returns only the default field set when fields is unset", async () => {
+      mockPipelineResponse(fullPipeline);
+      const result = await client.callTool({
+        name: "get_pipeline",
+        arguments: { project_id: "p", pipeline_id: 101 },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data.id).toBe(101);
+      expect(data.status).toBe("success");
+      // Bloat dropped
+      expect(data.user).toBeUndefined();
+      expect(data.duration).toBeUndefined();
+      expect(data.started_at).toBeUndefined();
+      expect(data.before_sha).toBeUndefined();
+    });
+
+    it('returns the full payload when fields="all"', async () => {
+      mockPipelineResponse(fullPipeline);
+      const result = await client.callTool({
+        name: "get_pipeline",
+        arguments: { project_id: "p", pipeline_id: 101, fields: "all" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data.duration).toBe(260);
+      expect(data.user).toEqual({ id: 1, username: "alice", state: "active" });
+    });
+
+    it("returns exactly the requested fields when fields is a custom list", async () => {
+      mockPipelineResponse(fullPipeline);
+      const result = await client.callTool({
+        name: "get_pipeline",
+        arguments: {
+          project_id: "p",
+          pipeline_id: 101,
+          fields: ["id", "status", "ref"],
+        },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(Object.keys(data).sort()).toEqual(["id", "ref", "status"]);
+    });
+  });
 });

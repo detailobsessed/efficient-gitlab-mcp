@@ -1,27 +1,15 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { parseGitLabResponse } from "../schemas/parse.js";
-import { GitLabPipelineListSchema } from "../schemas/pipelines.js";
+import {
+  GitLabPipelineListSchema,
+  GitLabPipelineSchema,
+  PIPELINE_SLIM_FIELDS,
+} from "../schemas/pipelines.js";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
-import { projectFields } from "../utils/projection.js";
+import { projectField, projectFields } from "../utils/projection.js";
 import { fieldsParam } from "../utils/schema-helpers.js";
-
-// Compact set of pipeline fields. Identifies the pipeline, its ref/SHA,
-// status, and how to reach it. Drops bridge metadata, queued_duration,
-// finished/started_at deltas. Pass `fields: "all"` for raw GitLab response.
-const LIST_PIPELINES_DEFAULT_FIELDS = [
-  "id",
-  "iid",
-  "project_id",
-  "sha",
-  "ref",
-  "status",
-  "source",
-  "web_url",
-  "created_at",
-  "updated_at",
-] as const;
 
 const ListPipelinesSchema = z.object({
   project_id: z
@@ -58,6 +46,7 @@ const GetPipelineSchema = z.object({
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   pipeline_id: z.number().describe("Pipeline ID"),
+  fields: fieldsParam("pipeline").optional(),
 });
 
 const CreatePipelineSchema = z.object({
@@ -323,7 +312,7 @@ export function registerPipelineTools(
         "list_pipelines",
         logger,
       ) as unknown as Record<string, unknown>[];
-      const projected = projectFields(pipelines, LIST_PIPELINES_DEFAULT_FIELDS, fields);
+      const projected = projectFields(pipelines, PIPELINE_SLIM_FIELDS, fields);
       return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
@@ -334,13 +323,15 @@ export function registerPipelineTools(
     "get_pipeline",
     {
       title: "Get Pipeline",
-      description: "Get details of a specific pipeline in a GitLab project",
+      description:
+        "Get details of a specific pipeline in a GitLab project. Returns a compact set of fields by default; pass `fields: 'all'` for the raw GitLab response or `fields: ['id', 'status', ...]` to pick your own.",
       inputSchema: {
         project_id: z
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         pipeline_id: z.number().describe("Pipeline ID"),
+        fields: fieldsParam("pipeline").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -351,10 +342,14 @@ export function registerPipelineTools(
       const args = GetPipelineSchema.parse(params);
       const projectId = resolveProjectId(args.project_id);
 
-      const pipeline = await defaultClient.get(
-        `/projects/${projectId}/pipelines/${args.pipeline_id}`,
+      const raw = await defaultClient.get(`/projects/${projectId}/pipelines/${args.pipeline_id}`);
+      const pipeline = parseGitLabResponse(GitLabPipelineSchema, raw, "get_pipeline", logger);
+      const projected = projectField(
+        pipeline as unknown as Record<string, unknown>,
+        PIPELINE_SLIM_FIELDS,
+        args.fields,
       );
-      return { content: [{ type: "text", text: JSON.stringify(pipeline, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef2.disable();
