@@ -1,3 +1,10 @@
+## [2.28.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.28.0...v2.28.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* **registry:** trim server.json description to <=100 chars ([#101](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/101)) ([48ad425](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/48ad42508b8f6c3b5a45ac55ead7100d8517ea5a))
+
 # [2.28.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.27.0...v2.28.0) (2026-05-15)
 
 
