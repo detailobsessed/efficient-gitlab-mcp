@@ -1,29 +1,15 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { GitLabCommitListSchema } from "../schemas/commits.js";
+import {
+  COMMIT_SLIM_FIELDS,
+  GitLabCommitListSchema,
+  GitLabCommitSchema,
+} from "../schemas/commits.js";
 import { parseGitLabResponse } from "../schemas/parse.js";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
-import { projectFields } from "../utils/projection.js";
+import { projectField, projectFields } from "../utils/projection.js";
 import { fieldsParam } from "../utils/schema-helpers.js";
-
-// Compact set of commit fields. Identifies the commit, its parent chain,
-// who made it, and the message. Drops `last_pipeline` (rarely needed in a
-// list context) and trailers; keeps `parent_ids` (relevant for graph
-// reasoning) and `web_url` (consistent with other list endpoints' compact
-// defaults).
-const LIST_COMMITS_DEFAULT_FIELDS = [
-  "id",
-  "short_id",
-  "title",
-  "message",
-  "author_name",
-  "author_email",
-  "authored_date",
-  "committed_date",
-  "parent_ids",
-  "web_url",
-] as const;
 
 const ListCommitsSchema = z.object({
   project_id: z
@@ -46,6 +32,7 @@ const GetCommitSchema = z.object({
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   sha: z.string().describe("Commit SHA"),
+  fields: fieldsParam("commit").optional(),
 });
 
 const GetCommitDiffSchema = z.object({
@@ -103,7 +90,7 @@ export function registerCommitTools(
         "list_commits",
         logger,
       ) as unknown as Record<string, unknown>[];
-      const projected = projectFields(commits, LIST_COMMITS_DEFAULT_FIELDS, fields);
+      const projected = projectFields(commits, COMMIT_SLIM_FIELDS, fields);
       return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
@@ -114,13 +101,15 @@ export function registerCommitTools(
     "get_commit",
     {
       title: "Get Commit",
-      description: "Get details of a specific commit",
+      description:
+        "Get details of a specific commit. Returns a compact set of fields by default; pass `fields: 'all'` for the raw GitLab response or `fields: ['id', 'title', ...]` to pick your own.",
       inputSchema: {
         project_id: z
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         sha: z.string().describe("Commit SHA"),
+        fields: fieldsParam("commit").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -131,10 +120,14 @@ export function registerCommitTools(
       const args = GetCommitSchema.parse(params);
       const projectId = resolveProjectId(args.project_id);
 
-      const commit = await defaultClient.get(
-        `/projects/${projectId}/repository/commits/${args.sha}`,
+      const raw = await defaultClient.get(`/projects/${projectId}/repository/commits/${args.sha}`);
+      const commit = parseGitLabResponse(GitLabCommitSchema, raw, "get_commit", logger);
+      const projected = projectField(
+        commit as unknown as Record<string, unknown>,
+        COMMIT_SLIM_FIELDS,
+        args.fields,
       );
-      return { content: [{ type: "text", text: JSON.stringify(commit, null, 2) }] };
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef2.disable();

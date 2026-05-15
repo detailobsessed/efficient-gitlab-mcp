@@ -1,30 +1,11 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { GitLabIssueListSchema, GitLabIssueSchema } from "../schemas/issues.js";
+import { GitLabIssueListSchema, GitLabIssueSchema, ISSUE_SLIM_FIELDS } from "../schemas/issues.js";
 import { parseGitLabResponse } from "../schemas/parse.js";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
-import { projectFields } from "../utils/projection.js";
+import { projectField, projectFields } from "../utils/projection.js";
 import { coerceStringArray, fieldsParam } from "../utils/schema-helpers.js";
-
-// Compact set of issue fields useful to an LLM by default. Identifies the
-// issue, its current state, who's involved, and how to reach it. Pass
-// `fields: "all"` for the raw GitLab response or `fields: [...]` to override.
-const LIST_ISSUES_DEFAULT_FIELDS = [
-  "id",
-  "iid",
-  "title",
-  "state",
-  "labels",
-  "author",
-  "assignees",
-  "milestone",
-  "due_date",
-  "web_url",
-  "created_at",
-  "updated_at",
-  "confidential",
-] as const;
 
 const CreateIssueSchema = z.object({
   project_id: z
@@ -69,6 +50,7 @@ const GetIssueSchema = z.object({
     .optional()
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   issue_iid: z.number().describe("Issue IID"),
+  fields: fieldsParam("issue").optional(),
 });
 
 const UpdateIssueSchema = z.object({
@@ -257,7 +239,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
         "list_issues",
         logger,
       ) as unknown as Record<string, unknown>[];
-      const projected = projectFields(issues, LIST_ISSUES_DEFAULT_FIELDS, fields);
+      const projected = projectFields(issues, ISSUE_SLIM_FIELDS, fields);
       return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
@@ -288,7 +270,7 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       const query = buildQueryString(queryParams);
 
       const issues = (await defaultClient.get(`/issues${query}`)) as Record<string, unknown>[];
-      const projected = projectFields(issues, LIST_ISSUES_DEFAULT_FIELDS, fields);
+      const projected = projectFields(issues, ISSUE_SLIM_FIELDS, fields);
       return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
@@ -299,13 +281,15 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
     "get_issue",
     {
       title: "Get Issue",
-      description: "Get details of a specific issue in a GitLab project",
+      description:
+        "Get details of a specific issue in a GitLab project. Returns a compact set of fields by default; pass `fields: 'all'` for the raw GitLab response or `fields: ['iid', 'title', ...]` to pick your own.",
       inputSchema: {
         project_id: z
           .string()
           .optional()
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         issue_iid: z.number().describe("Issue IID"),
+        fields: fieldsParam("issue").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -318,7 +302,12 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
 
       const raw = await defaultClient.get(`/projects/${projectId}/issues/${args.issue_iid}`);
       const issue = parseGitLabResponse(GitLabIssueSchema, raw, "get_issue", logger);
-      return { content: [{ type: "text", text: JSON.stringify(issue, null, 2) }] };
+      const projected = projectField(
+        issue as unknown as Record<string, unknown>,
+        ISSUE_SLIM_FIELDS,
+        args.fields,
+      );
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef4.disable();

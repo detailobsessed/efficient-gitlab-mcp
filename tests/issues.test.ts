@@ -410,4 +410,86 @@ describe("Issue Tools Handlers", () => {
       expect(data[0].subscribed).toBeUndefined();
     });
   });
+
+  describe("get_issue field projection (DOT-558)", () => {
+    function mockIssueResponse(issue: Record<string, unknown>) {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify(issue)),
+        } as Response),
+      );
+    }
+
+    const fullIssue = {
+      id: 7777,
+      iid: 10,
+      project_id: 999,
+      title: "Important issue",
+      description: "Details here",
+      state: "opened",
+      labels: ["bug", "P2"],
+      author: { id: 5, username: "admin", name: "Admin", state: "active" },
+      assignees: [],
+      milestone: null,
+      due_date: null,
+      web_url: "https://gitlab.example/p/-/issues/10",
+      created_at: "2026-05-15T10:00:00Z",
+      updated_at: "2026-05-15T10:30:00Z",
+      confidential: false,
+      // Bloat that should NOT survive default projection:
+      subscribed: true,
+      time_stats: { time_estimate: 0 },
+      task_completion_status: { count: 0, completed_count: 0 },
+      merge_requests_count: 0,
+      user_notes_count: 4,
+      upvotes: 1,
+      downvotes: 0,
+    };
+
+    it("returns only the default field set when fields is unset", async () => {
+      mockIssueResponse(fullIssue);
+      const result = await client.callTool({
+        name: "get_issue",
+        arguments: { project_id: "p", issue_iid: 10 },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data.iid).toBe(10);
+      expect(data.title).toBe("Important issue");
+      expect(data.confidential).toBe(false);
+      // Bloat dropped
+      expect(data.description).toBeUndefined();
+      expect(data.subscribed).toBeUndefined();
+      expect(data.user_notes_count).toBeUndefined();
+      expect(data.project_id).toBeUndefined();
+    });
+
+    it('returns the full payload when fields="all"', async () => {
+      mockIssueResponse(fullIssue);
+      const result = await client.callTool({
+        name: "get_issue",
+        arguments: { project_id: "p", issue_iid: 10, fields: "all" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data.description).toBe("Details here");
+      expect(data.subscribed).toBe(true);
+      expect(data.user_notes_count).toBe(4);
+    });
+
+    it("returns exactly the requested fields when fields is a custom list", async () => {
+      mockIssueResponse(fullIssue);
+      const result = await client.callTool({
+        name: "get_issue",
+        arguments: {
+          project_id: "p",
+          issue_iid: 10,
+          fields: ["iid", "title", "state"],
+        },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(Object.keys(data).sort()).toEqual(["iid", "state", "title"]);
+    });
+  });
 });

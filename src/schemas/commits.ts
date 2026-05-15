@@ -44,3 +44,30 @@ export const GitLabCommitSchema = z
 export const GitLabCommitListSchema = z.array(GitLabCommitSchema);
 
 export type GitLabCommit = z.infer<typeof GitLabCommitSchema>;
+
+/**
+ * Slim shape (Phase 3 / DOT-558): the fields an LLM almost always wants from
+ * a commit. Single source of truth for both the typed `.pick()` view
+ * (`GitLabCommitSlimSchema`) and the field-name allow-list consumed by
+ * `projectField` / `projectFields` (`COMMIT_SLIM_FIELDS`). Mirrors the
+ * compact defaults the codebase already used for `list_commits`.
+ */
+export const CommitSlimShape = {
+  id: true,
+  short_id: true,
+  title: true,
+  message: true,
+  author_name: true,
+  author_email: true,
+  authored_date: true,
+  committed_date: true,
+  parent_ids: true,
+  web_url: true,
+} as const;
+
+export const GitLabCommitSlimSchema = GitLabCommitSchema.pick(CommitSlimShape);
+export type GitLabCommitSlim = z.infer<typeof GitLabCommitSlimSchema>;
+
+export const COMMIT_SLIM_FIELDS = Object.keys(CommitSlimShape) as ReadonlyArray<
+  keyof typeof CommitSlimShape
+>;

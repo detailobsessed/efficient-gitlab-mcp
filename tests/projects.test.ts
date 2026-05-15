@@ -383,7 +383,7 @@ describe("Project Tools Handlers", () => {
       expect(text).toContain("secret-alpha");
     });
 
-    it("applies field projection (DOT-516.5) using LIST_PROJECTS_DEFAULT_FIELDS", async () => {
+    it("applies field projection (DOT-516.5) using PROJECT_SLIM_FIELDS", async () => {
       mockJsonResponse([
         { id: 1, name: "Alpha", visibility: "public", shared_runners_enabled: true },
       ]);
@@ -395,6 +395,100 @@ describe("Project Tools Handlers", () => {
       const data = JSON.parse((result.content as TextContent)[0].text);
       expect(data[0].name).toBe("Alpha");
       expect(data[0].shared_runners_enabled).toBeUndefined();
+    });
+  });
+
+  describe("get_project field projection (DOT-558)", () => {
+    function mockProjectResponse(project: Record<string, unknown>) {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify(project)),
+        } as Response),
+      );
+    }
+
+    const fullProject = {
+      id: 42,
+      name: "Alpha",
+      name_with_namespace: "My Group / Alpha",
+      path: "alpha",
+      path_with_namespace: "my-group/alpha",
+      description: "A project",
+      default_branch: "main",
+      visibility: "private",
+      web_url: "https://gitlab.example/my-group/alpha",
+      ssh_url_to_repo: "git@gitlab.example:my-group/alpha.git",
+      http_url_to_repo: "https://gitlab.example/my-group/alpha.git",
+      last_activity_at: "2026-05-01T00:00:00Z",
+      archived: false,
+      topics: ["a", "b"],
+      // Bloat / sensitive that should NOT survive default projection:
+      shared_runners_enabled: true,
+      owner: { id: 1, username: "alice", state: "active" },
+      namespace: { id: 7, name: "My Group", path: "my-group", kind: "group" },
+      star_count: 3,
+      forks_count: 1,
+      open_issues_count: 5,
+      runners_token: "RUNNERS-SECRET-XYZ",
+    };
+
+    it("returns only the default field set when fields is unset", async () => {
+      mockProjectResponse(fullProject);
+      const result = await client.callTool({
+        name: "get_project",
+        arguments: { project_id: "my-group/alpha" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data.id).toBe(42);
+      expect(data.path_with_namespace).toBe("my-group/alpha");
+      // Bloat dropped
+      expect(data.shared_runners_enabled).toBeUndefined();
+      expect(data.owner).toBeUndefined();
+      expect(data.namespace).toBeUndefined();
+      expect(data.star_count).toBeUndefined();
+      // Secret redacted AND not in slim defaults either way
+      expect(data.runners_token).toBeUndefined();
+    });
+
+    it('returns the full payload when fields="all" (but still redacts runners_token without include_secrets)', async () => {
+      mockProjectResponse(fullProject);
+      const result = await client.callTool({
+        name: "get_project",
+        arguments: { project_id: "my-group/alpha", fields: "all" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data.shared_runners_enabled).toBe(true);
+      expect(data.owner).toEqual({ id: 1, username: "alice", state: "active" });
+      // Redaction still applies — fields: "all" doesn't unlock secrets
+      expect(data.runners_token).toBeUndefined();
+    });
+
+    it("include_secrets: true defaults to full payload (so the token is actually visible)", async () => {
+      mockProjectResponse(fullProject);
+      const result = await client.callTool({
+        name: "get_project",
+        arguments: { project_id: "my-group/alpha", include_secrets: true },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data.runners_token).toBe("RUNNERS-SECRET-XYZ");
+      // Bloat is also present because effectiveFields collapses to "all"
+      expect(data.shared_runners_enabled).toBe(true);
+    });
+
+    it("returns exactly the requested fields when fields is a custom list", async () => {
+      mockProjectResponse(fullProject);
+      const result = await client.callTool({
+        name: "get_project",
+        arguments: {
+          project_id: "my-group/alpha",
+          fields: ["id", "name", "visibility"],
+        },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(Object.keys(data).sort()).toEqual(["id", "name", "visibility"]);
     });
   });
 });

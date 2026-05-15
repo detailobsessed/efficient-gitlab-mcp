@@ -30,3 +30,29 @@ export const GitLabPipelineSchema = z
 export const GitLabPipelineListSchema = z.array(GitLabPipelineSchema);
 
 export type GitLabPipeline = z.infer<typeof GitLabPipelineSchema>;
+
+/**
+ * Slim shape (Phase 3 / DOT-558): the fields an LLM almost always wants from
+ * a pipeline. Mirrors the compact defaults the codebase already used for
+ * `list_pipelines`. Drops timing details (started_at, finished_at, duration,
+ * queued_duration), before_sha, and user — pass `fields: "all"` to get them.
+ */
+export const PipelineSlimShape = {
+  id: true,
+  iid: true,
+  project_id: true,
+  sha: true,
+  ref: true,
+  status: true,
+  source: true,
+  web_url: true,
+  created_at: true,
+  updated_at: true,
+} as const;
+
+export const GitLabPipelineSlimSchema = GitLabPipelineSchema.pick(PipelineSlimShape);
+export type GitLabPipelineSlim = z.infer<typeof GitLabPipelineSlimSchema>;
+
+export const PIPELINE_SLIM_FIELDS = Object.keys(PipelineSlimShape) as ReadonlyArray<
+  keyof typeof PipelineSlimShape
+>;
