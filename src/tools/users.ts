@@ -1,22 +1,31 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { parseGitLabResponse } from "../schemas/parse.js";
-import { GitLabUserSchema } from "../schemas/users.js";
+import { GitLabUserListSchema, GitLabUserSchema, USER_SLIM_FIELDS } from "../schemas/users.js";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
+import { projectField, projectFields } from "../utils/projection.js";
+import { fieldsParam } from "../utils/schema-helpers.js";
 
 const GetUsersSchema = z.object({
   usernames: z.array(z.string()).describe("List of usernames to look up"),
+  fields: fieldsParam("user").optional(),
 });
 
 const GetUserSchema = z.object({
   user_id: z.number().describe("User ID"),
+  fields: fieldsParam("user").optional(),
 });
 
 const SearchUsersSchema = z.object({
   search: z.string().describe("Search query"),
   page: z.number().optional().describe("Page number"),
   per_page: z.number().optional().describe("Results per page"),
+  fields: fieldsParam("user").optional(),
+});
+
+const GetCurrentUserSchema = z.object({
+  fields: fieldsParam("user").optional(),
 });
 
 const ListEventsSchema = z.object({
@@ -101,9 +110,11 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
     "get_users",
     {
       title: "Get Users",
-      description: "Get GitLab user details by usernames",
+      description:
+        "Get GitLab user details by usernames. Returns a compact set of fields per user by default; pass `fields: 'all'` for the raw GitLab response or `fields: ['id', 'username', ...]` to pick your own.",
       inputSchema: {
         usernames: z.array(z.string()).describe("List of usernames to look up"),
+        fields: fieldsParam("user").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -116,11 +127,20 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
 
       for (const username of args.usernames) {
         const query = buildQueryString({ username });
-        const users = await defaultClient.get<unknown[]>(`/users${query}`);
+        const raw = await defaultClient.get(`/users${query}`);
+        const users = parseGitLabResponse(GitLabUserListSchema, raw, "get_users", logger);
         // Always assign — null when the username didn't resolve. Omitting
         // missing keys would collapse signal: callers couldn't tell whether
         // a key wasn't asked for or actually didn't exist on GitLab.
-        results[username] = users.length > 0 ? users[0] : null;
+        if (users.length === 0) {
+          results[username] = null;
+          continue;
+        }
+        results[username] = projectField(
+          users[0] as unknown as Record<string, unknown>,
+          USER_SLIM_FIELDS,
+          args.fields,
+        );
       }
 
       return { content: [{ type: "text", text: JSON.stringify(results, null, 2) }] };
@@ -133,9 +153,11 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
     "get_user",
     {
       title: "Get User",
-      description: "Get details of a specific user by ID",
+      description:
+        "Get details of a specific user by ID. Returns a compact set of fields by default; pass `fields: 'all'` for the raw GitLab response or `fields: ['id', 'username', ...]` to pick your own.",
       inputSchema: {
         user_id: z.number().describe("User ID"),
+        fields: fieldsParam("user").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -146,7 +168,12 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
       const args = GetUserSchema.parse(params);
       const raw = await defaultClient.get(`/users/${args.user_id}`);
       const user = parseGitLabResponse(GitLabUserSchema, raw, "get_user", logger);
-      return { content: [{ type: "text", text: JSON.stringify(user, null, 2) }] };
+      const projected = projectField(
+        user as unknown as Record<string, unknown>,
+        USER_SLIM_FIELDS,
+        args.fields,
+      );
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef2.disable();
@@ -156,11 +183,13 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
     "search_users",
     {
       title: "Search Users",
-      description: "Search for GitLab users",
+      description:
+        "Search for GitLab users. Returns a compact set of fields per user by default; pass `fields: 'all'` for the raw GitLab response or `fields: ['id', 'username', ...]` to pick your own.",
       inputSchema: {
         search: z.string().describe("Search query"),
         page: z.number().optional().describe("Page number"),
         per_page: z.number().optional().describe("Results per page"),
+        fields: fieldsParam("user").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -169,10 +198,18 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
     },
     async (params) => {
       const args = SearchUsersSchema.parse(params);
-      const query = buildQueryString(args);
+      const { fields, ...queryParams } = args;
+      const query = buildQueryString(queryParams);
 
-      const users = await defaultClient.get(`/users${query}`);
-      return { content: [{ type: "text", text: JSON.stringify(users, null, 2) }] };
+      const raw = await defaultClient.get(`/users${query}`);
+      const users = parseGitLabResponse(
+        GitLabUserListSchema,
+        raw,
+        "search_users",
+        logger,
+      ) as unknown as Record<string, unknown>[];
+      const projected = projectFields(users, USER_SLIM_FIELDS, fields);
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef3.disable();
@@ -366,17 +403,25 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
     {
       title: "Get Current User",
       description:
-        "Get details of the authenticated user (whoami). Returns the user identified by the configured PAT / OAuth token.",
-      inputSchema: {},
+        "Get details of the authenticated user (whoami). Returns the user identified by the configured PAT / OAuth token. Returns a compact set of identity fields by default; pass `fields: 'all'` for the raw GitLab response (including email, last_sign_in_at, is_admin, etc.) or `fields: ['id', 'username', 'email']` to pick your own.",
+      inputSchema: {
+        fields: fieldsParam("user").optional(),
+      },
       annotations: {
         readOnlyHint: true,
         openWorldHint: true,
       },
     },
-    async () => {
+    async (params) => {
+      const args = GetCurrentUserSchema.parse(params);
       const raw = await defaultClient.get(`/user`);
       const user = parseGitLabResponse(GitLabUserSchema, raw, "get_current_user", logger);
-      return { content: [{ type: "text", text: JSON.stringify(user, null, 2) }] };
+      const projected = projectField(
+        user as unknown as Record<string, unknown>,
+        USER_SLIM_FIELDS,
+        args.fields,
+      );
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef8.disable();

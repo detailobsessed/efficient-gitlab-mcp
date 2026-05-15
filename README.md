@@ -189,6 +189,7 @@ Currently applied to:
 - `list_pipelines`, `get_pipeline`
 - `list_releases`
 - `list_commits`, `get_commit`
+- `get_current_user`, `get_user`, `get_users`, `search_users`
 
 A spike measurement against `list_projects` with 5 owned projects went from **~32 KB → ~3 KB** by switching to the compact default. Because it's allow-list based, the compact output stays compact when GitLab adds new fields upstream.
 

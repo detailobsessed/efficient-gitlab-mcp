@@ -43,3 +43,35 @@ export const GitLabUserSchema = z
   .passthrough();
 
 export type GitLabUser = z.infer<typeof GitLabUserSchema>;
+
+export const GitLabUserListSchema = z.array(GitLabUserSchema);
+
+/**
+ * Slim shape (Phase 3b / DOT-560): identity-only fields safe to expose for
+ * any GitLab user. Deliberately excludes every privacy-sensitive field
+ * GitLab returns for the current user (email, last_sign_in_at, is_admin,
+ * two_factor_enabled, confirmed_at, current_sign_in_at, private_profile,
+ * last_activity_on, theme_id, color_scheme_id, projects_limit, external)
+ * and the bulky public-profile fields (bio, location, organization,
+ * job_title, work_information, pronouns, followers, following). Callers
+ * opt back in via `fields: "all"` or a custom `fields: [...]` allow-list.
+ *
+ * `bot` is included because the LLM often needs to know whether to treat
+ * the user as a service account vs. a person. Always safe to expose.
+ */
+export const UserSlimShape = {
+  id: true,
+  username: true,
+  name: true,
+  state: true,
+  avatar_url: true,
+  web_url: true,
+  bot: true,
+} as const;
+
+export const GitLabUserSlimSchema = GitLabUserSchema.pick(UserSlimShape);
+export type GitLabUserSlim = z.infer<typeof GitLabUserSlimSchema>;
+
+export const USER_SLIM_FIELDS = Object.keys(UserSlimShape) as ReadonlyArray<
+  keyof typeof UserSlimShape
+>;
