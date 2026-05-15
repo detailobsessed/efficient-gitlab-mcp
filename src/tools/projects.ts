@@ -1,5 +1,7 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { parseGitLabResponse } from "../schemas/parse.js";
+import { GitLabProjectListSchema } from "../schemas/projects.js";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 import { projectFields } from "../utils/projection.js";
@@ -280,7 +282,13 @@ export function registerProjectTools(
       const { include_secrets, fields, ...queryArgs } = args;
       const query = buildQueryString(queryArgs);
 
-      const projects = (await defaultClient.get(`/projects${query}`)) as Record<string, unknown>[];
+      const raw = await defaultClient.get(`/projects${query}`);
+      const projects = parseGitLabResponse(
+        GitLabProjectListSchema,
+        raw,
+        "list_projects",
+        logger,
+      ) as unknown as Record<string, unknown>[];
       const redacted = redactProjectSecrets(projects, include_secrets ?? false) as Record<
         string,
         unknown

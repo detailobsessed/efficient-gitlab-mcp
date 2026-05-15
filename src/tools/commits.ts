@@ -1,5 +1,7 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { GitLabCommitListSchema } from "../schemas/commits.js";
+import { parseGitLabResponse } from "../schemas/parse.js";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 import { projectFields } from "../utils/projection.js";
@@ -94,9 +96,13 @@ export function registerCommitTools(
       const { project_id: _, fields, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
-      const commits = (await defaultClient.get(
-        `/projects/${projectId}/repository/commits${query}`,
-      )) as Record<string, unknown>[];
+      const raw = await defaultClient.get(`/projects/${projectId}/repository/commits${query}`);
+      const commits = parseGitLabResponse(
+        GitLabCommitListSchema,
+        raw,
+        "list_commits",
+        logger,
+      ) as unknown as Record<string, unknown>[];
       const projected = projectFields(commits, LIST_COMMITS_DEFAULT_FIELDS, fields);
       return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },

@@ -1,5 +1,7 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { parseGitLabResponse } from "../schemas/parse.js";
+import { GitLabTreeListSchema } from "../schemas/repositories.js";
 import {
   buildQueryString,
   defaultClient,
@@ -600,7 +602,13 @@ export function registerRepositoryTools(
         `/projects/${projectId}/repository/tree${query}`,
       );
       const responseText = await response.text();
-      const items = responseText ? JSON.parse(responseText) : [];
+      const rawItems = responseText ? JSON.parse(responseText) : [];
+      const items = parseGitLabResponse(
+        GitLabTreeListSchema,
+        rawItems,
+        "get_repository_tree",
+        logger,
+      );
       // GitLab emits the keyset cursor under `X-Next-Page-Token` on newer
       // versions. On older versions (and some configurations) the cursor is
       // reused under the `X-Next-Page` header that was originally an offset

@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "name": "Alpha",
+    "name_with_namespace": "my-group / Alpha",
+    "path": "alpha",
+    "path_with_namespace": "my-group/alpha",
+    "description": "First project",
+    "default_branch": "main",
+    "visibility": "public",
+    "web_url": "https://gitlab.com/my-group/alpha",
+    "ssh_url_to_repo": "git@gitlab.com:my-group/alpha.git",
+    "http_url_to_repo": "https://gitlab.com/my-group/alpha.git",
+    "last_activity_at": "2026-05-15T10:00:00Z",
+    "archived": false,
+    "topics": ["typescript", "mcp"],
+    "namespace": {
+      "id": 10,
+      "name": "my-group",
+      "path": "my-group",
+      "kind": "group",
+      "full_path": "my-group"
+    },
+    "star_count": 5,
+    "forks_count": 1,
+    "open_issues_count": 7,
+    "shared_runners_enabled": true,
+    "forking_access_level": "enabled"
+  }
+]
