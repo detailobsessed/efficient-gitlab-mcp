@@ -1,0 +1,32 @@
+{
+  "id": 7777,
+  "iid": 10,
+  "project_id": 999,
+  "title": "Important issue",
+  "description": "Details here",
+  "state": "opened",
+  "labels": ["bug", "P2"],
+  "author": {
+    "id": 5,
+    "name": "Admin",
+    "username": "admin",
+    "state": "active",
+    "avatar_url": null,
+    "web_url": "https://gitlab.com/admin"
+  },
+  "assignee": null,
+  "assignees": [],
+  "milestone": null,
+  "due_date": null,
+  "web_url": "https://gitlab.com/example/project/-/issues/10",
+  "created_at": "2026-05-15T10:00:00Z",
+  "updated_at": "2026-05-15T10:30:00Z",
+  "closed_at": null,
+  "closed_by": null,
+  "confidential": false,
+  "user_notes_count": 0,
+  "upvotes": 0,
+  "downvotes": 0,
+  "issue_type": "issue",
+  "weight": null
+}
