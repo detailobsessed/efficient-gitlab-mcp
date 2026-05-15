@@ -1,32 +1,15 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { parseGitLabResponse } from "../schemas/parse.js";
-import { GitLabProjectListSchema } from "../schemas/projects.js";
+import {
+  GitLabProjectListSchema,
+  GitLabProjectSchema,
+  PROJECT_SLIM_FIELDS,
+} from "../schemas/projects.js";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
-import { projectFields } from "../utils/projection.js";
+import { projectField, projectFields } from "../utils/projection.js";
 import { fieldsParam } from "../utils/schema-helpers.js";
-
-// Compact set of project fields useful to an LLM by default. Identifies the
-// project, its location, who owns it, what state it's in, and how to reach it
-// — without dragging along the 100+ fields a full GitLab response carries.
-// Callers can request the raw payload with `fields: "all"` or override with
-// their own list.
-const LIST_PROJECTS_DEFAULT_FIELDS = [
-  "id",
-  "name",
-  "name_with_namespace",
-  "path_with_namespace",
-  "description",
-  "default_branch",
-  "visibility",
-  "web_url",
-  "ssh_url_to_repo",
-  "http_url_to_repo",
-  "last_activity_at",
-  "archived",
-  "topics",
-] as const;
 
 // GitLab project responses include `runners_token` for projects the caller
 // can administer. That field is a CI-runner registration secret — leaking it
@@ -57,6 +40,7 @@ const GetProjectSchema = z.object({
     .boolean()
     .optional()
     .describe("Include sensitive fields like runners_token (default: false)"),
+  fields: fieldsParam("project").optional(),
 });
 
 const ListProjectsSchema = z.object({
@@ -207,7 +191,8 @@ export function registerProjectTools(
     "get_project",
     {
       title: "Get Project",
-      description: "Get details of a specific project",
+      description:
+        "Get details of a specific project. Returns a compact set of fields by default; pass `fields: 'all'` for the raw GitLab response or `fields: ['id', 'name', ...]` to pick your own. Pass `include_secrets: true` to expose `runners_token`; that implies `fields: 'all'` unless overridden.",
       inputSchema: {
         project_id: z
           .string()
@@ -220,6 +205,7 @@ export function registerProjectTools(
           .boolean()
           .optional()
           .describe("Include sensitive fields like runners_token (default: false)"),
+        fields: fieldsParam("project").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -235,9 +221,19 @@ export function registerProjectTools(
         with_custom_attributes: args.with_custom_attributes,
       });
 
-      const project = await defaultClient.get(`/projects/${projectId}${query}`);
-      const redacted = redactProjectSecrets(project, args.include_secrets ?? false);
-      return { content: [{ type: "text", text: JSON.stringify(redacted, null, 2) }] };
+      const raw = await defaultClient.get(`/projects/${projectId}${query}`);
+      const project = parseGitLabResponse(GitLabProjectSchema, raw, "get_project", logger);
+      // Redact before projecting — preserves the list-endpoint ordering and
+      // means `runners_token` is gone before slim defaults run.
+      const redacted = redactProjectSecrets(project, args.include_secrets ?? false) as Record<
+        string,
+        unknown
+      >;
+      // include_secrets implies "show me everything" unless the caller
+      // explicitly passes a different `fields` value.
+      const effectiveFields = args.fields ?? (args.include_secrets ? "all" : undefined);
+      const projected = projectField(redacted, PROJECT_SLIM_FIELDS, effectiveFields);
+      return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
   toolRef.disable();
@@ -297,7 +293,7 @@ export function registerProjectTools(
       // the secret they explicitly opted into would be silently stripped by
       // projection's default field set). Explicit `fields` always wins.
       const effectiveFields = fields ?? (include_secrets ? "all" : undefined);
-      const projected = projectFields(redacted, LIST_PROJECTS_DEFAULT_FIELDS, effectiveFields);
+      const projected = projectFields(redacted, PROJECT_SLIM_FIELDS, effectiveFields);
       return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
@@ -556,7 +552,7 @@ export function registerProjectTools(
         unknown
       >[];
       const effectiveFields = fields ?? (include_secrets ? "all" : undefined);
-      const projected = projectFields(redacted, LIST_PROJECTS_DEFAULT_FIELDS, effectiveFields);
+      const projected = projectFields(redacted, PROJECT_SLIM_FIELDS, effectiveFields);
       return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
