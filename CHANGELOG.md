@@ -1,3 +1,10 @@
+# [2.33.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.32.0...v2.33.0) (2026-05-15)
+
+
+### Features
+
+* **ci:** schema-drift CI gate against live GitLab (DOT-559) ([#112](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/112)) ([fe19784](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/fe19784a0a4fda00bec75bcc91834185b8e53251))
+
 # [2.32.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.31.0...v2.32.0) (2026-05-15)
 
 
