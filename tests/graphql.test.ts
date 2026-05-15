@@ -77,7 +77,7 @@ describe("GraphQL Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/api/graphql");
+      expect(capturedUrl).toBe("https://gitlab.com/api/graphql");
       expect(capturedMethod).toBe("POST");
 
       const body = JSON.parse(capturedBody ?? "");

@@ -77,7 +77,9 @@ describe("Merge Request Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/merge_requests");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/merge_requests",
+      );
       expect(capturedMethod).toBe("POST");
 
       const body = JSON.parse(capturedBody ?? "");
@@ -124,10 +126,9 @@ describe("Merge Request Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/merge_requests");
-      expect(capturedUrl).toContain("state=opened");
-      expect(capturedUrl).toContain("page=2");
-      expect(capturedUrl).toContain("per_page=10");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/merge_requests?state=opened&page=2&per_page=10",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;
@@ -158,8 +159,9 @@ describe("Merge Request Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("author_username=alice");
-      expect(capturedUrl).toContain("assignee_id=42");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/merge_requests?author_username=alice&assignee_id=42",
+      );
     });
 
     it("should prefer author_username over author_id when both provided", async () => {
@@ -184,8 +186,9 @@ describe("Merge Request Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("author_username=alice");
-      expect(capturedUrl).not.toContain("author_id=99");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/merge_requests?author_username=alice",
+      );
     });
 
     it("should prefer reviewer_username over reviewer_id when both provided", async () => {
@@ -210,8 +213,9 @@ describe("Merge Request Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("reviewer_username=bob");
-      expect(capturedUrl).not.toContain("reviewer_id=7");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/merge_requests?reviewer_username=bob",
+      );
     });
 
     it("should prefer assignee_username over assignee_id=0 when both provided", async () => {
@@ -236,8 +240,9 @@ describe("Merge Request Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("assignee_username=alice");
-      expect(capturedUrl).not.toContain("assignee_id=0");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/merge_requests?assignee_username=alice",
+      );
     });
   });
 
@@ -272,7 +277,9 @@ describe("Merge Request Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/merge_requests/5/approve");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/merge_requests/5/approve",
+      );
       expect(capturedMethod).toBe("POST");
 
       const content = result.content as Array<{ type: string; text: string }>;
@@ -310,7 +317,9 @@ describe("Merge Request Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/merge_requests/7/draft_notes");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/merge_requests/7/draft_notes",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;
@@ -346,7 +355,9 @@ describe("Merge Request Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/merge_requests/26");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/merge_requests/26",
+      );
       const content = result.content as Array<{ type: string; text: string }>;
       const data = JSON.parse(content[0].text);
       expect(data.iid).toBe(26);
@@ -377,7 +388,9 @@ describe("Merge Request Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/merge_requests/27");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/merge_requests/27",
+      );
       expect(capturedMethod).toBe("PUT");
     });
   });
@@ -466,9 +479,9 @@ describe("Merge Request Tools Handlers", () => {
         },
       });
       // username wins over id when both provided
-      expect(capturedUrl).toContain("state=opened");
-      expect(capturedUrl).toContain("author_username=alice");
-      expect(capturedUrl).not.toContain("author_id=42");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/p/merge_requests?state=opened&author_username=alice",
+      );
     });
   });
 
@@ -516,12 +529,10 @@ describe("Merge Request Tools Handlers", () => {
       });
 
       expect(capturedMethod).toBe("GET");
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/merge_requests/1/pipelines");
-      expect(capturedUrl).toContain("page=2");
-      expect(capturedUrl).toContain("per_page=10");
       // project_id and merge_request_iid live in the path, not the query.
-      expect(capturedUrl).not.toContain("project_id=");
-      expect(capturedUrl).not.toContain("merge_request_iid=");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/merge_requests/1/pipelines?page=2&per_page=10",
+      );
 
       const content = result.content as Array<{ type: string; text: string }>;
       const responseData = JSON.parse(content[0].text);
@@ -550,7 +561,9 @@ describe("Merge Request Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/merge_requests/42/pipelines");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/g%2Fp/merge_requests/42/pipelines",
+      );
     });
   });
 });

@@ -63,9 +63,8 @@ describe("User Tools Handlers", () => {
       });
       const text = (result.content as TextContent)[0].text;
 
-      expect(capturedUrl).toContain("/user");
-      // Make sure we hit /user (singular) not /users (plural).
-      expect(capturedUrl).not.toMatch(/\/users(?:\?|$)/);
+      // Hit /user (singular) not /users (plural).
+      expect(capturedUrl).toBe("https://gitlab.com/api/v4/user");
       expect(text).toContain("ismart");
       expect(text).toContain("42");
     });
@@ -147,7 +146,7 @@ describe("User Tools Handlers", () => {
       const text = (result.content as TextContent)[0].text;
       const parsed = JSON.parse(text);
 
-      expect(capturedUrl).toContain("/user");
+      expect(capturedUrl).toBe("https://gitlab.com/api/v4/user");
       expect(parsed.status).toBe("ok");
       expect(parsed.authenticated).toBe(true);
       expect(typeof parsed.gitlab_url).toBe("string");

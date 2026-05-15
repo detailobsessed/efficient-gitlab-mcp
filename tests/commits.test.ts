@@ -70,10 +70,9 @@ describe("Commit Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/repository/commits");
-      expect(capturedUrl).toContain("ref_name=main");
-      expect(capturedUrl).toContain("page=1");
-      expect(capturedUrl).toContain("per_page=20");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/repository/commits?ref_name=main&page=1&per_page=20",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;
@@ -160,8 +159,8 @@ describe("Commit Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain(
-        "/projects/my-group%2Fmy-project/repository/commits/abc123def456789",
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/repository/commits/abc123def456789",
       );
       expect(capturedMethod).toBe("GET");
 

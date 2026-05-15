@@ -69,9 +69,9 @@ describe("Milestone Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/milestones");
-      expect(capturedUrl).toContain("state=active");
-      expect(capturedUrl).toContain("page=1");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/milestones?state=active&page=1",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;
@@ -115,7 +115,9 @@ describe("Milestone Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/milestones");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/milestones",
+      );
       expect(capturedMethod).toBe("POST");
 
       const body = JSON.parse(capturedBody ?? "");
@@ -159,7 +161,9 @@ describe("Milestone Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/milestones/5/issues");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/milestones/5/issues",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;

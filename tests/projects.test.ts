@@ -152,7 +152,7 @@ describe("Project Tools Handlers", () => {
         arguments: { project_id: "1", with_counts: true },
       });
 
-      expect(capturedUrl).toContain("with_counts=true");
+      expect(capturedUrl).toBe("https://gitlab.com/api/v4/projects/1/labels?with_counts=true");
       const text = (result.content as TextContent)[0].text;
       expect(text).toContain("open_issues_count");
     });
@@ -176,7 +176,7 @@ describe("Project Tools Handlers", () => {
         arguments: { project_id: "1" },
       });
 
-      expect(capturedUrl).not.toContain("with_counts");
+      expect(capturedUrl).toBe("https://gitlab.com/api/v4/projects/1/labels");
     });
   });
 
@@ -200,7 +200,7 @@ describe("Project Tools Handlers", () => {
         arguments: { topic: "mkdocs" },
       });
 
-      expect(capturedUrl).toContain("topic=mkdocs");
+      expect(capturedUrl).toBe("https://gitlab.com/api/v4/projects?topic=mkdocs");
     });
 
     it("omits topic from the outgoing query when not set", async () => {
@@ -222,7 +222,7 @@ describe("Project Tools Handlers", () => {
         arguments: {},
       });
 
-      expect(capturedUrl).not.toContain("topic=");
+      expect(capturedUrl).toBe("https://gitlab.com/api/v4/projects");
     });
   });
 
@@ -347,7 +347,9 @@ describe("Project Tools Handlers", () => {
         arguments: { group_id: "my-group", topic: "terraform-module" },
       });
 
-      expect(capturedUrl).toContain("topic=terraform-module");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/groups/my-group/projects?topic=terraform-module",
+      );
     });
   });
 

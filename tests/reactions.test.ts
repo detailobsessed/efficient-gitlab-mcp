@@ -81,7 +81,9 @@ describe("Emoji Reaction Tools Handlers", () => {
         arguments: { project_id: "my-group/my-project", merge_request_iid: 7 },
       });
 
-      expect(cap.url).toContain("/projects/my-group%2Fmy-project/merge_requests/7/award_emoji");
+      expect(cap.url).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/merge_requests/7/award_emoji",
+      );
       expect(cap.method).toBe("GET");
     });
   });
@@ -95,7 +97,7 @@ describe("Emoji Reaction Tools Handlers", () => {
         arguments: { project_id: "p", merge_request_iid: 7, name: "rocket" },
       });
 
-      expect(cap.url).toContain("/projects/p/merge_requests/7/award_emoji");
+      expect(cap.url).toBe("https://gitlab.com/api/v4/projects/p/merge_requests/7/award_emoji");
       expect(cap.method).toBe("POST");
       const body = JSON.parse(cap.body ?? "{}");
       expect(body.name).toBe("rocket");
@@ -111,7 +113,7 @@ describe("Emoji Reaction Tools Handlers", () => {
         arguments: { project_id: "p", merge_request_iid: 7, award_id: 99 },
       });
 
-      expect(cap.url).toContain("/projects/p/merge_requests/7/award_emoji/99");
+      expect(cap.url).toBe("https://gitlab.com/api/v4/projects/p/merge_requests/7/award_emoji/99");
       expect(cap.method).toBe("DELETE");
     });
   });
@@ -127,9 +129,10 @@ describe("Emoji Reaction Tools Handlers", () => {
         arguments: { project_id: "p", merge_request_iid: 7, note_id: 42 },
       });
 
-      expect(cap.url).toContain("/projects/p/merge_requests/7/notes/42/award_emoji");
       // Critical: no `/discussions/` segment when discussion_id is unset
-      expect(cap.url).not.toContain("/discussions/");
+      expect(cap.url).toBe(
+        "https://gitlab.com/api/v4/projects/p/merge_requests/7/notes/42/award_emoji",
+      );
     });
 
     it("GETs /discussions/:did/notes/:id/award_emoji when discussion_id is set", async () => {
@@ -145,8 +148,8 @@ describe("Emoji Reaction Tools Handlers", () => {
         },
       });
 
-      expect(cap.url).toContain(
-        "/projects/p/merge_requests/7/discussions/abc123/notes/42/award_emoji",
+      expect(cap.url).toBe(
+        "https://gitlab.com/api/v4/projects/p/merge_requests/7/discussions/abc123/notes/42/award_emoji",
       );
     });
   });
@@ -166,7 +169,9 @@ describe("Emoji Reaction Tools Handlers", () => {
         },
       });
 
-      expect(cap.url).toContain("/discussions/abc123/notes/42/award_emoji");
+      expect(cap.url).toBe(
+        "https://gitlab.com/api/v4/projects/p/merge_requests/7/discussions/abc123/notes/42/award_emoji",
+      );
       expect(cap.method).toBe("POST");
       const body = JSON.parse(cap.body ?? "{}");
       expect(body.name).toBe("eyes");
@@ -182,8 +187,9 @@ describe("Emoji Reaction Tools Handlers", () => {
         arguments: { project_id: "p", merge_request_iid: 7, note_id: 42, award_id: 99 },
       });
 
-      expect(cap.url).toContain("/notes/42/award_emoji/99");
-      expect(cap.url).not.toContain("/discussions/");
+      expect(cap.url).toBe(
+        "https://gitlab.com/api/v4/projects/p/merge_requests/7/notes/42/award_emoji/99",
+      );
       expect(cap.method).toBe("DELETE");
     });
   });
@@ -199,7 +205,7 @@ describe("Emoji Reaction Tools Handlers", () => {
         arguments: { project_id: "p", issue_iid: 11 },
       });
 
-      expect(cap.url).toContain("/projects/p/issues/11/award_emoji");
+      expect(cap.url).toBe("https://gitlab.com/api/v4/projects/p/issues/11/award_emoji");
       expect(cap.method).toBe("GET");
     });
   });
@@ -213,7 +219,7 @@ describe("Emoji Reaction Tools Handlers", () => {
         arguments: { project_id: "p", issue_iid: 11, name: "rocket" },
       });
 
-      expect(cap.url).toContain("/projects/p/issues/11/award_emoji");
+      expect(cap.url).toBe("https://gitlab.com/api/v4/projects/p/issues/11/award_emoji");
       expect(cap.method).toBe("POST");
       const body = JSON.parse(cap.body ?? "{}");
       expect(body.name).toBe("rocket");
@@ -229,7 +235,7 @@ describe("Emoji Reaction Tools Handlers", () => {
         arguments: { project_id: "p", issue_iid: 11, award_id: 88 },
       });
 
-      expect(cap.url).toContain("/projects/p/issues/11/award_emoji/88");
+      expect(cap.url).toBe("https://gitlab.com/api/v4/projects/p/issues/11/award_emoji/88");
       expect(cap.method).toBe("DELETE");
     });
   });
@@ -245,8 +251,7 @@ describe("Emoji Reaction Tools Handlers", () => {
         arguments: { project_id: "p", issue_iid: 11, note_id: 42 },
       });
 
-      expect(cap.url).toContain("/projects/p/issues/11/notes/42/award_emoji");
-      expect(cap.url).not.toContain("/discussions/");
+      expect(cap.url).toBe("https://gitlab.com/api/v4/projects/p/issues/11/notes/42/award_emoji");
     });
 
     it("GETs /discussions/:did/notes/:id/award_emoji when discussion_id is set", async () => {
@@ -262,7 +267,9 @@ describe("Emoji Reaction Tools Handlers", () => {
         },
       });
 
-      expect(cap.url).toContain("/projects/p/issues/11/discussions/abc123/notes/42/award_emoji");
+      expect(cap.url).toBe(
+        "https://gitlab.com/api/v4/projects/p/issues/11/discussions/abc123/notes/42/award_emoji",
+      );
     });
   });
 
@@ -281,7 +288,9 @@ describe("Emoji Reaction Tools Handlers", () => {
         },
       });
 
-      expect(cap.url).toContain("/discussions/abc123/notes/42/award_emoji");
+      expect(cap.url).toBe(
+        "https://gitlab.com/api/v4/projects/p/issues/11/discussions/abc123/notes/42/award_emoji",
+      );
       expect(cap.method).toBe("POST");
       const body = JSON.parse(cap.body ?? "{}");
       expect(body.name).toBe("eyes");
@@ -297,8 +306,9 @@ describe("Emoji Reaction Tools Handlers", () => {
         arguments: { project_id: "p", issue_iid: 11, note_id: 42, award_id: 99 },
       });
 
-      expect(cap.url).toContain("/issues/11/notes/42/award_emoji/99");
-      expect(cap.url).not.toContain("/discussions/");
+      expect(cap.url).toBe(
+        "https://gitlab.com/api/v4/projects/p/issues/11/notes/42/award_emoji/99",
+      );
       expect(cap.method).toBe("DELETE");
     });
   });
