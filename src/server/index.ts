@@ -110,6 +110,27 @@ function createMcpServer(
   return mcpServer;
 }
 
+export async function closeSession(
+  sessionId: string,
+  session: { server: { close(): unknown }; transport: { close(): unknown } },
+  logger: Logger,
+): Promise<void> {
+  try {
+    await session.transport.close();
+  } catch (error) {
+    logger.warn(`Failed to close transport for session ${sessionId}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+  try {
+    await session.server.close();
+  } catch (error) {
+    logger.warn(`Failed to close server for session ${sessionId}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 async function main() {
   const config = loadConfig();
   const logger = new Logger(config.logLevel, config.logFormat);
@@ -130,6 +151,11 @@ async function main() {
     }
   }
 
+  // Teardown hooks run in registration order on SIGINT/SIGTERM. Each branch
+  // below registers its own; shutdown awaits them with Promise.allSettled so
+  // one failure can't strand other resources.
+  const teardowns: Array<() => Promise<void>> = [];
+
   if (config.transportMode === "stdio") {
     // Stdio: single server, single client
     const mcpServer = createMcpServer(config, logger, readOnlyOverride);
@@ -137,6 +163,9 @@ async function main() {
     const transport = new StdioServerTransport();
     await mcpServer.connect(transport);
     logger.info("MCP Server ready (stdio)");
+    teardowns.push(async () => {
+      await closeSession("stdio", { server: mcpServer, transport }, logger);
+    });
   } else if (config.transportMode === "streamable-http") {
     // HTTP: per-session server for independent disclosure state
     logger.info("Starting with Streamable HTTP transport", {
@@ -167,6 +196,14 @@ async function main() {
       }
     }, 30_000);
     cleanupInterval.unref();
+
+    teardowns.push(async () => {
+      clearInterval(cleanupInterval);
+      const entries = Object.entries(sessions);
+      if (entries.length === 0) return;
+      logger.info(`Closing ${entries.length} active session(s) before exit`);
+      await Promise.allSettled(entries.map(([sid, session]) => closeSession(sid, session, logger)));
+    });
 
     // Health check endpoint
     app.get("/health", (_req: Request, res: Response) => {
@@ -290,9 +327,12 @@ async function main() {
     process.exit(1);
   }
 
-  // Graceful shutdown
+  // Graceful shutdown — run registered teardowns (close transports, clear
+  // intervals, etc.) before exiting. allSettled so one stuck resource can't
+  // block the rest.
   const shutdown = async () => {
     logger.info("Shutting down gracefully...");
+    await Promise.allSettled(teardowns.map((fn) => fn()));
     logger.info("Shutdown complete");
     process.exit(0);
   };
