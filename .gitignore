@@ -18,4 +18,6 @@ coverage/
 # mcp-publisher tokens
 .mcpregistry_*
 .claude/settings.local.json
+.claude/worktrees/
+.serena/
 .gitnexus
