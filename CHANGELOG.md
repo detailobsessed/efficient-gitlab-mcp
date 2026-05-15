@@ -1,3 +1,10 @@
+# [2.28.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.27.0...v2.28.0) (2026-05-15)
+
+
+### Features
+
+* **tools:** port health_check + list_merge_request_pipelines from upstream (DOT-543) ([#100](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/100)) ([4736f85](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/4736f85c77628928861e74129753e68c5bd02722))
+
 # [2.27.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.26.0...v2.27.0) (2026-04-28)
 
 
