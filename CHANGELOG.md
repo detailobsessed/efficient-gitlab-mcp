@@ -1,3 +1,10 @@
+## [2.28.3](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.28.2...v2.28.3) (2026-05-15)
+
+
+### Bug Fixes
+
+* **server:** close per-session transports + servers on shutdown (DOT-382) ([#105](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/105)) ([b10dcbb](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/b10dcbb46df4112eff97fe91b9f1b08f036b66c6))
+
 ## [2.28.2](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.28.1...v2.28.2) (2026-05-15)
 
 
