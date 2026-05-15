@@ -183,12 +183,12 @@ List endpoints — and a growing set of singular `get_*` endpoints — return a 
 
 Currently applied to:
 
-- `list_projects`, `list_group_projects`
-- `list_issues`, `my_issues`
+- `list_projects`, `list_group_projects`, `get_project`
+- `list_issues`, `my_issues`, `get_issue`
 - `list_merge_requests`, `get_merge_request`
-- `list_pipelines`
+- `list_pipelines`, `get_pipeline`
 - `list_releases`
-- `list_commits`
+- `list_commits`, `get_commit`
 
 A spike measurement against `list_projects` with 5 owned projects went from **~32 KB → ~3 KB** by switching to the compact default. Because it's allow-list based, the compact output stays compact when GitLab adds new fields upstream.
 
