@@ -168,6 +168,44 @@ describe("Work Item Tools Handlers", () => {
       expect(parsed.items[0].title).toBe("Task 1");
       expect(parsed.items[0].type).toBe("Task");
     });
+
+    it("coerces JSON-stringified arrays for label_names + assignee_usernames", async () => {
+      // Regression for DOT-554: LLMs sometimes serialize arrays as JSON strings
+      // when filling MCP tool parameters. coerceStringArray accepts either form
+      // and normalises to an array, matching behavior already in place for
+      // `labels` everywhere else in the fork.
+      const { mockFn, calls } = createMockFetch([
+        // REST resolve project path
+        { data: { path_with_namespace: "my-group/my-project" } },
+        // GraphQL list work items
+        {
+          data: {
+            project: {
+              workItems: {
+                nodes: [],
+                pageInfo: { hasNextPage: false, endCursor: null },
+              },
+            },
+          },
+        },
+      ]);
+
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mockFn;
+
+      await client.callTool({
+        name: "list_work_items",
+        arguments: {
+          project_id: "my-group/my-project",
+          label_names: '["bug","critical"]',
+          assignee_usernames: '["alice","bob"]',
+        },
+      });
+
+      const gqlBody = JSON.parse(calls[1].body);
+      expect(gqlBody.variables.labelName).toEqual(["bug", "critical"]);
+      expect(gqlBody.variables.assigneeUsernames).toEqual(["alice", "bob"]);
+    });
   });
 
   describe("create_work_item", () => {

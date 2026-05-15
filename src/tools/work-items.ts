@@ -62,8 +62,8 @@ const ListWorkItemsSchema = z.object({
     .describe("Filter by work item types. If not set, returns all types."),
   state: z.enum(["opened", "closed"]).optional().describe("Filter by state"),
   search: z.string().optional().describe("Search in title and description"),
-  assignee_usernames: z.array(z.string()).optional().describe("Filter by assignee usernames"),
-  label_names: z.array(z.string()).optional().describe("Filter by label names"),
+  assignee_usernames: coerceStringArray("Filter by assignee usernames").optional(),
+  label_names: coerceStringArray("Filter by label names").optional(),
   first: z.coerce
     .number()
     .optional()
@@ -1836,8 +1836,8 @@ export function registerWorkItemTools(
         types: z.array(workItemTypeEnum).optional().describe("Filter by work item types"),
         state: z.enum(["opened", "closed"]).optional().describe("Filter by state"),
         search: z.string().optional().describe("Search in title and description"),
-        assignee_usernames: z.array(z.string()).optional().describe("Filter by assignee usernames"),
-        label_names: z.array(z.string()).optional().describe("Filter by label names"),
+        assignee_usernames: coerceStringArray("Filter by assignee usernames").optional(),
+        label_names: coerceStringArray("Filter by label names").optional(),
         first: z.coerce
           .number()
           .optional()
