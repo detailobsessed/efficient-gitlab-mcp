@@ -1,6 +1,6 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { GitLabIssueSchema } from "../schemas/issues.js";
+import { GitLabIssueListSchema, GitLabIssueSchema } from "../schemas/issues.js";
 import { parseGitLabResponse } from "../schemas/parse.js";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
@@ -250,10 +250,13 @@ export function registerIssueTools(server: McpServer, logger: Logger): Map<strin
       const { project_id: _, fields, ...queryParams } = args;
       const query = buildQueryString(queryParams);
 
-      const issues = (await defaultClient.get(`/projects/${projectId}/issues${query}`)) as Record<
-        string,
-        unknown
-      >[];
+      const raw = await defaultClient.get(`/projects/${projectId}/issues${query}`);
+      const issues = parseGitLabResponse(
+        GitLabIssueListSchema,
+        raw,
+        "list_issues",
+        logger,
+      ) as unknown as Record<string, unknown>[];
       const projected = projectFields(issues, LIST_ISSUES_DEFAULT_FIELDS, fields);
       return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
