@@ -179,18 +179,33 @@ Instead of exposing 167 individual tools, the server exposes **3 meta-tools**:
 
 ### Field Projection
 
-List endpoints return a curated, allow-listed default set of fields per resource. Callers can opt into the full payload with `fields: "all"` or pick their own list with `fields: ["id", "name"]`.
+List endpoints — and a growing set of singular `get_*` endpoints — return a curated, allow-listed default set of fields per resource. Callers can opt into the full payload with `fields: "all"` or pick their own list with `fields: ["id", "name"]`.
 
 Currently applied to:
 
 - `list_projects`, `list_group_projects`
 - `list_issues`, `my_issues`
-- `list_merge_requests`
+- `list_merge_requests`, `get_merge_request`
 - `list_pipelines`
 - `list_releases`
 - `list_commits`
 
 A spike measurement against `list_projects` with 5 owned projects went from **~32 KB → ~3 KB** by switching to the compact default. Because it's allow-list based, the compact output stays compact when GitLab adds new fields upstream.
+
+Example — fetch a merge request with the compact default vs. the full GitLab payload:
+
+```jsonc
+// Default: ~17 fields (iid, title, state, draft, labels, branches, author, …)
+{ "name": "get_merge_request", "arguments": { "merge_request_iid": 42 } }
+
+// Opt out: the raw GitLab response
+{ "name": "get_merge_request", "arguments": { "merge_request_iid": 42, "fields": "all" } }
+
+// Custom pick
+{ "name": "get_merge_request", "arguments": { "merge_request_iid": 42, "fields": ["iid", "title", "state"] } }
+```
+
+The slim defaults are derived from the same Zod response schemas that validate GitLab API responses (see `src/schemas/`), so they stay in sync with the type-level shape and there's a single source of truth per resource.
 
 ### Server-Side File Trimming
 

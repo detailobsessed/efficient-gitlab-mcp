@@ -485,6 +485,114 @@ describe("Merge Request Tools Handlers", () => {
     });
   });
 
+  describe("get_merge_request field projection (DOT-557)", () => {
+    function mockMRResponse(mr: Record<string, unknown>) {
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify(mr)),
+        } as Response),
+      );
+    }
+
+    const fullMr = {
+      id: 12345,
+      iid: 42,
+      project_id: 999,
+      title: "Add response schemas",
+      state: "opened",
+      draft: false,
+      labels: ["chore", "schemas"],
+      source_branch: "feature/x",
+      target_branch: "main",
+      author: { id: 1, username: "ismart", name: "Ismar", state: "active" },
+      web_url: "https://gitlab.example/p/-/merge_requests/42",
+      created_at: "2026-05-15T10:00:00Z",
+      updated_at: "2026-05-15T11:00:00Z",
+      merge_status: "can_be_merged",
+      detailed_merge_status: "mergeable",
+      // Bloat that should NOT survive default projection:
+      changes_count: "7",
+      has_conflicts: false,
+      blocking_discussions_resolved: true,
+      _links: { self: "..." },
+      time_stats: { time_estimate: 0 },
+      sha: "abc123",
+      merge_commit_sha: null,
+    };
+
+    it("returns only the default field set when fields is unset", async () => {
+      mockMRResponse(fullMr);
+      const result = await client.callTool({
+        name: "get_merge_request",
+        arguments: { project_id: "p", merge_request_iid: 42 },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data.iid).toBe(42);
+      expect(data.title).toBe("Add response schemas");
+      expect(data.merge_status).toBe("can_be_merged");
+      // Bloat dropped
+      expect(data.changes_count).toBeUndefined();
+      expect(data.has_conflicts).toBeUndefined();
+      expect(data._links).toBeUndefined();
+      expect(data.time_stats).toBeUndefined();
+      expect(data.sha).toBeUndefined();
+    });
+
+    it('returns the full payload when fields="all"', async () => {
+      mockMRResponse(fullMr);
+      const result = await client.callTool({
+        name: "get_merge_request",
+        arguments: { project_id: "p", merge_request_iid: 42, fields: "all" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data.changes_count).toBe("7");
+      expect(data.has_conflicts).toBe(false);
+      expect(data._links).toEqual({ self: "..." });
+      expect(data.sha).toBe("abc123");
+    });
+
+    it("returns exactly the requested fields when fields is a custom list", async () => {
+      mockMRResponse(fullMr);
+      const result = await client.callTool({
+        name: "get_merge_request",
+        arguments: {
+          project_id: "p",
+          merge_request_iid: 42,
+          fields: ["iid", "title", "state"],
+        },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(Object.keys(data).sort()).toEqual(["iid", "state", "title"]);
+      expect(data.iid).toBe(42);
+      expect(data.title).toBe("Add response schemas");
+      expect(data.state).toBe("opened");
+    });
+
+    it("applies projection on the branch_name lookup path too", async () => {
+      // branch_name route fetches a list, returns the first; projection
+      // must still slim the response.
+      // @ts-expect-error - mock doesn't need full fetch signature
+      globalThis.fetch = mock(() =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(JSON.stringify([fullMr])),
+        } as Response),
+      );
+      const result = await client.callTool({
+        name: "get_merge_request",
+        arguments: { project_id: "p", branch_name: "feature/x" },
+      });
+      const data = JSON.parse((result.content as Array<{ type: string; text: string }>)[0].text);
+      expect(data.iid).toBe(42);
+      expect(data.changes_count).toBeUndefined();
+      expect(data._links).toBeUndefined();
+    });
+  });
+
   describe("list_merge_request_pipelines (DOT-543)", () => {
     it("GETs the MR pipelines endpoint and forwards pagination", async () => {
       let capturedUrl = "";

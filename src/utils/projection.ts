@@ -45,3 +45,17 @@ export function projectFields<T extends Record<string, unknown>>(
     return out as Partial<T>;
   });
 }
+
+/**
+ * Singular sibling of {@link projectFields} for `get_*`-style endpoints that
+ * return one resource rather than a list. Same allow-list semantics:
+ * `"all"` returns the item unchanged, an array picks those keys explicitly,
+ * `undefined` or `[]` falls back to `defaultFields`.
+ */
+export function projectField<T extends Record<string, unknown>>(
+  item: T,
+  defaultFields: readonly string[],
+  requested: FieldsParam,
+): Partial<T> {
+  return projectFields([item], defaultFields, requested)[0];
+}
