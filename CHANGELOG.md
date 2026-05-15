@@ -1,3 +1,10 @@
+# [2.32.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.31.0...v2.32.0) (2026-05-15)
+
+
+### Features
+
+* **schemas:** schema-driven slim fields on users (Phase 3b, DOT-560) ([#111](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/111)) ([6ea1953](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/6ea195357cfa2d2ce264bdf08087d54ac807ce20)), closes [#109](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/109) [#110](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/110)
+
 # [2.31.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.30.0...v2.31.0) (2026-05-15)
 
 
