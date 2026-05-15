@@ -59,3 +59,37 @@ Tools start **disabled** (via `toolRef.disable()`). The LLM discovers them via m
 ## Upstream Relationship
 
 This project maintains `main` as a read-only mirror of upstream (`zereight/gitlab-mcp`). The working trunk is `detailobsessed`. New upstream features are reviewed and ported selectively — we do not rebase onto upstream's architecture.
+
+## Branch Workflow
+
+Create every feature branch through git-spice — even single-concern (non-stacked) work. Use the canonical `bc` → `bs` flow; don't fall back to plain `git checkout -b` + `git push` + `gh pr create`. Tracking is free, keeps `git-spice ls` a complete view of in-flight work, and lets a follow-up branch stack on this one without manual re-parenting.
+
+Canonical daily workflow (trunk is `detailobsessed`, not `main`):
+
+```bash
+git add src/tools/foo.ts tests/foo.test.ts        # stage explicitly first
+git-spice bc port/foo-feature -m "feat(foo): ..." # creates branch, commits, tracks
+# iterate:
+git add <more-files>
+git-spice ca --no-edit                            # amend current branch's commit
+# ship:
+git-spice branch submit --fill --no-draft         # pushes + opens GitHub PR
+```
+
+After review feedback:
+
+```bash
+git add <fixes>
+git-spice ca --no-edit
+git-spice stack submit --update-only              # force-pushes the rebased branch
+```
+
+Retroactive tracking (only when a branch was already created with plain `git checkout -b`):
+
+```bash
+git-spice branch track <branch> --base detailobsessed
+```
+
+This complements — not supersedes — the global rule in `~/.claude/CLAUDE.md` about *when* to actually stack. Stacking is still reserved for multi-step, independently-shippable work; this project's policy is just "always track, regardless."
+
+Always invoke the CLI as `git-spice` (full name), never the `gs` short name — `gs` collides with Ghostscript on the maintainer's machine.
