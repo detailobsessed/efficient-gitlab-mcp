@@ -36,3 +36,32 @@ export const GitLabIssueSchema = z
 export const GitLabIssueListSchema = z.array(GitLabIssueSchema);
 
 export type GitLabIssue = z.infer<typeof GitLabIssueSchema>;
+
+/**
+ * Slim shape (Phase 3 / DOT-558): the fields an LLM almost always wants from
+ * an issue. Mirrors the compact defaults the codebase already used for
+ * `list_issues` / `my_issues`. Drops description, vote counts, note counts,
+ * closed metadata, project_id — pass `fields: "all"` to get them back.
+ */
+export const IssueSlimShape = {
+  id: true,
+  iid: true,
+  title: true,
+  state: true,
+  labels: true,
+  author: true,
+  assignees: true,
+  milestone: true,
+  due_date: true,
+  web_url: true,
+  created_at: true,
+  updated_at: true,
+  confidential: true,
+} as const;
+
+export const GitLabIssueSlimSchema = GitLabIssueSchema.pick(IssueSlimShape);
+export type GitLabIssueSlim = z.infer<typeof GitLabIssueSlimSchema>;
+
+export const ISSUE_SLIM_FIELDS = Object.keys(IssueSlimShape) as ReadonlyArray<
+  keyof typeof IssueSlimShape
+>;
