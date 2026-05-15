@@ -1,5 +1,10 @@
 import type { McpServer, RegisteredTool } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import {
+  GitLabMergeRequestListSchema,
+  GitLabMergeRequestSchema,
+} from "../schemas/merge-requests.js";
+import { parseGitLabResponse } from "../schemas/parse.js";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
 import { projectFields } from "../utils/projection.js";
@@ -518,16 +523,23 @@ export function registerMergeRequestTools(
       const projectId = resolveProjectId(args.project_id);
 
       if (args.merge_request_iid) {
-        const mr = await defaultClient.get(
+        const raw = await defaultClient.get(
           `/projects/${projectId}/merge_requests/${args.merge_request_iid}`,
         );
+        const mr = parseGitLabResponse(GitLabMergeRequestSchema, raw, "get_merge_request", logger);
         return { content: [{ type: "text", text: JSON.stringify(mr, null, 2) }] };
       }
 
       if (args.branch_name) {
         const query = buildQueryString({ source_branch: args.branch_name, state: "opened" });
-        const mrs = await defaultClient.get<unknown[]>(
+        const raw = await defaultClient.get<unknown[]>(
           `/projects/${projectId}/merge_requests${query}`,
+        );
+        const mrs = parseGitLabResponse(
+          GitLabMergeRequestListSchema,
+          raw,
+          "get_merge_request (by branch)",
+          logger,
         );
         if (mrs.length === 0) {
           return { content: [{ type: "text", text: "No merge request found for this branch" }] };

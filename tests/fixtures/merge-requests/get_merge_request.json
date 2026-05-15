@@ -1,0 +1,49 @@
+{
+  "id": 12345,
+  "iid": 42,
+  "project_id": 999,
+  "title": "Add response schemas",
+  "description": "Introduces Zod response schemas for top-traffic endpoints.",
+  "state": "opened",
+  "draft": false,
+  "work_in_progress": false,
+  "labels": ["chore", "schemas"],
+  "source_branch": "port/dot-556-response-schemas-p1",
+  "target_branch": "detailobsessed",
+  "author": {
+    "id": 1,
+    "name": "Ismar Iljazovic",
+    "username": "ismart",
+    "state": "active",
+    "avatar_url": null,
+    "web_url": "https://gitlab.com/ismart"
+  },
+  "assignees": [
+    {
+      "id": 1,
+      "name": "Ismar Iljazovic",
+      "username": "ismart",
+      "state": "active",
+      "avatar_url": null,
+      "web_url": "https://gitlab.com/ismart"
+    }
+  ],
+  "reviewers": [],
+  "milestone": null,
+  "web_url": "https://gitlab.com/example/project/-/merge_requests/42",
+  "created_at": "2026-05-15T10:00:00Z",
+  "updated_at": "2026-05-15T11:00:00Z",
+  "merged_at": null,
+  "closed_at": null,
+  "merge_status": "can_be_merged",
+  "detailed_merge_status": "mergeable",
+  "sha": "abc123def456",
+  "merge_commit_sha": null,
+  "squash_commit_sha": null,
+  "user_notes_count": 3,
+  "upvotes": 1,
+  "downvotes": 0,
+  "blocking_discussions_resolved": true,
+  "has_conflicts": false,
+  "changes_count": "7"
+}
