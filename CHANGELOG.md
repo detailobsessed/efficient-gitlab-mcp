@@ -1,3 +1,10 @@
+# [2.29.0](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.28.4...v2.29.0) (2026-05-15)
+
+
+### Features
+
+* **schemas:** add response schema for get_merge_request (DOT-556) ([#108](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/108)) ([1619da4](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/1619da47cb2b1e3547a1d6b7f41f044f250a33ab))
+
 ## [2.28.4](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.28.3...v2.28.4) (2026-05-15)
 
 
