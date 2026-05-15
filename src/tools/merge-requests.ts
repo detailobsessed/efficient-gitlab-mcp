@@ -3,36 +3,13 @@ import { z } from "zod";
 import {
   GitLabMergeRequestListSchema,
   GitLabMergeRequestSchema,
+  MERGE_REQUEST_SLIM_FIELDS,
 } from "../schemas/merge-requests.js";
 import { parseGitLabResponse } from "../schemas/parse.js";
 import { buildQueryString, defaultClient, resolveProjectId } from "../utils/gitlab-client.js";
 import type { Logger } from "../utils/logger.js";
-import { projectFields } from "../utils/projection.js";
+import { projectField, projectFields } from "../utils/projection.js";
 import { coerceStringArray, fieldsParam } from "../utils/schema-helpers.js";
-
-// Compact set of MR fields useful to an LLM by default. Identifies the MR,
-// its branches, who's involved, and its current merge state — without
-// dragging along the change_count, _links, time_stats, has_conflicts, etc.
-// Pass `fields: "all"` for the raw GitLab response, `fields: [...]` to override.
-const LIST_MERGE_REQUESTS_DEFAULT_FIELDS = [
-  "id",
-  "iid",
-  "title",
-  "state",
-  "draft",
-  "labels",
-  "source_branch",
-  "target_branch",
-  "author",
-  "assignees",
-  "reviewers",
-  "milestone",
-  "web_url",
-  "created_at",
-  "updated_at",
-  "merge_status",
-  "detailed_merge_status",
-] as const;
 
 const MAX_PATTERN_LENGTH = 200;
 const NESTED_QUANTIFIER_RE = /(\+|\*|\{)\s*(\+|\*|\{)/;
@@ -69,6 +46,7 @@ const GetMergeRequestSchema = z.object({
     .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
   merge_request_iid: z.coerce.number().optional().describe("Merge request IID"),
   branch_name: z.string().optional().describe("Branch name to find MR"),
+  fields: fieldsParam("merge request").optional(),
 });
 
 const ListMergeRequestsSchema = z.object({
@@ -504,7 +482,8 @@ export function registerMergeRequestTools(
     "get_merge_request",
     {
       title: "Get Merge Request",
-      description: "Get details of a merge request",
+      description:
+        "Get details of a merge request. Returns a compact set of fields by default; pass `fields: 'all'` for the raw GitLab response or `fields: ['iid', 'title', ...]` to pick your own.",
       inputSchema: {
         project_id: z
           .string()
@@ -512,6 +491,7 @@ export function registerMergeRequestTools(
           .describe("Project ID or URL-encoded path (defaults to GITLAB_PROJECT_ID if set)"),
         merge_request_iid: z.coerce.number().optional().describe("Merge request IID"),
         branch_name: z.string().optional().describe("Branch name to find MR"),
+        fields: fieldsParam("merge request").optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -527,7 +507,12 @@ export function registerMergeRequestTools(
           `/projects/${projectId}/merge_requests/${args.merge_request_iid}`,
         );
         const mr = parseGitLabResponse(GitLabMergeRequestSchema, raw, "get_merge_request", logger);
-        return { content: [{ type: "text", text: JSON.stringify(mr, null, 2) }] };
+        const projected = projectField(
+          mr as unknown as Record<string, unknown>,
+          MERGE_REQUEST_SLIM_FIELDS,
+          args.fields,
+        );
+        return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
       }
 
       if (args.branch_name) {
@@ -544,7 +529,12 @@ export function registerMergeRequestTools(
         if (mrs.length === 0) {
           return { content: [{ type: "text", text: "No merge request found for this branch" }] };
         }
-        return { content: [{ type: "text", text: JSON.stringify(mrs[0], null, 2) }] };
+        const projected = projectField(
+          mrs[0] as unknown as Record<string, unknown>,
+          MERGE_REQUEST_SLIM_FIELDS,
+          args.fields,
+        );
+        return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
       }
 
       throw new Error("Either merge_request_iid or branch_name must be provided");
@@ -625,7 +615,7 @@ export function registerMergeRequestTools(
         "list_merge_requests",
         logger,
       ) as unknown as Record<string, unknown>[];
-      const projected = projectFields(mrs, LIST_MERGE_REQUESTS_DEFAULT_FIELDS, fields);
+      const projected = projectFields(mrs, MERGE_REQUEST_SLIM_FIELDS, fields);
       return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
   );
