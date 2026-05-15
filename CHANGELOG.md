@@ -1,3 +1,10 @@
+## [2.28.4](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.28.3...v2.28.4) (2026-05-15)
+
+
+### Bug Fixes
+
+* **work-items:** coerce string→array for label_names + assignee_usernames (DOT-554) ([#106](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/106)) ([21794f9](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/21794f9b77e83ca91777e4caf4f77aa0efbdd2ba))
+
 ## [2.28.3](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.28.2...v2.28.3) (2026-05-15)
 
 
