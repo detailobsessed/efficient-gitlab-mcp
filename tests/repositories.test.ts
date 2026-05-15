@@ -465,7 +465,7 @@ describe("Repository Tools Handlers", () => {
       });
       const text = (result.content as { type: "text"; text: string }[])[0].text;
 
-      expect(capturedUrl).toContain("/projects/1/repository/branches");
+      expect(capturedUrl).toBe("https://gitlab.com/api/v4/projects/1/repository/branches");
       expect(text).toContain("main");
       expect(text).toContain("develop");
     });
@@ -489,8 +489,9 @@ describe("Repository Tools Handlers", () => {
         arguments: { project_id: "1", search: "feature/", per_page: 50 },
       });
 
-      expect(capturedUrl).toContain("search=feature%2F");
-      expect(capturedUrl).toContain("per_page=50");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/1/repository/branches?search=feature%2F&per_page=50",
+      );
     });
   });
 
@@ -514,7 +515,9 @@ describe("Repository Tools Handlers", () => {
         arguments: { project_id: "1", branch: "feature/v2" },
       });
 
-      expect(capturedUrl).toContain("/repository/branches/feature%2Fv2");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/1/repository/branches/feature%2Fv2",
+      );
     });
   });
 
@@ -565,8 +568,9 @@ describe("Repository Tools Handlers", () => {
         arguments: { project_id: "1", pagination: "keyset", page_token: "TOKEN_ABC" },
       });
 
-      expect(capturedUrl).toContain("pagination=keyset");
-      expect(capturedUrl).toContain("page_token=TOKEN_ABC");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/1/repository/tree?pagination=keyset&page_token=TOKEN_ABC",
+      );
     });
 
     it("surfaces X-Next-Page-Token in pagination_note when present", async () => {
@@ -684,7 +688,7 @@ describe("Repository Tools Handlers", () => {
       });
 
       expect(result.isError).toBeFalsy();
-      expect(capturedUrl).toContain("search=test-repo");
+      expect(capturedUrl).toBe("https://gitlab.com/api/v4/projects?search=test-repo");
     });
   });
 });

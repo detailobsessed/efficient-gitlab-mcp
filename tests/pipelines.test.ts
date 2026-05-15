@@ -71,11 +71,9 @@ describe("Pipeline Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/pipelines");
-      expect(capturedUrl).toContain("status=success");
-      expect(capturedUrl).toContain("ref=main");
-      expect(capturedUrl).toContain("page=1");
-      expect(capturedUrl).toContain("per_page=20");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/pipelines?status=success&ref=main&page=1&per_page=20",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;
@@ -158,7 +156,7 @@ describe("Pipeline Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/pipeline");
+      expect(capturedUrl).toBe("https://gitlab.com/api/v4/projects/my-group%2Fmy-project/pipeline");
       expect(capturedMethod).toBe("POST");
 
       const body = JSON.parse(capturedBody ?? "");
@@ -201,9 +199,9 @@ describe("Pipeline Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/deployments");
-      expect(capturedUrl).toContain("environment=production");
-      expect(capturedUrl).toContain("status=success");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/deployments?environment=production&status=success",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;

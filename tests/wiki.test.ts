@@ -74,7 +74,7 @@ describe("Wiki Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/wikis");
+      expect(capturedUrl).toBe("https://gitlab.com/api/v4/projects/my-group%2Fmy-project/wikis");
       expect(capturedMethod).toBe("POST");
 
       const body = JSON.parse(capturedBody ?? "");
@@ -122,10 +122,9 @@ describe("Wiki Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/groups/my-org%2Fplatform/wikis");
-      expect(capturedUrl).toContain("with_content=true");
-      expect(capturedUrl).toContain("page=1");
-      expect(capturedUrl).toContain("per_page=50");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/groups/my-org%2Fplatform/wikis?with_content=true&page=1&per_page=50",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;

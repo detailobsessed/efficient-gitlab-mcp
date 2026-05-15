@@ -70,11 +70,9 @@ describe("Search Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/search");
-      expect(capturedUrl).toContain("scope=issues");
-      expect(capturedUrl).toContain("search=login");
-      expect(capturedUrl).toContain("state=opened");
-      expect(capturedUrl).toContain("per_page=10");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/search?scope=issues&search=login&state=opened&per_page=10",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;
@@ -121,11 +119,9 @@ describe("Search Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/search");
-      expect(capturedUrl).toContain("scope=blobs");
-      expect(capturedUrl).toContain("search=handleLogin");
-      expect(capturedUrl).toContain("extension=ts");
-      expect(capturedUrl).toContain("per_page=20");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/search?search=handleLogin&extension=ts&per_page=20&scope=blobs",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;

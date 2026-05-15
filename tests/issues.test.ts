@@ -77,7 +77,7 @@ describe("Issue Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/issues");
+      expect(capturedUrl).toBe("https://gitlab.com/api/v4/projects/my-group%2Fmy-project/issues");
       expect(capturedMethod).toBe("POST");
 
       const body = JSON.parse(capturedBody ?? "");
@@ -126,13 +126,10 @@ describe("Issue Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/issues");
-      expect(capturedUrl).toContain("state=opened");
       // Arrays go into query strings as labels[]=bug&labels[]=critical
-      expect(capturedUrl).toContain("labels%5B%5D=bug");
-      expect(capturedUrl).toContain("labels%5B%5D=critical");
-      expect(capturedUrl).toContain("page=2");
-      expect(capturedUrl).toContain("per_page=25");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/issues?state=opened&labels%5B%5D=bug&labels%5B%5D=critical&page=2&per_page=25",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;
@@ -165,8 +162,9 @@ describe("Issue Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("labels%5B%5D=bug");
-      expect(capturedUrl).toContain("labels%5B%5D=critical");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/issues?labels%5B%5D=bug&labels%5B%5D=critical",
+      );
     });
   });
 
@@ -203,7 +201,9 @@ describe("Issue Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fsub-group%2Fmy-project/issues/10");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fsub-group%2Fmy-project/issues/10",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;

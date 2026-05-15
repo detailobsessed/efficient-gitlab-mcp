@@ -69,9 +69,9 @@ describe("Release Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/releases");
-      expect(capturedUrl).toContain("order_by=released_at");
-      expect(capturedUrl).toContain("sort=desc");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/releases?order_by=released_at&sort=desc",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;
@@ -282,7 +282,7 @@ describe("Release Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/releases");
+      expect(capturedUrl).toBe("https://gitlab.com/api/v4/projects/my-group%2Fmy-project/releases");
       expect(capturedMethod).toBe("POST");
 
       const body = JSON.parse(capturedBody ?? "");

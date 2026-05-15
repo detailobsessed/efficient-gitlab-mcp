@@ -69,9 +69,9 @@ describe("Webhook Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/hooks");
-      expect(capturedUrl).toContain("page=1");
-      expect(capturedUrl).toContain("per_page=20");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/hooks?page=1&per_page=20",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;
@@ -124,9 +124,9 @@ describe("Webhook Tools Handlers", () => {
         },
       });
 
-      expect(capturedUrl).toContain("/projects/my-group%2Fmy-project/hooks/1/events");
-      expect(capturedUrl).toContain("page=1");
-      expect(capturedUrl).toContain("per_page=10");
+      expect(capturedUrl).toBe(
+        "https://gitlab.com/api/v4/projects/my-group%2Fmy-project/hooks/1/events?page=1&per_page=10",
+      );
       expect(capturedMethod).toBe("GET");
 
       const content = result.content as Array<{ type: string; text: string }>;
