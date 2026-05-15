@@ -1,3 +1,10 @@
+## [2.28.2](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.28.1...v2.28.2) (2026-05-15)
+
+
+### Bug Fixes
+
+* **client:** tailor 403 guidance to PAT vs CI job token (DOT-432) ([#104](https://github.com/detailobsessed/efficient-gitlab-mcp/issues/104)) ([868bab2](https://github.com/detailobsessed/efficient-gitlab-mcp/commit/868bab2732dbbf1b9afec9eea87665e257cfb0ba))
+
 ## [2.28.1](https://github.com/detailobsessed/efficient-gitlab-mcp/compare/v2.28.0...v2.28.1) (2026-05-15)
 
 
