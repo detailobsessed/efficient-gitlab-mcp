@@ -618,9 +618,13 @@ export function registerMergeRequestTools(
 
       const query = buildQueryString(queryParams);
 
-      const mrs = (await defaultClient.get(
-        `/projects/${projectId}/merge_requests${query}`,
-      )) as Record<string, unknown>[];
+      const raw = await defaultClient.get(`/projects/${projectId}/merge_requests${query}`);
+      const mrs = parseGitLabResponse(
+        GitLabMergeRequestListSchema,
+        raw,
+        "list_merge_requests",
+        logger,
+      ) as unknown as Record<string, unknown>[];
       const projected = projectFields(mrs, LIST_MERGE_REQUESTS_DEFAULT_FIELDS, fields);
       return { content: [{ type: "text", text: JSON.stringify(projected, null, 2) }] };
     },
