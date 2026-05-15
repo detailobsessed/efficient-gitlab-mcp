@@ -144,7 +144,8 @@ export function registerUserTools(server: McpServer, logger: Logger): Map<string
     },
     async (params) => {
       const args = GetUserSchema.parse(params);
-      const user = await defaultClient.get(`/users/${args.user_id}`);
+      const raw = await defaultClient.get(`/users/${args.user_id}`);
+      const user = parseGitLabResponse(GitLabUserSchema, raw, "get_user", logger);
       return { content: [{ type: "text", text: JSON.stringify(user, null, 2) }] };
     },
   );
