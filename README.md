@@ -1,5 +1,10 @@
 # Efficient GitLab MCP
 
+> [!CAUTION]
+> **This repository is archived (2026-05-22).**
+>
+> Upstream [`zereight/gitlab-mcp`](https://github.com/zereight/gitlab-mcp) v2.1+ has independently implemented progressive disclosure and schema slimming (commit [`44983ec`](https://github.com/zereight/gitlab-mcp/commit/44983ec)). The differentiators that justified this fork no longer apply — please use upstream instead.
+
 [![npm version](https://img.shields.io/npm/v/efficient-gitlab-mcp-server.svg)](https://www.npmjs.com/package/efficient-gitlab-mcp-server)
 [![npm downloads](https://img.shields.io/npm/dw/efficient-gitlab-mcp-server?logo=npm&color=cb3837)](https://www.npmjs.com/package/efficient-gitlab-mcp-server)
 [![CI](https://github.com/detailobsessed/efficient-gitlab-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/detailobsessed/efficient-gitlab-mcp/actions/workflows/ci.yml)
